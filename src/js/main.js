@@ -21,8 +21,10 @@ renderScoreStatus(
   document.querySelector("#rules-status"),
   engineStatus.gameplayReady
     ? "Disponibles"
-    : engineStatus.matchSetupReady
-      ? "Inicialización disponible · jugadas no implementadas"
+    : engineStatus.boardPlayReady
+      ? "Tablero lógico disponible · flujo de turnos y puntuación pendientes"
+      : engineStatus.matchSetupReady
+        ? "Inicialización disponible · jugadas no implementadas"
       : "Inicialización no disponible",
 );
 

@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y su primer bloque está completado y aprobado**: el motor puede crear y validar un snapshot inicial v3 con 28 fichas, cuatro manos, equipos alternados, K y jugador inicial. **Todavía no implementa jugadas, un tablero ocupado, cambios de turno, puntuación, pases ni finalización.**
+La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y sus bloques 1 y 2 están completados**: el motor inicializa el snapshot v3 y ya puede enumerar y aplicar colocaciones sobre la línea principal y sus ramas. **Todavía no implementa el flujo de turnos, puntuación, pases, tranque ni finalización.**
 
 ## Documentos de autoridad
 
@@ -56,9 +56,17 @@ npm test
 
 Los tests se ejecutan con `node:test`, sin navegador ni paquetes externos. La cobertura actual y el backlog de bloques posteriores están en [`tests/README.md`](tests/README.md).
 
-## API inicial del motor
+## API pública actual del motor
 
-La fachada `src/js/game/index.js` expone `createMatch`, `validateInitialMatchSnapshot` y las funciones puras de material, K, mezcla, reparto, asientos y jugador inicial. `createMatch` recibe jugadores, equipos, asientos, K y una fuente aleatoria opcional; no muta la configuración recibida y devuelve un snapshot preparado en fase `playing`.
+La fachada `src/js/game/index.js` expone:
+
+- `createMatch` y `validateInitialMatchSnapshot` para inicialización;
+- `getOpenEndTargets(state)` para destinos abiertos individualizados;
+- `getLegalPlays(state, playerId)` para combinaciones completas de ficha y destino;
+- `applyPlay(state, action)` para una transición topológica inmutable;
+- `getDerivedBranches(state)` y `validateBoardState(state)` para consulta y validación del tablero ocupado.
+
+`applyPlay` es deliberadamente una operación de bajo nivel en este bloque: registra la colocación, pero no avanza el turno ni calcula puntuación.
 
 ## Estructura general
 

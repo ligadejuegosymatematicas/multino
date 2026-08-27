@@ -1,6 +1,6 @@
 # Invariantes del motor
 
-Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. El bloque inicial de Fase 1 valida el subconjunto aplicable a una partida recién creada; los invariantes de tablero ocupado y acciones se implementarán en sus bloques correspondientes.
+Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. Los bloques 1 y 2 de Fase 1 validan el snapshot inicial y el tablero ocupado, respectivamente. Turnos completos, puntuación y estados terminales continúan pendientes.
 
 ## Snapshot autosuficiente
 
@@ -11,6 +11,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - Todos los IDs referenciados existen dentro del snapshot.
 - Una acción rechazada no muta snapshot ni historial.
 - Una acción aceptada deja nuevamente satisfechos todos los invariantes.
+- `placement-N`, `connection-N` y `history.sequence` se derivan del snapshot; no dependen de contadores globales.
 
 ## Participantes, fichas y ubicación
 
@@ -67,6 +68,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - Un chancho no especial posee solo sus dos lados tradicionales y como máximo dos conexiones.
 - Un chancho especial posee como máximo cuatro conexiones.
 - Cada puerto admite como máximo una conexión.
+- Una colocación especial agregada a una línea existente usa `main:1` como entrada canónica; `main:2` conserva la continuidad, sin significado geométrico.
 
 ## Compatibilidad
 
@@ -75,6 +77,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - La igualdad se aplica en línea principal, ramificaciones y todos los puertos de chanchos.
 - Una jugada legal referencia un extremo abierto existente y un lado compatible.
 - Si existen varias jugadas legales, el conjunto enumerado por el motor las contiene todas y ninguna se selecciona automáticamente (R-030).
+- Dos destinos con igual valor conservan IDs distintos `placementId:portId` y producen opciones de jugada distintas.
 
 ## Turnos, pase y terminación
 

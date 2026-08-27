@@ -5,13 +5,13 @@ import {
 
 export const RULES_CAPABILITIES = Object.freeze({
   turnPlayRequirement: SPECIFIED_NOT_IMPLEMENTED,
-  connectionCompatibility: SPECIFIED_NOT_IMPLEMENTED,
+  connectionCompatibility: CAPABILITY_IMPLEMENTED,
   randomDeal: CAPABILITY_IMPLEMENTED,
-  legalMoveChoice: SPECIFIED_NOT_IMPLEMENTED,
+  legalMoveChoice: CAPABILITY_IMPLEMENTED,
   passingAndBlocking: SPECIFIED_NOT_IMPLEMENTED,
-  specialDoubleEligibility: SPECIFIED_NOT_IMPLEMENTED,
-  mainLineTopology: SPECIFIED_NOT_IMPLEMENTED,
-  branchTopology: SPECIFIED_NOT_IMPLEMENTED,
+  specialDoubleEligibility: CAPABILITY_IMPLEMENTED,
+  mainLineTopology: CAPABILITY_IMPLEMENTED,
+  branchTopology: CAPABILITY_IMPLEMENTED,
 });
 
 export const RULES_READY = false;

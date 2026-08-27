@@ -24,6 +24,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Documentación de Modo Grafo, modos de visualización, variantes futuras y separación conceptual Round/Match.
 - Evaluación de extremos repetidos, límites de 16 globales y ocho para un mismo valor, opciones de UX y replay del grafo.
 - Matrices de coherencia para `Divisible por n`, `Sin divisibilidad`, condiciones de victoria y participantes alternativos.
+- Bloque 2 de Fase 1: tablero lógico ocupado, puertos canónicos, línea principal ordenada, ramas derivadas y chanchos especiales.
+- API pública `getOpenEndTargets`, `getLegalPlays`, `applyPlay`, `getDerivedBranches` y `validateBoardState`.
+- Historial `PLAY_DOMINO` con IDs secuenciales derivados del snapshot y `connectionId: null` para la primera ficha.
+- Tests ejecutables de los casos topológicos A–H, destinos repetidos, máximos de extremos y corrupción controlada de invariantes.
 
 ### Decidido
 
@@ -40,6 +44,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Reparto técnico circular de la secuencia mezclada y creación atómica `setup → playing` sin evento histórico artificial.
 - DEC-019 a DEC-024: distinguir ambos grafos, renderers intercambiables, extremos derivados dirigibles, configuración separada de vista, Round/Match pospuesto y política de puntuación aislada.
 - Modo Grafo previsto como representación predeterminada, con Modo Tradicional disponible sobre el mismo snapshot.
+- DEC-025 a DEC-028 resuelven ARQ-PEND-001 a 005: acción discriminada, puertos neutrales, IDs derivados y consultas separadas.
 
 ### Cambiado
 
@@ -55,3 +60,5 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Diagnóstico de capacidades y textos mínimos de UI sincronizados con el bloque inicial disponible y el juego aún no jugable.
 - Hoja de ruta ampliada con la puerta arquitectónica previa al Bloque 2, los dos renderers, explicación visual de S y herramientas de grafo/replay.
 - Agenda ARQ-PEND-001 a 005 para contrato de colocación, puertos canónicos, IDs deterministas, transición atómica y consultas derivadas antes del Bloque 2.
+- Bloque 2 completado sin introducir flujo de turnos, puntuación, pases, tranque ni finalización.
+- Corregida la cota global de destinos a `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`; el máximo ocho por valor queda demostrado y cubierto por una construcción ejecutable.

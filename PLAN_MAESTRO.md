@@ -7,7 +7,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | Fase | Estado | Resultado esperado |
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
-| 1 — Motor básico | EN CURSO — BLOQUE 1 APROBADO | Motor puro con tests |
+| 1 — Motor básico | EN CURSO — BLOQUE 2 COMPLETADO | Motor puro con tests |
 | 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
@@ -52,11 +52,13 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 **Bloque 1 — Inicialización de partida: COMPLETADO Y APROBADO.** Incluye material doble-seis, participantes y asientos, K, mezcla inyectable, reparto, jugador inicial y validación del snapshot inicial v3.
 
-**Bloque 2: NO INICIADO.** Permanecen fuera las jugadas y su enumeración, el tablero ocupado, los chanchos especiales colocados, las ramificaciones, la puntuación, los pases, el tranque, la finalización y la bonificación. No se inicia otro bloque sin autorización.
+**Bloque 2 — Núcleo lógico del tablero: COMPLETADO.** Incluye puertos canónicos, primera colocación, línea principal ordenada, chanchos especiales, ramas derivadas, destinos individualizados, enumeración de ficha+destino, aplicación inmutable, historial y validación topológica.
 
-### Puerta arquitectónica previa al Bloque 2
+**Siguiente bloque: NO INICIADO.** Permanecen fuera el flujo de turnos, puntuación, pases, tranque, finalización y bonificación. No se inicia sin autorización.
 
-Antes de implementar acciones sobre el tablero debe cerrarse en tests y contrato ejecutable:
+### Puerta arquitectónica del Bloque 2 — resuelta
+
+DEC-025 a DEC-028 y sus tests cerraron:
 
 - la identidad canónica de cada puerto y extremo derivado;
 - que una acción apunte a `placementId + portId`, no solo a un valor;
@@ -66,7 +68,7 @@ Antes de implementar acciones sobre el tablero debe cerrarse en tests y contrato
 - la asignación canónica de puertos simétricos;
 - la generación determinista de IDs y el límite transaccional de una acción.
 
-DEC-019 a DEC-024 fijan la dirección conceptual; ARQ-PEND-001 a 005 enumeran los contratos a cerrar. No requieren generalizar participantes, puntuación o match antes del Bloque 2.
+ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes, puntuación ni match. Los términos de puntuación continúan como un contrato separado para el bloque que implemente R-014–R-019.
 
 ### Alcance
 

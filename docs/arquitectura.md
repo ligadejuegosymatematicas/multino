@@ -60,7 +60,7 @@ Contiene representaciones de datos serializables: fichas, jugadores, equipos, ta
 
 ### `src/js/game/engine/`
 
-Es el lugar de las reglas puras y las transiciones de juego. Recibirá estado más acción y producirá un nuevo estado o un error de dominio. Las capacidades de jugada todavía no implementadas lo declaran y no devuelven resultados ficticios.
+Es el lugar de las reglas puras y las transiciones de juego. El Bloque 2 implementa consultas de puertos, ramas, destinos y jugadas legales, más `applyPlay(state, action)`: devuelve un snapshot nuevo o un error de dominio sin mutar la entrada. Turnos, pases, puntuación y finalización continúan declarados como no implementados y no devuelven resultados ficticios.
 
 ### `src/js/game/setup/`
 
@@ -90,7 +90,7 @@ Persistencia y red se añadirán en directorios propios cuando exista alcance de
 
 El snapshot v3 continúa representando el ciclo único desde reparto hasta salida o tranque. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
 
-## Flujo de una acción futura
+## Flujo de una acción de tablero
 
 1. La UI muestra un snapshot recibido.
 2. El usuario expresa una intención, por ejemplo jugar una ficha en un puerto lógico.
@@ -99,6 +99,8 @@ El snapshot v3 continúa representando el ciclo único desde reparto hasta salid
 5. El motor devuelve un nuevo snapshot y un resultado, o un error explícito sin mutar el estado original.
 6. La acción aceptada se registra en el historial.
 7. La UI vuelve a renderizar; efectos y animaciones observan la transición, pero no la deciden.
+
+En el Bloque 2, `applyPlay` termina tras el paso topológico e histórico: no avanza turno ni toca pases o marcador. Esa coordinación se añadirá en una capa de transición de turno cuando sea autorizada.
 
 ## Pureza y mutabilidad
 

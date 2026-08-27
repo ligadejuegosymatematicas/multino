@@ -11,7 +11,7 @@ El tablero es un grafo lógico de colocaciones, puertos y conexiones. Su topolog
   placements: {
     "placement-17": {
       id: "placement-17",
-      dominoId: "domino-5-5"
+      dominoId: "5-5"
     }
   },
   connections: {
@@ -27,6 +27,38 @@ El tablero es un grafo lógico de colocaciones, puertos y conexiones. Su topolog
   specialDoublePlacementIds: ["placement-17"]
 }
 ```
+
+El Bloque 2 conserva exactamente este esquema v3: no añadió `branches`, orientación ni contadores de IDs.
+
+## Contrato ejecutable de acciones
+
+La primera ficha no tiene conexión previa:
+
+```js
+{
+  type: "PLAY_DOMINO",
+  playerId: "P1",
+  dominoId: "2-5",
+  target: { kind: "START" }
+}
+```
+
+Toda ficha posterior señala un puerto abierto individual:
+
+```js
+{
+  type: "PLAY_DOMINO",
+  playerId: "P3",
+  dominoId: "3-5",
+  target: {
+    kind: "OPEN_END",
+    placementId: "placement-1",
+    portId: "side:b"
+  }
+}
+```
+
+Un `target` que contenga solamente `value: 5` es inválido. El valor permite comprobar compatibilidad; no identifica el destino.
 
 ## Fichas, colocaciones y conexiones
 
@@ -73,6 +105,8 @@ side:b
 
 Cada puerto presenta el valor de su lado y acepta como máximo una conexión. Cuando la colocación pertenece a la línea principal, esos puertos participan en el recorrido principal. Cuando pertenece a una rama, uno enlaza con su predecesor y el otro puede ser el extremo terminal.
 
+Los IDs corresponden directamente a los lados canónicos del catálogo. Para un doble ordinario, `side:a` es la entrada técnica al incorporarse a un tablero ocupado y `side:b` queda disponible. Esta convención resuelve la simetría sin introducir orientación visual.
+
 ## Puertos de un chancho especial
 
 Una colocación especial de `N|N` expone:
@@ -89,6 +123,8 @@ branch:2  valor N
 - Los cuatro nombres son lógicos y neutrales.
 - Todos tienen valor N para R-028.
 - Cada uno acepta como máximo una conexión.
+
+La correspondencia técnica estable es `a → main:1` y `b → main:2`. Si el chancho especial se agrega a una línea existente, `main:1` recibe la conexión de entrada y `main:2` conserva la continuidad. En la primera colocación, ambos están libres. Esto no significa izquierda/derecha.
 
 El número ordinal de una conexión del chancho no identifica un puerto específico: cuenta cuántos de sus cuatro puertos están ocupados. Por R-018 y R-033, el aporte es `2N` con 0 o 1 conexión y 0 con 2, 3 o 4.
 
@@ -130,6 +166,10 @@ La rama puede reconstruirse comenzando en una arista `branch:*` ocupada y recorr
 - La colección de extremos abiertos se deriva; no se persiste.
 
 Cada extremo puede identificarse canónicamente por su pareja `placementId + portId`. Una proyección futura puede exponer un `openEndId` compuesto, pero no debe guardarlo si no añade información. La identidad individual es obligatoria para R-030: dos extremos con el mismo valor siguen siendo destinos diferentes.
+
+La consulta implementada `getOpenEndTargets(state)` devuelve ese ID compuesto, valor, colocación, puerto y clase topológica. `getLegalPlays(state, playerId)` enumera el producto válido de cada ficha de la mano con cada destino compatible. `getDerivedBranches(state)` reconstruye cada cadena desde su puerto `branch:*` de origen.
+
+En todo tablero válido no vacío, con `s` chanchos especiales, existen exactamente `2 + 2s` destinos abiertos. Por tanto, `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`. Esta cuenta se refiere a puertos legalmente prolongables, no a términos de puntuación.
 
 ## Proyección al grafo de valores
 

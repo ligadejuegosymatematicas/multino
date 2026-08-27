@@ -9,6 +9,7 @@ import {
 } from "./engine/Rules.js";
 import { SCORING_READY } from "./engine/Scoring.js";
 import { TURN_MANAGER_READY } from "./engine/TurnManager.js";
+import { BOARD_PLAY_READY } from "./engine/PlayTransition.js";
 import { MATCH_SETUP_READY } from "./setup/createMatch.js";
 
 export { createEmptyGameState } from "./model/GameState.js";
@@ -30,6 +31,18 @@ export {
 export { getCounterclockwiseSuccessor } from "./setup/Seating.js";
 export { shuffle } from "./setup/Shuffle.js";
 export { findStartingPlayerId } from "./setup/StartingPlayer.js";
+export {
+  getDerivedBranches,
+  getOpenEndTargets,
+} from "./engine/BoardQueries.js";
+export { validateBoardState } from "./engine/BoardValidator.js";
+export {
+  areValuesCompatible,
+  getMatchingSideIds,
+  isDominoCompatibleWithValue,
+} from "./engine/Compatibility.js";
+export { getLegalPlays } from "./engine/LegalPlays.js";
+export { applyPlay, BOARD_PLAY_READY } from "./engine/PlayTransition.js";
 
 export function getEngineStatus() {
   return {
@@ -39,6 +52,7 @@ export function getEngineStatus() {
     phase: PROJECT_PHASE,
     specificationComplete: RULES_SPECIFICATION_COMPLETE,
     matchSetupReady: MATCH_SETUP_READY,
+    boardPlayReady: BOARD_PLAY_READY,
     gameplayReady: RULES_READY && SCORING_READY && TURN_MANAGER_READY,
   };
 }

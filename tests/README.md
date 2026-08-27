@@ -10,7 +10,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - tablero vacío conforme al contrato lógico;
 - estado v3 serializable, autosuficiente y sin colecciones compartidas;
 - ausencia de `stock`, `board.branches` y `placement.region`;
-- diagnóstico que distingue capacidades disponibles de mecánicas todavía no implementadas.
+- diagnóstico que distingue inicialización, tablero lógico disponible y mecánicas todavía no implementadas.
 
 ### Bloque 1 de Fase 1 — completado
 
@@ -24,6 +24,15 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/integration/create-match.test.js`: creación atómica del snapshot v3;
 - `tests/integration/initial-snapshot-validation.test.js`: corrupción dirigida de cada invariante inicial requerido.
 
+### Bloque 2 de Fase 1 — completado
+
+- `tests/rules/board-contracts.test.js`: puertos canónicos e IDs derivados sin contadores ocultos;
+- `tests/integration/board-plays.test.js`: primera ficha, extensión en ambos extremos, compatibilidad e inmutabilidad;
+- `tests/integration/board-topology.test.js`: casos normativos A–H, condición especial, ramas y multiplicidad de destinos;
+- `tests/rules/open-end-bounds.test.js`: identidad de extremos, fórmula exacta `2 + 2s`, máximo global 16 y construcción con ocho destinos del mismo valor;
+- `tests/integration/board-invariants.test.js`: corrupción dirigida de camino principal, puertos, valores, ramas, chanchos, ubicación y K efectivo;
+- `tests/integration/board-public-api.test.js`: fachada pública, carga JSON, historial y límite deliberado sin avance de turno ni puntuación.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.
@@ -32,25 +41,6 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - La aleatoriedad se sustituye por fuentes controladas; ningún test depende de `Math.random`.
 
 ## Backlog de bloques posteriores
-
-### Compatibilidad, elección y tablero
-
-- R-028: igualdad de valores en línea principal, ramas y puertos especiales.
-- R-030: enumerar todas las combinaciones legales de ficha y extremo sin selección automática.
-- Casos A/B y R-031: crear y extender el camino principal por ambos extremos.
-- R-031: rechazar ciclos, duplicados y conexiones principales no consecutivas.
-
-### Chanchos especiales y K efectivo
-
-- R-001/R-002, R-032 y DEC-013: adquisición y persistencia de condición especial.
-- Casos C/F/G: capacidad especial, K=0 y K agotado.
-- Validar los puertos `main:1`, `main:2`, `branch:1` y `branch:2`.
-
-### Ramificaciones
-
-- Caso D/R-034: iniciar y prolongar una cadena lateral.
-- Caso E/R-035: chancho ordinario dentro de rama y prohibición de segundo nivel.
-- R-034/R-035: origen único, ramas disjuntas y ausencia de reconexión.
 
 ### Turnos, pases y terminación
 
@@ -61,7 +51,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 ### Puntuación y resultado
 
 - R-014 a R-017: cálculo de S, múltiplos de cinco y última jugada.
-- Caso H/R-018/R-019/R-033: aporte y capacidad independientes de un chancho.
+- R-018/R-019/R-033: aporte numérico de un chancho; la capacidad ya está cubierta en el caso H del Bloque 2.
 - R-021 a R-026: tranque, bonificación, marcador final, ganador y empate.
 - Coherencia entre `score`, historial y bonificación terminal.
 

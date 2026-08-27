@@ -244,7 +244,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-021 — Extremos individualizados, derivados y dirigibles
 
-**Estado:** Aceptada conceptualmente; el contrato ejecutable se definirá antes de implementar jugadas.
+**Estado:** Aceptada e implementada por DEC-025 y DEC-028.
 
 **Decisión:** Cada extremo abierto será dirigible mediante una referencia lógica estable de colocación y puerto. La colección, su ID compuesto y su agrupación por valor se derivan; no se persiste un array `openEnds`.
 
@@ -252,7 +252,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 **Alternativas consideradas:** Elegir solo por valor; persistir extremos y multiplicidades; dejar que cada renderer reconstruya destinos con reglas propias.
 
-**Consecuencias:** La futura acción de jugada deberá referenciar un destino concreto, no solamente el número compatible. Antes del Bloque 2 debe fijarse la forma canónica de `placementId + portId` y probar que se deriva inequívocamente.
+**Consecuencias:** Toda acción posterior a la primera refiere un destino concreto, no solamente el número compatible. El Bloque 2 fija y prueba la forma canónica `placementId + portId`.
 
 ## DEC-022 — Separar reglas de partida y preferencias de representación
 
@@ -290,28 +290,86 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 **Consecuencias:** La modalidad actual sigue siendo exclusivamente n=5. Cualquier política nueva necesitará reglas propias, especialmente sobre la bonificación final.
 
-## Agenda técnica obligatoria antes del Bloque 2
+## Agenda técnica del Bloque 2 — resuelta
 
 No son vacíos de `REGLAS.md`; son contratos de implementación que deben resolverse explícitamente al planificar el bloque:
 
 ### ARQ-PEND-001 — Forma de la acción de colocación
 
+**Estado:** Resuelto por DEC-025.
+
 Distinguir la primera ficha, que no tiene destino previo, de las siguientes jugadas, que deben referenciar `placementId + portId`. Decidir si existe un destino discriminado `BOARD_START` o un tipo de acción inicial separado.
 
 ### ARQ-PEND-002 — Puertos canónicos de la ficha colocada
+
+**Estado:** Resuelto por DEC-026.
 
 R-030 deja la orientación gráfica al renderer. Debe definirse cómo el motor asigna de forma determinista `side:a/side:b` o `main:1/main:2` cuando hay simetría, sin enumerar como diferentes dos jugadas que reglamentariamente son la misma elección.
 
 ### ARQ-PEND-003 — IDs deterministas
 
+**Estado:** Resuelto por DEC-027.
+
 Definir cómo se producen `placementId` y `connectionId` para que una acción aceptada sea reproducible, testeable y sincronizable sin depender de UUID aleatorio interno.
 
 ### ARQ-PEND-004 — Límite transaccional y validación
+
+**Estado:** Resuelto por DEC-025 y DEC-027.
 
 Fijar la API que recibe snapshot más acción, devuelve un snapshot nuevo y valida invariantes del tablero ocupado. Debe especificar errores de dominio y garantizar que una acción rechazada no consuma IDs ni altere historial.
 
 ### ARQ-PEND-005 — Consultas derivadas
 
+**Estado:** Resuelto por DEC-028.
+
 Separar contratos para `openEndTargets`, `legalMoves` y `scoringTerms`. Pueden compartir derivación, pero no deben ser un único array interpretado de manera distinta por motor y renderers.
 
-ARQ-PEND-001 a 004 sí preceden a la implementación de colocaciones. ARQ-PEND-005 debe fijar al menos la identidad de extremos ahora; el desglose definitivo de puntuación puede completarse en el bloque que implemente R-014–R-019.
+ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El desglose de términos de puntuación permanece separado y se completará únicamente en el bloque que implemente R-014–R-019.
+
+## DEC-025 — Acción de jugada discriminada y transición de tablero
+
+**Estado:** Aceptada.
+
+**Decisión:** `applyPlay(state, action)` recibe `playerId`, `dominoId` y un destino discriminado: `{ kind: "START" }` para la primera ficha o `{ kind: "OPEN_END", placementId, portId }` después. Valida antes de clonar y devuelve un snapshot nuevo. En este bloque no avanza `currentPlayerId`, `turnNumber`, `consecutivePasses` ni `score`.
+
+**Motivo:** La primera ficha no se conecta; las posteriores deben elegir un extremo individual. El flujo de turno no debe inventarse para probar una transición topológica de bajo nivel.
+
+**Alternativas consideradas:** `target: null`; acciones distintas para inicio y extensión; destino por valor; avanzar parcialmente el turno.
+
+**Consecuencias:** La primera jugada solo se acepta al jugador inicial. Después, el caller de bajo nivel indica el jugador; un futuro coordinador de turnos será responsable de autorizarlo y avanzar. El historial registra el `turnNumber` recibido, sin fabricar un turno nuevo.
+
+## DEC-026 — Puertos canónicos sin orientación geométrica
+
+**Estado:** Aceptada.
+
+**Decisión:** Una colocación ordinaria expone `side:a` y `side:b`, en correspondencia directa con los IDs de lados del catálogo. Un chancho especial reemplaza esa interfaz por `main:1`, `main:2`, `branch:1`, `branch:2`; técnicamente `a → main:1` y `b → main:2`. Al colocarlo sobre una línea existente, `main:1` es el puerto de entrada y `main:2` queda como continuidad. Un doble ordinario usa `side:a` como entrada canónica.
+
+**Motivo:** Los dobles son simétricos, pero conexiones, replay y tests requieren IDs estables. La convención elimina duplicados lógicos sin afirmar izquierda, derecha ni rotación.
+
+**Alternativas consideradas:** Persistir orientación; escoger puertos aleatoriamente; enumerar ambas orientaciones simétricas; conservar simultáneamente puertos `side:*` y `main:*`.
+
+**Consecuencias:** La orientación lógica se deriva de conexiones. No se persiste `connectedSide`, ángulo ni dirección. En la primera colocación ambos puertos principales quedan disponibles.
+
+## DEC-027 — IDs secuenciales derivados del snapshot
+
+**Estado:** Aceptada.
+
+**Decisión:** Generar `placement-N` y `connection-N` usando uno más que el máximo sufijo canónico presente en los mapas respectivos. `sequence` usa uno más que el máximo del historial. No existen contadores globales ni campos persistidos adicionales.
+
+**Motivo:** Un snapshot cargado contiene toda la información necesaria para continuar y producir IDs reproducibles.
+
+**Alternativas consideradas:** UUID; coordenadas; contadores globales; persistir `nextPlacementId` y `nextConnectionId`.
+
+**Consecuencias:** Los validadores rechazan claves no canónicas, colisiones e incoherencias clave/ID. La primera conexión es `connection-1`, aunque corresponde a `placement-2`; la primera jugada registra `connectionId: null`.
+
+## DEC-028 — Consultas separadas para destinos, jugadas y puntuación
+
+**Estado:** Aceptada.
+
+**Decisión:** `getOpenEndTargets` deriva destinos individualizados; `getLegalPlays` produce el producto válido ficha+destino; la futura `getScoringTerms` será un contrato distinto. `START` no es un extremo abierto y, con tablero vacío, la consulta de extremos devuelve `[]`.
+
+**Motivo:** Varios destinos pueden compartir valor, y los chanchos prueban que un puerto disponible no equivale a un término de S.
+
+**Alternativas consideradas:** Un único array con interpretación contextual; extremos agrupados solo por valor; devolver puntuación provisional 0.
+
+**Consecuencias:** El Modo Grafo podrá seleccionar destinos concretos. Este bloque no expone `getScoringTerms` ni registra `scoreAwarded`; el módulo de puntuación posterior deberá consumir el mismo tablero sin redefinir extremos.

@@ -65,13 +65,13 @@ Por tanto, no se recomienda persistir `openEnds` ni agrupaciones por valor. Agru
 
 ## Multiplicidad y límites de diseño
 
-El número total de extremos disponibles no coincide con el número de vértices. Con `s` chanchos especiales ya colocados, la topología permite como máximo:
+El número total de extremos disponibles no coincide con el número de vértices. En un tablero válido no vacío, el grafo de colocaciones es un árbol: cada ficha ordinaria aporta dos puertos, cada chancho especial aporta dos adicionales y cada conexión ocupa dos puertos. Con `p` colocaciones, `p-1` conexiones y `s` chanchos especiales, la cantidad de destinos abiertos es exactamente:
 
 ```text
-2 extremos principales + 2s destinos laterales
+(2p + 2s) - 2(p - 1) = 2 + 2s
 ```
 
-Como `s ≤ 7`, el límite estructural global es 16. Es alcanzable conceptualmente con los siete chanchos especiales en la línea principal y sus catorce puertos laterales libres.
+Aquí “destino abierto” significa un puerto libre legalmente prolongable: extremo principal, origen lateral libre o terminal de rama. No significa término de puntuación. Como `s ≤ effectiveK = min(K,7)`, el límite estructural global es 16. La expresión `2 + 2K ≤ 16` no es correcta para el K reglamentario cuando `K > 7`; la forma correcta es `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`. El máximo es alcanzable con los siete chanchos especiales en la línea principal.
 
 Para un mismo valor `v`, el límite de diseño es ocho destinos abiertos simultáneos:
 
@@ -81,7 +81,7 @@ Para un mismo valor `v`, el límite de diseño es ocho destinos abiertos simult�
 - con una conexión, el máximo es `(4 - 1) + (6 - 1) = 8`; con más conexiones disminuye;
 - si el chancho es la única ficha, solo presenta cuatro destinos.
 
-El límite ocho puede alcanzarse con K suficiente usando el chancho `v|v` como extremo principal y dejando otros cinco dominós incidentes en `v` como terminales de cadenas diferentes. No se exige que toda configuración alcance ese máximo; sí conviene que el diseño responda correctamente hasta ocho indicadores en un vértice.
+El límite ocho puede alcanzarse con K suficiente usando el chancho `v|v` con una conexión —tres puertos libres— y dejando otros cinco dominós incidentes en `v` como terminales de cadenas diferentes. El Bloque 2 conserva una construcción ejecutable que demuestra simultáneamente ocho destinos de un valor y 16 globales. Ninguno de esos ocho destinos implica ocho términos `v` en S.
 
 ## Opciones visuales para extremos repetidos
 

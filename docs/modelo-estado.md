@@ -85,6 +85,8 @@ No existe `stock`: la unión de las manos es exactamente el catálogo. `effectiv
 
 Con estos campos, el motor puede enumerar las jugadas del jugador actual, decidir si un pase completa el tranque, consultar la capacidad de cada chancho y continuar el marcador sin reconstruir acciones anteriores.
 
+El Bloque 2 implementa la parte topológica mediante una operación de bajo nivel que recibe `playerId` explícito. Después de la primera colocación no autoriza ni avanza por sí misma el turno: `currentPlayerId`, `turnNumber`, `consecutivePasses` y `score` quedan intactos hasta que un bloque posterior incorpore el coordinador de turnos y puntuación.
+
 ## Marcador normativo
 
 `score.teams[teamId]` es el puntaje actual y la fuente operativa para continuar la partida.
@@ -145,26 +147,26 @@ Propuesta de acción:
 
 ```js
 {
-  sequence: 12,
-  turn: 12,
+  sequence: 10,
+  turn: 1,
   playerId: "A2",
   type: "PLAY_DOMINO",
   payload: {
-    dominoId: "domino-5-5",
-    targetPort: {
+    dominoId: "5-5",
+    target: {
+      kind: "OPEN_END",
       placementId: "placement-8",
       portId: "branch:1"
     }
   },
   result: {
-    placementId: "placement-17",
-    connectionId: "connection-9",
-    scoreAwarded: 2
+    placementId: "placement-10",
+    connectionId: "connection-9"
   }
 }
 ```
 
-El historial conserva causalidad y orden. Puede reproducir o auditar el snapshot, pero una carga válida no necesita reproducirlo antes de continuar.
+Para la primera ficha, `payload.target` es `{ kind: "START" }` y `connectionId` es `null`. El Bloque 2 no escribe `scoreAwarded: 0`: el campo se incorporará cuando exista un cálculo real. El historial conserva causalidad y orden. Puede reproducir o auditar el snapshot, pero una carga válida no necesita reproducirlo antes de continuar.
 
 ## Sin pozo
 
@@ -179,7 +181,7 @@ No existe `stock`. Al comenzar el juego, las 28 fichas están distribuidas entre
 - Tablero, lista especial e historial deben satisfacer sus invariantes cruzados.
 - `schemaVersion` se incrementa ante cambios incompatibles.
 
-El validador inicial implementado comprueba schema, participantes, equipos, alternancia, K, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío y serialización JSON. Los validadores de un tablero ocupado, historial de jugadas y estados terminales corresponden a bloques posteriores.
+El validador inicial implementado comprueba schema, participantes, equipos, alternancia, K, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío y serialización JSON. `validateBoardState` añade para tableros ocupados IDs canónicos, línea principal, puertos, compatibilidad, ramas, condición especial, ubicación única e historial de colocaciones. La coherencia de puntuación, turnos, pases y estados terminales corresponde a bloques posteriores.
 
 El esquema v3 sustituye al v2 antes de existir partidas persistidas reales. No se implementan migraciones en esta intervención.
 
