@@ -89,6 +89,21 @@ Gana el puntaje final mayor; puntajes finales iguales producen empate (R-024 a R
 
 Snapshot e historial deben coincidir, pero el motor no recorre el historial para conocer el marcador presente.
 
+## Proyección visual de S
+
+Una UI puede mostrar `S = 2 + 5 + 5 + 5 + 6 = 23` o su forma agrupada, pero debe recibir del motor el desglose lógico y el total. GraphRenderer no recalcula puntuación a partir del número de curvas dibujadas.
+
+Esta separación es necesaria porque destinos legales y términos de S no son uno-a-uno para los chanchos:
+
+- un chancho con una conexión aporta `2N`, aunque visualmente tenga otro número de puertos disponibles;
+- un chancho especial con dos o más conexiones puede conservar destinos laterales y aportar 0.
+
+La proyección puede enlazar fuentes de puntuación y objetivos mediante IDs de colocación/puerto, agrupar el aporte del chancho y destacar visualmente qué elementos explican el total. El contrato detallado se estudia en [`modo-grafo.md`](modo-grafo.md).
+
 ## Cierre de la especificación de S
 
 R-028 define compatibilidad por igualdad y R-031 a R-035 fijan línea principal, puertos especiales y ramificaciones. Con estas reglas, el conjunto lógico de extremos abiertos y el aporte de cada chancho pueden determinarse sin geometría. No queda un vacío normativo de puntuación que bloquee Fase 1.
+
+## Variantes no normativas
+
+`Divisible por n` y `Sin divisibilidad` son hipótesis futuras documentadas en [`variantes-futuras.md`](variantes-futuras.md). La generalización no está autorizada: en particular, todavía no se ha definido cómo se relacionaría `n` con la bonificación de R-023. Al implementar el modo aprobado conviene localizar el literal 5 en la política de puntuación, sin exponer configuraciones no reglamentadas.

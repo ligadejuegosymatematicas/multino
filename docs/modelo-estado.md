@@ -137,6 +137,8 @@ A partir del snapshot actual se derivan:
 
 Estas propiedades no requieren recorrer `history`.
 
+También son derivadas la proyección de las fichas sobre el grafo de valores `0–6`, la agrupación de extremos por valor y cualquier fórmula visual de S. El modo de visualización seleccionado, el zoom, las coordenadas, el foco y las animaciones son preferencias de UI y no forman parte del snapshot.
+
 ## Historial
 
 Propuesta de acción:
@@ -187,3 +189,9 @@ El esquema v3 sustituye al v2 antes de existir partidas persistidas reales. No s
 - **Cargar:** valida el snapshot directamente; no necesita reproducir el historial.
 - **Replay:** usa el historial cuando el usuario solicita reconstrucción temporal.
 - **Red:** puede enviar snapshots autoritativos compactos y acciones incrementales, con proyecciones que oculten manos ajenas.
+
+## Round y Match futuros
+
+Aunque la API actual se denomina `createMatch`, el snapshot v3 cubre un único ciclo desde reparto hasta salida o tranque. No se renombra ni refactoriza mientras solo exista esa modalidad.
+
+Si se aprueban múltiples rondas, un futuro `MatchState` podrá envolver un `RoundState` equivalente al estado actual y añadir política de victoria, rondas ganadas o puntos acumulados. Esa evolución requerirá reglas y versión de esquema propias; no justifica agregar campos preventivos a v3. Véase [`modelo-round-match.md`](modelo-round-match.md).

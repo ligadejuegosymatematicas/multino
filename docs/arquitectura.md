@@ -24,6 +24,34 @@ modelo de estado + tablero lógico
 
 La dirección importante es hacia el dominio. El motor nunca importa módulos de `ui/`, ni conoce `document`, `window`, HTML, CSS, animaciones, píxeles o coordenadas. La UI puede importar la API pública del motor y representar snapshots, pero no escribir directamente en ellos.
 
+## Dos grafos, una frontera explícita
+
+“Grafo” puede referirse a dos estructuras distintas:
+
+- el **grafo lógico del tablero**, formado por colocaciones, puertos y conexiones y usado por el motor;
+- el **grafo de valores**, formado por los vértices `0–6` y las fichas como aristas/lazos, usado por GraphRenderer.
+
+El grafo de valores es una proyección: no reemplaza ni simplifica el estado normativo. En particular, necesita una superposición de extremos individualizados para recuperar destinos que el colapso por valor no distingue.
+
+## Arquitectura de renderers
+
+```text
+                    motor de una ronda
+                            │
+                       snapshot v3
+                            │
+                   proyecciones puras
+                            │
+                ┌───────────┴───────────┐
+                │                       │
+                ▼                       ▼
+          GraphRenderer         TraditionalRenderer
+```
+
+GraphRenderer es la vista predeterminada prevista. TraditionalRenderer representa el mismo snapshot como fichas y cadenas. Alternar entre ambos solo cambia preferencias y estado efímero de UI; nunca `config`, `board`, `history` ni `score`.
+
+La proyección de extremos, jugadas legales y puntuación pertenece a funciones puras cercanas al motor. La geometría, hit areas, animaciones y agrupaciones visuales pertenecen al renderer. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
+
 ## Responsabilidades
 
 ### `src/js/game/model/`
@@ -57,6 +85,10 @@ Utilidades técnicas sin reglas de dominio. No debe convertirse en un lugar para
 ### Adaptadores futuros
 
 Persistencia y red se añadirán en directorios propios cuando exista alcance definido. Transformarán JSON o mensajes a contratos públicos del motor; no incorporarán reglas paralelas.
+
+### Coordinación Round / Match futura
+
+El snapshot v3 continúa representando el ciclo único desde reparto hasta salida o tranque. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
 
 ## Flujo de una acción futura
 

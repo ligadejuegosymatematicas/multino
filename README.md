@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y su primer bloque está completado**: el motor puede crear y validar un snapshot inicial v3 con 28 fichas, cuatro manos, equipos alternados, K y jugador inicial. **Todavía no implementa jugadas, un tablero ocupado, cambios de turno, puntuación, pases ni finalización.**
+La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y su primer bloque está completado y aprobado**: el motor puede crear y validar un snapshot inicial v3 con 28 fichas, cuatro manos, equipos alternados, K y jugador inicial. **Todavía no implementa jugadas, un tablero ocupado, cambios de turno, puntuación, pases ni finalización.**
 
 ## Documentos de autoridad
 
@@ -23,6 +23,15 @@ Antes de cambiar el motor, leer en este orden:
 5. [`docs/modelo-estado.md`](docs/modelo-estado.md)
 6. [`docs/invariantes.md`](docs/invariantes.md)
 7. [`docs/decisiones-diseno.md`](docs/decisiones-diseno.md)
+
+Para diseño futuro de producto y renderers:
+
+- [`docs/modos-visualizacion.md`](docs/modos-visualizacion.md)
+- [`docs/modo-grafo.md`](docs/modo-grafo.md)
+- [`docs/variantes-futuras.md`](docs/variantes-futuras.md)
+- [`docs/modelo-round-match.md`](docs/modelo-round-match.md)
+
+Estos cuatro documentos no son normativos y no sustituyen `REGLAS.md`.
 
 ## Requisitos
 

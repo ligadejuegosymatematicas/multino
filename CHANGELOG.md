@@ -21,6 +21,9 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - API pública `createMatch`, funciones puras de preparación y validador del snapshot inicial v3.
 - Errores de dominio con códigos estables y detalles útiles para diagnóstico.
 - Tests de modelo, reglas e integración para R-003 a R-007, R-009, R-027 y R-029.
+- Documentación de Modo Grafo, modos de visualización, variantes futuras y separación conceptual Round/Match.
+- Evaluación de extremos repetidos, límites de 16 globales y ocho para un mismo valor, opciones de UX y replay del grafo.
+- Matrices de coherencia para `Divisible por n`, `Sin divisibilidad`, condiciones de victoria y participantes alternativos.
 
 ### Decidido
 
@@ -35,6 +38,8 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - El snapshot es autosuficiente; `history` sirve para auditoría y replay, no para reconstruir el presente.
 - Fisher–Yates no mutante con fuente de aleatoriedad inyectable; el algoritmo es técnico, no normativo.
 - Reparto técnico circular de la secuencia mezclada y creación atómica `setup → playing` sin evento histórico artificial.
+- DEC-019 a DEC-024: distinguir ambos grafos, renderers intercambiables, extremos derivados dirigibles, configuración separada de vista, Round/Match pospuesto y política de puntuación aislada.
+- Modo Grafo previsto como representación predeterminada, con Modo Tradicional disponible sobre el mismo snapshot.
 
 ### Cambiado
 
@@ -46,5 +51,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-013 sustituye DEC-010 para persistir la condición especial adquirida.
 - DEC-014 sustituye parcialmente DEC-012 para reintroducir el marcador normativo.
 - Fase 0 declarada completada documentalmente.
-- Fase 1 iniciada de forma autorizada; su bloque inicial queda completado sin implementar jugadas, tablero ocupado, puntuación ni terminación.
+- Fase 1 iniciada de forma autorizada; su bloque inicial queda completado y aprobado sin implementar jugadas, tablero ocupado, puntuación ni terminación.
 - Diagnóstico de capacidades y textos mínimos de UI sincronizados con el bloque inicial disponible y el juego aún no jugable.
+- Hoja de ruta ampliada con la puerta arquitectónica previa al Bloque 2, los dos renderers, explicación visual de S y herramientas de grafo/replay.
+- Agenda ARQ-PEND-001 a 005 para contrato de colocación, puertos canónicos, IDs deterministas, transición atómica y consultas derivadas antes del Bloque 2.

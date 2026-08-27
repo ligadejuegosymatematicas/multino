@@ -129,6 +129,21 @@ La rama puede reconstruirse comenzando en una arista `branch:*` ocupada y recorr
 - Un puerto `branch:*` libre de un chancho especial es también un extremo legal capaz de iniciar una rama.
 - La colección de extremos abiertos se deriva; no se persiste.
 
+Cada extremo puede identificarse canónicamente por su pareja `placementId + portId`. Una proyección futura puede exponer un `openEndId` compuesto, pero no debe guardarlo si no añade información. La identidad individual es obligatoria para R-030: dos extremos con el mismo valor siguen siendo destinos diferentes.
+
+## Proyección al grafo de valores
+
+El Modo Grafo futuro no cambia este modelo. Proyecta cada ficha colocada `[N|M]` como arista entre los vértices de valor N y M, o como lazo si `N = M`.
+
+Esa proyección no es el grafo lógico del tablero:
+
+- colapsa todas las apariciones de N en un único vértice;
+- no conserva por sí sola línea principal, ramas ni extremos repetidos;
+- no es un multigrafo porque cada ficha no ordenada existe una sola vez;
+- necesita conservar referencias `dominoId` y `placementId`, más una superposición derivada de extremos abiertos.
+
+El detalle matemático y los límites de multiplicidad están en [`modo-grafo.md`](modo-grafo.md).
+
 ## Información normativa y derivada
 
 | Concepto | Tratamiento |
@@ -141,6 +156,9 @@ La rama puede reconstruirse comenzando en una arista `branch:*` ocupada y recorr
 | `placement.role` | Derivado de la lista especial; no persistir |
 | `board.branches` | Derivado; no persistir |
 | Extremos abiertos | Derivado |
+| ID de extremo abierto | Derivado de colocación y puerto |
+| Agrupación de extremos por valor | Proyección del renderer |
+| Grafo de valores `0–6` | Proyección del renderer |
 | Aporte a S | Derivado del valor y número de conexiones |
 | Coordenadas y rotación | Efímero del renderer |
 
@@ -157,4 +175,3 @@ p1 —— p2 —— p3       camino principal
 ```
 
 `r1` y `r2` no están en `mainLine`; forman una sola cadena lateral y no pueden conectarse de nuevo a `p1`, `p3` ni a otra rama.
-

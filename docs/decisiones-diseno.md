@@ -217,3 +217,101 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 **Alternativas consideradas:** Exponer snapshots intermedios en `setup`; registrar eventos internos de generación y mezcla; crear una acción sintética `MATCH_CREATED` sin necesidad normativa.
 
 **Consecuencias:** Un retorno exitoso siempre está listo para la futura primera jugada y supera el validador inicial. Un error no deja estado parcialmente creado. El historial comienza cuando exista una acción de dominio aceptada; `turnNumber: 1` es una convención técnica documentada, no una regla adicional.
+
+## DEC-019 — Distinguir grafo del tablero y grafo de valores
+
+**Estado:** Aceptada.
+
+**Decisión:** Reservar “grafo lógico del tablero” para colocaciones, puertos y conexiones del motor. El Modo Grafo utiliza una proyección distinta con siete vértices de valor, aristas para fichas no dobles y lazos para chanchos.
+
+**Motivo:** Colapsar todas las apariciones de un valor hace visible el material, pero pierde orden, ramas e identidad de extremos repetidos. Tratar ambas estructuras como una sola introduciría reglas dependientes del renderer.
+
+**Alternativas consideradas:** Reemplazar Board por el grafo de siete vértices; duplicar ambos grafos en el snapshot; representar cada extremo como un vértice adicional persistido.
+
+**Consecuencias:** El grafo de valores se deriva y nunca es fuente normativa. Cada arista visual referencia ficha y colocación. Los extremos se superponen como objetivos individuales derivados.
+
+## DEC-020 — Renderers intercambiables y Modo Grafo predeterminado
+
+**Estado:** Aceptada como decisión de producto, revisable mediante prototipos.
+
+**Decisión:** Prever GraphRenderer y TraditionalRenderer sobre el mismo snapshot. GraphRenderer será la vista inicial predeterminada, con cambio de vista puramente representacional.
+
+**Motivo:** Permitir una forma de juego propia basada en el grafo sin renunciar a la lectura tradicional ni duplicar el motor.
+
+**Alternativas consideradas:** Solo vista tradicional; grafo decorativo secundario; snapshots específicos por vista.
+
+**Consecuencias:** La preferencia de renderer, layout, zoom y animación pertenece a UI local. Ningún renderer muta el snapshot. El cambio debe poder hacerse durante la ronda sin acción de dominio.
+
+## DEC-021 — Extremos individualizados, derivados y dirigibles
+
+**Estado:** Aceptada conceptualmente; el contrato ejecutable se definirá antes de implementar jugadas.
+
+**Decisión:** Cada extremo abierto será dirigible mediante una referencia lógica estable de colocación y puerto. La colección, su ID compuesto y su agrupación por valor se derivan; no se persiste un array `openEnds`.
+
+**Motivo:** R-030 permite elegir entre destinos diferentes con el mismo valor. GraphRenderer colapsa esos valores y necesita recuperar la identidad individual sin crear una fuente paralela.
+
+**Alternativas consideradas:** Elegir solo por valor; persistir extremos y multiplicidades; dejar que cada renderer reconstruya destinos con reglas propias.
+
+**Consecuencias:** La futura acción de jugada deberá referenciar un destino concreto, no solamente el número compatible. Antes del Bloque 2 debe fijarse la forma canónica de `placementId + portId` y probar que se deriva inequívocamente.
+
+## DEC-022 — Separar reglas de partida y preferencias de representación
+
+**Estado:** Aceptada.
+
+**Decisión:** Sistema de puntuación, K/topología, condición de victoria y participantes son configuración de dominio. Renderer, layout, zoom, animación y modo de vista son preferencias de representación.
+
+**Motivo:** Combinar ambos grupos produciría snapshots distintos para una misma partida y dificultaría replay, persistencia y multijugador.
+
+**Alternativas consideradas:** Incluir `viewMode` en `config`; permitir que GraphRenderer adapte reglas; crear una modalidad de juego distinta por renderer.
+
+**Consecuencias:** Cambiar vista no altera hashes, acciones ni resultado. Las variantes futuras podrán usar cualquiera de los dos renderers sin duplicarse.
+
+## DEC-023 — Posponer RoundState/MatchState hasta aprobar multirronda
+
+**Estado:** Aceptada.
+
+**Decisión:** Mantener snapshot v3 y `createMatch` durante el motor de una única ronda. Si se aprueba una serie o meta acumulada, introducir un coordinador MatchState alrededor de un RoundState equivalente al ciclo actual.
+
+**Motivo:** La separación es útil para mejores-de-N y metas, pero hoy no existe una regla que defina acumulación, empates de ronda o cierre de series.
+
+**Alternativas consideradas:** Refactorizar ahora nombres y esquema; mezclar acumulados futuros en `score`; impedir cualquier evolución multirronda.
+
+**Consecuencias:** El Bloque 2 no requiere migración. K, tablero, manos e historial siguen perteneciendo al ciclo actual. Una futura separación exigirá reglamento, decisión de esquema y migración explícitos.
+
+## DEC-024 — Aislar la política de puntuación sin habilitar variantes
+
+**Estado:** Aceptada como restricción para el futuro bloque de puntuación.
+
+**Decisión:** Implementar R-014–R-026 de modo que el literal 5 y el cálculo aprobado estén concentrados en el módulo de puntuación, no dispersos por tablero, UI o historial. No exponer todavía un divisor configurable.
+
+**Motivo:** Facilitar tests y estudiar `Divisible por n` posteriormente sin presentar reglas experimentales como disponibles.
+
+**Alternativas consideradas:** Codificar 5 en cada consumidor; añadir ahora `divisor` al snapshot; implementar una jerarquía extensible antes de tener variantes aprobadas.
+
+**Consecuencias:** La modalidad actual sigue siendo exclusivamente n=5. Cualquier política nueva necesitará reglas propias, especialmente sobre la bonificación final.
+
+## Agenda técnica obligatoria antes del Bloque 2
+
+No son vacíos de `REGLAS.md`; son contratos de implementación que deben resolverse explícitamente al planificar el bloque:
+
+### ARQ-PEND-001 — Forma de la acción de colocación
+
+Distinguir la primera ficha, que no tiene destino previo, de las siguientes jugadas, que deben referenciar `placementId + portId`. Decidir si existe un destino discriminado `BOARD_START` o un tipo de acción inicial separado.
+
+### ARQ-PEND-002 — Puertos canónicos de la ficha colocada
+
+R-030 deja la orientación gráfica al renderer. Debe definirse cómo el motor asigna de forma determinista `side:a/side:b` o `main:1/main:2` cuando hay simetría, sin enumerar como diferentes dos jugadas que reglamentariamente son la misma elección.
+
+### ARQ-PEND-003 — IDs deterministas
+
+Definir cómo se producen `placementId` y `connectionId` para que una acción aceptada sea reproducible, testeable y sincronizable sin depender de UUID aleatorio interno.
+
+### ARQ-PEND-004 — Límite transaccional y validación
+
+Fijar la API que recibe snapshot más acción, devuelve un snapshot nuevo y valida invariantes del tablero ocupado. Debe especificar errores de dominio y garantizar que una acción rechazada no consuma IDs ni altere historial.
+
+### ARQ-PEND-005 — Consultas derivadas
+
+Separar contratos para `openEndTargets`, `legalMoves` y `scoringTerms`. Pueden compartir derivación, pero no deben ser un único array interpretado de manera distinta por motor y renderers.
+
+ARQ-PEND-001 a 004 sí preceden a la implementación de colocaciones. ARQ-PEND-005 debe fijar al menos la identidad de extremos ahora; el desglose definitivo de puntuación puede completarse en el bloque que implemente R-014–R-019.

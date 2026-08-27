@@ -7,7 +7,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | Fase | Estado | Resultado esperado |
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
-| 1 — Motor básico | EN CURSO — BLOQUE 1 COMPLETADO | Motor puro con tests |
+| 1 — Motor básico | EN CURSO — BLOQUE 1 APROBADO | Motor puro con tests |
 | 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
@@ -50,9 +50,23 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 ### Progreso incremental
 
-**Bloque 1 — Inicialización de partida: COMPLETADO.** Incluye material doble-seis, participantes y asientos, K, mezcla inyectable, reparto, jugador inicial y validación del snapshot inicial v3.
+**Bloque 1 — Inicialización de partida: COMPLETADO Y APROBADO.** Incluye material doble-seis, participantes y asientos, K, mezcla inyectable, reparto, jugador inicial y validación del snapshot inicial v3.
 
-Permanecen expresamente fuera de este bloque las jugadas y su enumeración, el tablero ocupado, los chanchos especiales colocados, las ramificaciones, la puntuación, los pases, el tranque, la finalización y la bonificación. No se inicia otro bloque sin autorización.
+**Bloque 2: NO INICIADO.** Permanecen fuera las jugadas y su enumeración, el tablero ocupado, los chanchos especiales colocados, las ramificaciones, la puntuación, los pases, el tranque, la finalización y la bonificación. No se inicia otro bloque sin autorización.
+
+### Puerta arquitectónica previa al Bloque 2
+
+Antes de implementar acciones sobre el tablero debe cerrarse en tests y contrato ejecutable:
+
+- la identidad canónica de cada puerto y extremo derivado;
+- que una acción apunte a `placementId + portId`, no solo a un valor;
+- la derivación única de extremos principales, orígenes laterales y terminales de rama;
+- la separación entre destinos legales y términos que aportan a S.
+- el tratamiento de la primera colocación sin destino previo;
+- la asignación canónica de puertos simétricos;
+- la generación determinista de IDs y el límite transaccional de una acción.
+
+DEC-019 a DEC-024 fijan la dirección conceptual; ARQ-PEND-001 a 005 enumeran los contratos a cerrar. No requieren generalizar participantes, puntuación o match antes del Bloque 2.
 
 ### Alcance
 
@@ -91,6 +105,10 @@ Permanecen expresamente fuera de este bloque las jugadas y su enumeración, el t
 - Resolver orientación y geometría visual.
 - Adaptar automáticamente el trazado al espacio disponible.
 - Mantener la separación entre modelo lógico y coordenadas.
+- Implementar GraphRenderer sobre siete vértices como vista predeterminada.
+- Implementar TraditionalRenderer sobre el mismo snapshot.
+- Permitir alternancia de vista sin acción de dominio.
+- Representar extremos repetidos con identidad individual y solución híbrida adaptable.
 
 ### Criterios de salida
 
@@ -98,6 +116,8 @@ Permanecen expresamente fuera de este bloque las jugadas y su enumeración, el t
 - Cambiar de renderer no requiere modificar reglas.
 - Las coordenadas y rotaciones no aparecen en el estado normativo.
 - Se verifican tableros representativos y redimensionamiento.
+- Ambos renderers producen selecciones equivalentes para el mismo conjunto de jugadas legales.
+- El Modo Grafo soporta hasta ocho extremos del mismo valor sin perder accesibilidad ni selección individual.
 
 ## Fase 3 — Juego local 2 vs 2
 
@@ -131,6 +151,8 @@ Permanecen expresamente fuera de este bloque las jugadas y su enumeración, el t
 - Tutorial.
 - Diseño responsive.
 - Accesibilidad básica de teclado, foco, contraste y anuncios de estado.
+- Resaltado y animación discreta de extremos compatibles.
+- Fórmula de S enlazada visualmente con sus fuentes sin recalcular reglas en UI.
 
 ### Criterios de salida
 
@@ -148,6 +170,8 @@ Permanecen expresamente fuera de este bloque las jugadas y su enumeración, el t
 - Herramientas de debugging.
 - Exportar e importar JSON.
 - Migrar versiones de esquema cuando corresponda.
+- Inspeccionar el grafo final con metadatos de ficha, jugador, turno y puntuación.
+- Reproducir `G₀ → G₁ → … → Gₖ` desde acciones aceptadas.
 
 ### Criterios de salida
 
@@ -179,3 +203,16 @@ Esta fase es solo una dirección arquitectónica futura. No se desarrolla antes 
 ## Regla de avance
 
 No se marca una fase como completada solo por existir código. Deben cumplirse sus criterios de salida, actualizarse `CHANGELOG.md` y quedar resueltas o registradas las decisiones correspondientes.
+
+## Investigación de producto sin fase asignada
+
+No forma parte de Fase 1 ni autoriza implementación:
+
+- `Divisible por n`, comenzando por simulaciones de `n = 3, 4, 6, 7`;
+- `Sin divisibilidad` para una ronda y, después, series;
+- separación RoundState/MatchState cuando exista una condición multirronda aprobada;
+- mejor de 3, mejor de 5 y metas de puntuación;
+- 1 vs 1 y cuatro jugadores todos contra todos;
+- otras cantidades de participantes solo si justifican pozo, reparto y reglas nuevas.
+
+Las evaluaciones y bloqueos normativos están en [`docs/variantes-futuras.md`](docs/variantes-futuras.md) y [`docs/modelo-round-match.md`](docs/modelo-round-match.md).
