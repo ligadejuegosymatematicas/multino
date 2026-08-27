@@ -1,0 +1,16 @@
+{
+  "name": "domino-multiplo-5",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Base arquitectónica para Dominó múltiplo de 5",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "check": "node --check src/js/main.js && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+

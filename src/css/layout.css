@@ -1,0 +1,25 @@
+.app-shell {
+  width: min(64rem, calc(100% - 2rem));
+  margin-inline: auto;
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.app-header {
+  max-width: 46rem;
+  margin-block-end: 2rem;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+@media (max-width: 36rem) {
+  .app-shell {
+    width: min(100% - 1.25rem, 64rem);
+    padding-block: 1.5rem;
+  }
+}
+

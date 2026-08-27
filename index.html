@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Base arquitectónica del juego Dominó múltiplo de 5."
+    >
+    <title>Dominó múltiplo de 5</title>
+    <link rel="stylesheet" href="./src/css/base.css">
+    <link rel="stylesheet" href="./src/css/layout.css">
+    <link rel="stylesheet" href="./src/css/board.css">
+    <link rel="stylesheet" href="./src/css/components.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <p class="eyebrow">Fase 1 · Bloque inicial</p>
+        <h1>Dominó múltiplo de 5</h1>
+        <p class="lead">Proyecto inicializado</p>
+      </header>
+
+      <section class="status-grid" aria-label="Estado del proyecto">
+        <article class="status-card">
+          <h2>Motor</h2>
+          <p id="engine-status" class="status-value" aria-live="polite">
+            Cargando…
+          </p>
+        </article>
+
+        <article class="status-card">
+          <h2>Estado</h2>
+          <p id="state-status" class="status-value" aria-live="polite">
+            Preparando diagnóstico…
+          </p>
+        </article>
+
+        <article class="status-card">
+          <h2>Reglas jugables</h2>
+          <p id="rules-status" class="status-value status-pending">
+            Inicialización disponible · jugadas no implementadas
+          </p>
+        </article>
+      </section>
+
+      <section id="board-root" class="board-placeholder" aria-label="Tablero">
+        <noscript>JavaScript es necesario para comprobar la carga del motor.</noscript>
+      </section>
+
+      <p class="notice">
+        Esta pantalla solo confirma la estructura técnica. No simula turnos,
+        jugadas ni puntuación.
+      </p>
+    </main>
+
+    <script type="module" src="./src/js/main.js"></script>
+  </body>
+</html>

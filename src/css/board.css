@@ -1,0 +1,12 @@
+.board-placeholder {
+  display: grid;
+  min-height: 10rem;
+  place-items: center;
+  padding: 1.5rem;
+  border: 1px dashed #91a398;
+  border-radius: 0.75rem;
+  color: #4d5b52;
+  background: #f9fbf8;
+  text-align: center;
+}
+
