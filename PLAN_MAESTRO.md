@@ -8,7 +8,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
 | 1 — Motor básico | COMPLETADA | Motor puro con tests |
-| 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
+| 2 — Renderer del tablero | EN CURSO — PROYECCIÓN PURA COMPLETADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
 | 5 — Persistencia y herramientas | NO INICIADA | Guardado, carga y reproducción |
@@ -104,6 +104,12 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - Cargar un snapshot válido permite continuar sin reproducir `history`.
 
 ## Fase 2 — Renderer del tablero
+
+### Progreso incremental
+
+**Bloque 1 — Capa de proyección pura para Modo Grafo: COMPLETADO.** Incluye grafo de valores, metadatos temporales, agrupación de extremos, jugadas por ficha, destinos concretos, explicación de S y fachada resumida para UI. No contiene DOM, coordenadas, geometría ni renderer.
+
+**Siguiente bloque: NO INICIADO.** Permanecen fuera GraphRenderer, layout, SVG/Canvas, curvas reales, animaciones, interacción visual y Modo Tradicional.
 
 ### Alcance
 

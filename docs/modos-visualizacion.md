@@ -39,24 +39,28 @@ Cambiar de renderer no baraja, reparte, juega, pasa, puntúa ni modifica el turn
 
 Las columnas son independientes. Una vista no puede consultar su propio estado visual para resolver una regla.
 
-## Contrato conceptual de proyección
+## Contrato implementado de proyección
 
-Los renderers no deberían recorrer estructuras internas de forma distinta ni reinterpretar reglas. Una capa pura de proyección podrá producir, cuando el motor correspondiente exista:
+Los renderers no deben recorrer estructuras internas de forma distinta ni reinterpretar reglas. La capa `src/js/game/projections/` ofrece consultas pequeñas y una fachada compuesta:
 
 ```js
 {
-  placedDominoes: [],
-  openEndTargets: [],
-  legalTargetIds: [],
-  scoringBreakdown: {
+  vertices: [],
+  edges: [],
+  openEndsByValue: [],
+  hand: [],
+  legalPlays: [],
+  scoring: {
     terms: [],
     sum: 0,
-    pointsAwarded: 0
-  }
+    contributionGroups: []
+  },
+  turn: {},
+  roundStatus: {}
 }
 ```
 
-Este objeto es conceptual y derivado; no se añade al snapshot en esta intervención. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. El renderer solo decide geometría, estilo, foco y animación.
+`projectGraphView(state, playerId)` compone esa forma; `getValueGraphProjection`, `groupOpenEndsByValue`, `getOpenEndVisualProjection`, `getLegalPlayProjection`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. El renderer solo decidirá geometría, estilo, foco y animación.
 
 ## Responsabilidades comunes
 
@@ -99,4 +103,4 @@ Conviene conservar la última preferencia de vista como ajuste local del usuario
 
 ## No implementado
 
-Permanecen pendientes GraphRenderer, TraditionalRenderer, la capa de proyección, el selector de vista, la geometría, las animaciones y los controles definitivos. Su documentación no autoriza a iniciar Fase 2 ni el Bloque 2 de Fase 1.
+Permanecen pendientes GraphRenderer, TraditionalRenderer, selector de vista, geometría, SVG/Canvas, curvas reales, animaciones y controles definitivos. La capa pura no autoriza por sí sola ninguno de esos bloques visuales.

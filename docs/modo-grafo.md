@@ -34,7 +34,39 @@ El proyecto utiliza dos construcciones diferentes:
 
 El segundo colapsa todas las apariciones de un mismo valor en un vértice. Por sí solo no conserva el orden de la línea principal, la pertenencia a una rama ni la identidad de extremos repetidos. Esa información debe llegar como metadatos derivados del primer grafo.
 
-Cada arista visual debería conservar, como mínimo, referencias a `dominoId` y `placementId`. Quién la jugó, el turno y los puntos de esa acción pueden obtenerse del historial cuando esa función sea requerida.
+La capa pura implementada conserva `dominoId`, `placementId`, actor, equipo, turno y secuencia derivados. No añade ninguno de esos campos al snapshot.
+
+## Capa de proyección implementada
+
+Los módulos dentro de `src/js/game/projections/` consumen el snapshot y consultas del motor. Devuelven objetos nuevos, no persisten resultados y no contienen DOM, Canvas, SVG, coordenadas ni decisiones de layout.
+
+`getValueGraphProjection(state)` devuelve:
+
+```js
+{
+  vertices: [
+    { value: 0, incidentPlacementIds: [] },
+    // siempre existen 0, 1, 2, 3, 4, 5 y 6
+  ],
+  edges: [
+    {
+      dominoId: "2-5",
+      placementId: "placement-12",
+      a: 2,
+      b: 5,
+      isLoop: false,
+      playSequence: 12,
+      turnNumber: 12,
+      playerId: "P4",
+      teamId: "B"
+    }
+  ]
+}
+```
+
+Un lazo usa `a === b` e `isLoop: true`. `placementId` individualiza cada arista. `playSequence`, `turnNumber`, `playerId` y `teamId` se derivan del evento `PLAY_DOMINO` correspondiente. La proyección ordena aristas por `placement-N` y no persiste orientación visual.
+
+Dos snapshots con las mismas fichas jugadas pueden producir exactamente este mismo grafo y conservar distinta línea principal o distintas ramas. Por ello, el grafo de valores nunca valida legalidad, reconstruye conexiones ni sustituye `board`.
 
 ## Identidad individual de los extremos
 
@@ -44,15 +76,17 @@ Los extremos abiertos no son aristas paralelas. Constituyen una colección deriv
 {
   id: "placement-17:branch:2",
   value: 5,
-  target: {
+  placementId: "placement-17",
+  portId: "branch:2",
+  kind: "branch-origin",
+  branchOrigin: {
     placementId: "placement-17",
     portId: "branch:2"
-  },
-  topologyKind: "branch-origin"
+  }
 }
 ```
 
-La forma es conceptual. El ID puede derivarse canónicamente de `placementId + portId`; no necesita persistirse si esa pareja es estable.
+Esta es la forma vigente de `getOpenEndTargets`. `kind` distingue `main`, `branch-origin` y `branch`. Un destino principal añade `mainLineEnd: "start" | "end"`; un origen o terminal lateral añade `branchOrigin`. El ID se deriva canónicamente de `placementId + portId` y no se persiste.
 
 La colección puede reconstruirse inequívocamente desde el snapshot:
 
@@ -61,7 +95,19 @@ La colección puede reconstruirse inequívocamente desde el snapshot:
 3. recorrer cada componente fuera de `mainLine` desde su puerto especial de origen hasta su terminal;
 4. emitir una entrada por cada puerto o terminal actualmente disponible.
 
-Por tanto, no se recomienda persistir `openEnds` ni agrupaciones por valor. Agrupar por `value` es una proyección descartable del renderer.
+`groupOpenEndsByValue(state)` devuelve un record con una lista por cada valor presente. `getOpenEndVisualProjection(state)` lo transforma en listas ordenadas `{ value, count, targets }`. Cada target permanece individual: `q` targets de valor M significan `q` futuras curvas seleccionables desde M. Ninguna de estas agrupaciones se persiste.
+
+`getLegalPlayProjection(state, playerId)` agrupa los resultados de `getLegalPlays` por ficha:
+
+```js
+{
+  dominoId: "2-5",
+  legalTargetCount: 3,
+  legalTargets: [/* targets completos e individualizados */]
+}
+```
+
+`getLegalTargetsForDomino(state, playerId, dominoId)` devuelve directamente esa lista para resaltado futuro. En tablero vacío, el único destino proyectado es `{ kind: "START" }`. En una ronda terminada ambas consultas devuelven listas vacías, aunque el grafo y los extremos topológicos sigan consultables.
 
 ## Multiplicidad y límites de diseño
 
@@ -133,7 +179,7 @@ Los destinos legales y los términos de puntuación se derivan del mismo tablero
 - un chancho especial puede conservar varios puertos libres y aportar 0 desde su segunda conexión;
 - con cero o una conexión, el aporte agregado del chancho es `2N`, no el número de puertos libres multiplicado por N.
 
-La futura proyección debería separar:
+La proyección implementada separa:
 
 ```js
 {
@@ -143,7 +189,7 @@ La futura proyección debería separar:
 }
 ```
 
-Ambas colecciones pueden enlazarse mediante `placementId` y `portId`, pero el renderer no debe recalcular R-018.
+`getScoringProjection(state)` devuelve `{ terms, sum, contributionGroups }`. `terms` proviene directamente de `getScoringTerms`; `sum` suma esas contribuciones y cada grupo usa `{ contribution, count, subtotal }`. No expone una puntuación hipotética por observar el tablero. Ambas colecciones pueden enlazarse mediante `placementId` y, cuando corresponde, `portId`, pero el renderer no recalcula R-018.
 
 Recomendación visual:
 
@@ -151,7 +197,7 @@ Recomendación visual:
 - activar un modo de puntuación que ilumine las fuentes que aportan a S;
 - mostrar una fórmula lateral, por ejemplo `2·1 + 5·3 + 6·1 = 23`;
 - para un chancho, agrupar visualmente sus puertos con una etiqueta única `aporte: 2N` o `aporte: 0`;
-- si `S = 20`, mostrar como respuesta de UI `20 = 5·4` y `+4 puntos`, usando el resultado entregado por el motor.
+- para una jugada ya ocurrida, mostrar puntos consultando `history[].result.scoreAwarded`; observar S actual no finge una acción nueva.
 
 Así, los indicadores ayudan a explicar S sin convertir sus trazos en una segunda implementación de puntuación.
 
@@ -170,7 +216,9 @@ El replay visual puede proyectar prefijos del historial:
 G₀ → G₁ → G₂ → … → Gₖ
 ```
 
-Cada acción aceptada agrega una única arista o lazo. Esta función depende de conservar historial suficiente, pero no exige guardar copias de cada grafo: cada `Gᵢ` es derivable.
+Cada `PLAY_DOMINO` aceptado agrega una única arista o lazo; `PASS` no agrega ninguno. Esta función depende de conservar historial suficiente, pero no exige guardar copias de cada grafo: cada `Gᵢ` es derivable.
+
+`projectGraphView(state, playerId)` compone las consultas pequeñas para entregar vértices, aristas, extremos agrupados, mano, legalidad, puntuación, turno y estado de ronda. En `phase: "finished"` conserva aristas, S, score y una copia de `roundResult`, pero produce `legalPlays: []`. Es una comodidad descartable; los consumidores pueden usar las consultas individuales cuando no necesiten toda la fachada.
 
 ## Decisiones todavía abiertas
 
@@ -180,4 +228,4 @@ Cada acción aceptada agrega una única arista o lazo. Esta función depende de 
 - representación accesible de destinos que producen el mismo valor pero distinta topología;
 - comportamiento de inspección cuando una arista está ausente por permanecer en una mano oculta.
 
-Estas decisiones pertenecen al diseño de renderer y deben validarse con prototipos antes de Fase 2.
+Estas decisiones pertenecen al diseño del renderer y deben validarse con prototipos antes de iniciar su bloque visual.

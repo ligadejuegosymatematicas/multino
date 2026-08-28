@@ -465,3 +465,17 @@ No se persisten mapas redundantes de puntaje de juego o puntaje final: el primer
 **Alternativas consideradas:** Persistir `playScoreByTeam` y `finalRoundScoreByTeam`; añadir un evento sintético terminal; calcular ganador solo en consultas; conservar v5 con campos opcionales; usar `Math.round(a / 5)` sin expresar la convención de residuos.
 
 **Consecuencias:** En `playing`, score continúa igualando los puntos de `PLAY_DOMINO`. En `finished`, equivale a esos puntos más `finalBonus` para `traditionalWinnerTeamId`. `remainingPipsByTeam`, ganador tradicional, bonificación y ganador final se validan contra manos, historial y marcador. `SCORING_READY`, `RULES_READY` y `gameplayReady` pasan a verdaderos exclusivamente para una ronda; multirronda, metas, variantes y renderers permanecen fuera de alcance.
+
+## DEC-035 — Proyecciones puras y grafo de valores no autoritativo
+
+**Estado:** Aceptada.
+
+**Decisión:** Crear `src/js/game/projections/` como capa unidireccional que consume snapshots y consultas existentes. Exponer consultas pequeñas para grafo de valores, agrupación de extremos, legalidad por ficha y explicación de S, más `projectGraphView` como composición opcional. Mantener `getOpenEndTargets` como contrato base sin agrupar ni alterar.
+
+Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales derivados de `history`. Cada destino conserva `placementId + portId`; agruparlo por valor nunca elimina esa identidad. `getScoringProjection` reutiliza `getScoringTerms` y no publica puntos hipotéticos por observar el estado.
+
+**Motivo:** GraphRenderer necesita datos cómodos sin conocer la forma interna del tablero ni reinterpretar reglas. A la vez, el colapso de todas las apariciones de un valor en un único vértice pierde línea principal, ramas, puertos y conexión elegida.
+
+**Alternativas consideradas:** Hacer que el renderer recorra directamente `board`; persistir el grafo de valores; crear una megaestructura obligatoria; agrupar extremos solo por valor; calcular legalidad o S dentro del renderer; introducir coordenadas preventivas.
+
+**Consecuencias:** El grafo de valores nunca valida jugadas ni reconstruye el tablero reglamentario. Las proyecciones son JSON serializables, descartables, inmutables respecto del snapshot y válidas también en `finished`. No cambia schema v6 ni `gameplayReady`. GraphRenderer, layout, curvas, SVG/Canvas, animaciones y Modo Tradicional siguen pendientes.

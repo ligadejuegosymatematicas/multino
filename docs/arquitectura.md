@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. La Fase 0 cerró las fronteras y contratos; la Fase 1 implementa el motor por bloques verificables.
+La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. Las Fases 0 y 1 cerraron contratos y motor; la Fase 2 comienza con proyecciones puras antes de cualquier geometría.
 
 ## Capas y dirección de dependencias
 
@@ -13,8 +13,10 @@ index.html
 UI / controladores ───────────────┐
     │                             │
     ▼                             ▼
-API pública del motor       adaptadores futuros
+API pública de dominio      adaptadores futuros
     │                       persistencia / red
+    ├──► proyecciones puras ──────┤
+    │                             │
     ▼                             │
 reglas + transiciones ◄───────────┘
     │
@@ -50,7 +52,7 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
 
 GraphRenderer es la vista predeterminada prevista. TraditionalRenderer representa el mismo snapshot como fichas y cadenas. Alternar entre ambos solo cambia preferencias y estado efímero de UI; nunca `config`, `board`, `history` ni `score`.
 
-La proyección de extremos, jugadas legales y puntuación pertenece a funciones puras cercanas al motor. La geometría, hit areas, animaciones y agrupaciones visuales pertenecen al renderer. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
+La proyección de grafo, extremos, jugadas legales y puntuación pertenece a `game/projections/`. La geometría, hit areas, animaciones y trazados pertenecen al renderer. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
 
 ## Responsabilidades
 
@@ -83,6 +85,12 @@ primitiva topológica `applyPlay`
 
 `applyPlay` permanece exportada para tests y herramientas de bajo nivel, pero la UI no debe usarla como transición de juego.
 
+### `src/js/game/projections/`
+
+Contiene transformaciones puras y descartables sobre snapshots validados. Depende de consultas del motor; el motor no depende de esta capa. `ValueGraphProjection` crea los siete vértices y aristas/lazos, `OpenEndProjection` agrupa destinos, `LegalPlayProjection` organiza acciones por ficha, `ScoringProjection` explica S y `GraphViewProjection` compone un resumen opcional.
+
+La capa no persiste estado, no valida legalidad por una ruta propia y no contiene coordenadas, DOM, Canvas, SVG ni animaciones. El grafo de valores jamás se usa como entrada de `applyTurnAction`, `getLegalPlays` o validadores del tablero.
+
 ### `src/js/game/setup/`
 
 Contiene la preparación pura y atómica de una partida: participantes, ciclo de asientos, K, mezcla, reparto, jugador inicial y validación del snapshot recién creado. No contiene colocaciones ni transiciones de turno. La aleatoriedad entra como dependencia explícita para que los tests sean deterministas.
@@ -93,7 +101,7 @@ Define errores de dominio con código y detalles serializables. Permite que UI, 
 
 ### `src/js/game/index.js`
 
-Es la fachada pública del motor. La UI y futuros adaptadores deberían depender de este punto y no de detalles internos, salvo tests unitarios específicos.
+Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptadores deberían depender de este punto y no de detalles internos, salvo tests unitarios específicos.
 
 ### `src/js/ui/`
 
@@ -137,7 +145,7 @@ Se favorecerán funciones puras y actualizaciones inmutables. No es requisito co
 
 ## Capacidades no implementadas
 
-Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda está completo; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5` y renderers.
+Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda y la proyección lógica del grafo están completos; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5`, geometría y renderers.
 
 ## GitHub Pages y ubicación de `index.html`
 
@@ -166,6 +174,7 @@ No hay framework, bundler, transpiler ni dependencia externa. Esto reduce superf
 │   │   │   ├── engine/
 │   │   │   ├── errors/
 │   │   │   ├── model/
+│   │   │   ├── projections/
 │   │   │   └── setup/
 │   │   ├── ui/
 │   │   └── utils/
@@ -176,7 +185,7 @@ No hay framework, bundler, transpiler ni dependencia externa. Esto reduce superf
 └── prototypes/
 ```
 
-La separación entre `game/model`, `game/setup` y `game/engine` hace visible la diferencia entre datos, inicialización y transiciones de una partida en curso. Se prefieren fábricas de datos serializables a instancias de clases con prototipo; la justificación está en DEC-006.
+La separación entre `game/model`, `game/setup`, `game/engine` y `game/projections` hace visible la diferencia entre datos, inicialización, reglas y vistas lógicas descartables. Se prefieren fábricas de datos serializables a instancias de clases con prototipo; la justificación está en DEC-006.
 
 ## Invariantes
 

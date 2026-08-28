@@ -45,6 +45,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Resultado terminal con vencedor tradicional, totales restantes, bonificación, ganador por puntaje y empate.
 - Reconciliación del marcador terminal como puntos históricos más bonificación única y validación de todos sus componentes.
 - Tests de salida puntuable/no puntuable, tranque para ambos equipos, igualdad de manos, ganadores distintos, empate y corrupción terminal.
+- Inicio de Fase 2 con una capa pura y descartable de proyección para el futuro Modo Grafo.
+- Grafo de valores sobre siete vértices con aristas/lazos enlazados a colocación, jugador, equipo, turno y secuencia.
+- Agrupación de extremos por valor, proyección visual sin coordenadas y consultas de jugadas/destinos por ficha.
+- Proyección explicativa de S basada exclusivamente en `getScoringTerms` y fachada compuesta `projectGraphView`.
+- Tests de grafo vacío, lazos, incidencia, identidad de extremos, legalidad proyectada, terminalidad, inmutabilidad y ausencia de DOM/geometría.
 
 ### Decidido
 
@@ -65,6 +70,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-029 a DEC-031 separan transición reglamentaria y topológica, formalizan `turnNumber`/estado terminal y fijan la consulta de acciones disponibles.
 - DEC-032 y DEC-033 fijan los términos de S, la auditoría compacta de puntuación y el schema v5.
 - DEC-034 fija el cierre derivado, la ausencia de evento terminal artificial y el schema v6.
+- DEC-035 fija la capa `game/projections`, su API componible y la prohibición de usar el grafo de valores como autoridad reglamentaria.
 
 ### Cambiado
 
@@ -90,3 +96,4 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Estado serializable elevado a schema v6: el marcador terminal incluye la bonificación y `roundResult` conserva el resumen reglamentario completo.
 - `SCORING_READY`, `RULES_READY` y `gameplayReady` pasan a `true` para una ronda completa; multirronda, variantes y renderers no forman parte de ese readiness.
 - Fase 1 declarada completada tras satisfacer sus criterios de salida.
+- Fase 2 iniciada únicamente con proyecciones puras; `gameplayReady` y schema v6 permanecen sin cambios.

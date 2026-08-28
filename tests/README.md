@@ -55,6 +55,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - fixtures terminales construidos desde transiciones reglamentarias y redistribuciones completas de las fichas aún no colocadas;
 - tests anteriores sincronizados con schema v6, bonificación terminal y readiness completo de una ronda.
 
+### Fase 2, Bloque 1 — proyección pura de Modo Grafo completada
+
+- `tests/projections/value-graph-projection.test.js`: siete vértices permanentes, aristas, lazos, incidencia, ausencia de paralelas, metadatos temporales y pérdida deliberada de topología;
+- `tests/projections/graph-view-projection.test.js`: agrupación e identidad de extremos, destinos por ficha, chancho con puerto libre/aporte 0, explicación de S, snapshot terminal e inmutabilidad;
+- `tests/engine-boundaries.test.js` y cobertura específica verifican importación en Node y ausencia de DOM, Canvas, SVG, animaciones o coordenadas en la capa;
+- consistencia cruzada con `getOpenEndTargets`, `getLegalPlays` y `getScoringTerms`, sin introducir una segunda lógica reglamentaria.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

@@ -64,6 +64,17 @@ export {
   getAvailableActions,
   TURN_MANAGER_READY,
 } from "./engine/TurnManager.js";
+export { getValueGraphProjection } from "./projections/ValueGraphProjection.js";
+export {
+  getOpenEndVisualProjection,
+  groupOpenEndsByValue,
+} from "./projections/OpenEndProjection.js";
+export {
+  getLegalPlayProjection,
+  getLegalTargetsForDomino,
+} from "./projections/LegalPlayProjection.js";
+export { getScoringProjection } from "./projections/ScoringProjection.js";
+export { projectGraphView } from "./projections/GraphViewProjection.js";
 
 export function getEngineStatus() {
   return {

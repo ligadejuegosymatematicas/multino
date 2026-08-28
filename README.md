@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. Múltiples rondas, metas acumuladas, variantes y renderers continúan fuera de alcance.
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y ya dispone de proyecciones puras para el futuro Modo Grafo; todavía no existen renderers, geometría ni interacción visual definitiva. Múltiples rondas, metas acumuladas y variantes continúan fuera de alcance.
 
 ## Documentos de autoridad
 
@@ -68,6 +68,7 @@ La fachada `src/js/game/index.js` expone:
 - `getScoringTerms(state)` y `calculateOpenEndsSum(state)` para explicar y sumar S;
 - `calculateMoveScore(openEndsSum)` para la política vigente de múltiplos de 5;
 - `calculateRemainingPipsByTeam(state)` y `calculateFinalBonus(a)` para explicar el cierre;
+- `getValueGraphProjection`, agrupaciones de extremos, proyecciones de legalidad/S y `projectGraphView` para preparar vistas sin geometría;
 - `validateRoundState(state)` para snapshots reglamentarios activos o terminados;
 - `applyPlay(state, action)` para una transición topológica inmutable de bajo nivel;
 - `getDerivedBranches(state)` y `validateBoardState(state)` para consulta y validación del tablero ocupado.
