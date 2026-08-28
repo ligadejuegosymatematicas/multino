@@ -97,3 +97,53 @@ test("history PASS rechaza resultado redundante o ficticio", () => {
     snapshot.history.at(-1).turn -= 1;
   });
 });
+
+test("el resultado terminal rechaza una razón desconocida", () => {
+  const state = finishedByExit();
+  expectCorruption(state, "INVALID_ROUND_RESULT", (snapshot) => {
+    snapshot.roundResult.reason = "ABANDONED";
+  });
+});
+
+test("remainingPipsByTeam debe reconciliarse con las manos", () => {
+  const state = finishedByBlock();
+  expectCorruption(state, "INVALID_REMAINING_PIPS", (snapshot) => {
+    const teamId = Object.keys(snapshot.teams)[0];
+    snapshot.roundResult.remainingPipsByTeam[teamId] += 1;
+  });
+});
+
+test("vencedor tradicional y bonificación se derivan del cierre", () => {
+  const state = finishedByBlock();
+  expectCorruption(state, "INVALID_TRADITIONAL_WINNER", (snapshot) => {
+    snapshot.roundResult.traditionalWinnerTeamId =
+      snapshot.roundResult.traditionalWinnerTeamId === "A" ? "B" : "A";
+  });
+  expectCorruption(state, "INVALID_FINAL_BONUS", (snapshot) => {
+    snapshot.roundResult.finalBonus += 1;
+  });
+});
+
+test("el marcador terminal solo añade la bonificación al vencedor tradicional", () => {
+  const state = finishedByExit();
+  expectCorruption(state, "FINAL_SCORE_MISMATCH", (snapshot) => {
+    const teamId = snapshot.roundResult.traditionalWinnerTeamId;
+    snapshot.score.teams[teamId] -= 1;
+  });
+  expectCorruption(state, "FINAL_SCORE_MISMATCH", (snapshot) => {
+    const winnerTeamId = snapshot.roundResult.traditionalWinnerTeamId;
+    const otherTeamId = Object.keys(snapshot.teams).find(
+      (teamId) => teamId !== winnerTeamId,
+    );
+    snapshot.score.teams[winnerTeamId] -= 1;
+    snapshot.score.teams[otherTeamId] += 1;
+  });
+});
+
+test("winnerTeamId e isTie deben coincidir con el puntaje final", () => {
+  const state = finishedByExit();
+  expectCorruption(state, "INVALID_ROUND_WINNER", (snapshot) => {
+    snapshot.roundResult.winnerTeamId = null;
+    snapshot.roundResult.isTie = true;
+  });
+});

@@ -4,10 +4,11 @@ import { getCounterclockwiseSuccessor } from "../setup/Seating.js";
 import { ACTION_TYPES } from "./ActionTypes.js";
 import { getLegalPlays } from "./LegalPlays.js";
 import { applyPlay } from "./PlayTransition.js";
+import { validateRoundState } from "./RoundValidator.js";
 import {
+  deriveRoundCompletion,
   ROUND_END_REASONS,
-  validateRoundState,
-} from "./RoundValidator.js";
+} from "./RoundCompletion.js";
 import { getNextHistorySequence } from "./SequentialIds.js";
 import {
   calculateMoveScore,
@@ -59,20 +60,22 @@ export function getAvailableActions(state) {
 }
 
 function finishByEmptyHand(state, playerId) {
-  const player = state.players[playerId];
-  state.phase = "finished";
-  state.roundResult = {
+  const { roundResult, finalScoreByTeam } = deriveRoundCompletion(state, {
     reason: ROUND_END_REASONS.EMPTY_HAND,
     finishingPlayerId: playerId,
-    finishingTeamId: player.teamId,
-  };
+  });
+  state.score.teams = finalScoreByTeam;
+  state.phase = "finished";
+  state.roundResult = roundResult;
 }
 
 function finishByBlock(state) {
-  state.phase = "finished";
-  state.roundResult = {
+  const { roundResult, finalScoreByTeam } = deriveRoundCompletion(state, {
     reason: ROUND_END_REASONS.BLOCKED,
-  };
+  });
+  state.score.teams = finalScoreByTeam;
+  state.phase = "finished";
+  state.roundResult = roundResult;
 }
 
 function advanceTurn(state, playerId) {
@@ -145,7 +148,7 @@ function applyRegulatoryPass(state, action, availableActions) {
 
 /**
  * Transición reglamentaria: valida turno, compone la primitiva topológica y
- * coordina puntuación de jugada, pase, avance y terminación básica.
+ * coordina puntuación de jugada, pase, avance y cierre completo de ronda.
  */
 export function applyTurnAction(state, action) {
   validateRoundState(state);

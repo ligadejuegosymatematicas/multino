@@ -19,7 +19,7 @@ test("el diagnóstico distingue especificación completa de motor implementado",
   assert.equal(status.boardPlayReady, true);
   assert.equal(status.turnFlowReady, true);
   assert.equal(status.playScoringReady, true);
-  assert.equal(status.gameplayReady, false);
+  assert.equal(status.gameplayReady, true);
   assert.equal(typeof status.stateSchemaVersion, "number");
   assert.equal(RULES_CAPABILITIES.randomDeal, "IMPLEMENTADA");
   assert.equal(RULES_CAPABILITIES.connectionCompatibility, "IMPLEMENTADA");
@@ -29,25 +29,26 @@ test("el diagnóstico distingue especificación completa de motor implementado",
   assert.equal(RULES_CAPABILITIES.branchTopology, "IMPLEMENTADA");
   assert.equal(RULES_CAPABILITIES.turnPlayRequirement, "IMPLEMENTADA");
   assert.equal(RULES_CAPABILITIES.passingAndBlocking, "IMPLEMENTADA");
+  assert.equal(RULES_CAPABILITIES.roundCompletion, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.initialPlayer, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.twoVsTwoOrder, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.turnTransition, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.passing, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.fourPassBlock, "IMPLEMENTADA");
-  assert.equal(SCORING_READY, false);
+  assert.equal(SCORING_READY, true);
   assert.equal(PLAY_SCORING_READY, true);
   assert.equal(SCORING_CAPABILITIES.openEndSum, "IMPLEMENTADA");
   assert.equal(SCORING_CAPABILITIES.multipleOfFiveAward, "IMPLEMENTADA");
   assert.equal(
     SCORING_CAPABILITIES.traditionalWinBonus,
-    "ESPECIFICADA — NO IMPLEMENTADA",
+    "IMPLEMENTADA",
   );
   assert.equal(
     SCORING_CAPABILITIES.blockedGameResult,
-    "ESPECIFICADA — NO IMPLEMENTADA",
+    "IMPLEMENTADA",
   );
   assert.equal(
     SCORING_CAPABILITIES.finalResult,
-    "ESPECIFICADA — NO IMPLEMENTADA",
+    "IMPLEMENTADA",
   );
 });

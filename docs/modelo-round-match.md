@@ -2,7 +2,7 @@
 
 ## Estado de la propuesta
 
-El snapshot v5 representa actualmente una partida completa desde el reparto hasta salida o tranque; en terminología futura, ese ciclo corresponde principalmente a una **ronda**. La incorporación de puntuación por jugada no introduce todavía un coordinador multirronda.
+El snapshot v6 representa actualmente una ronda completa desde el reparto hasta su resultado final. No existe todavía un coordinador multirronda.
 
 La separación aquí descrita solo será necesaria si se aprueban múltiples rondas o condiciones de victoria acumuladas.
 
@@ -27,7 +27,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 
 ```js
 {
-  schemaVersion: 6, // solo ilustrativo; no aprobado
+  schemaVersion: "<versión futura>",
   matchId: "...",
   phase: "playing",
 
@@ -66,7 +66,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 }
 ```
 
-La forma es deliberadamente conceptual. No autoriza `schemaVersion: 6`, nuevos campos ni migraciones.
+La forma es deliberadamente conceptual. No autoriza una nueva versión, campos ni migraciones de MatchState.
 
 ## Propiedad de cada dato
 
@@ -86,12 +86,12 @@ Un snapshot completo de match debe seguir siendo autosuficiente. Separar respons
 
 ## Resultados de ronda y acumulación
 
-Una ronda futura debería producir un resumen inmutable, conceptualmente:
+Un MatchState futuro podría proyectar el resultado v6 de cada ronda en un resumen inmutable, conceptualmente:
 
 ```js
 {
   roundId: "round-2",
-  endReason: "OUT" | "BLOCKED",
+  reason: "EMPTY_HAND" | "BLOCKED",
   traditionalWinnerTeamId: "A" | null,
   finalRoundScoreByTeam: { A: 7, B: 4 },
   winnerTeamId: "A" | null,
@@ -99,7 +99,7 @@ Una ronda futura debería producir un resumen inmutable, conceptualmente:
 }
 ```
 
-Los campos exactos dependen de reglas futuras. En particular, vencedor tradicional, ganador por puntaje y ganador del match no deben confundirse.
+La política de retención y los campos adicionales dependen de reglas futuras. En particular, vencedor tradicional, ganador por puntaje de ronda y ganador del match no deben confundirse.
 
 ## Políticas de victoria
 
@@ -147,9 +147,9 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 
 ## Estrategia de evolución
 
-1. Mantener snapshot v5 y `createMatch` sin refactor durante el motor de una ronda.
+1. Mantener snapshot v6 y `createMatch` sin refactor mientras solo exista una ronda.
 2. Evitar que el módulo de puntuación aprobado disperse el literal 5 o conozca una meta de match.
-3. Definir reglas de una variante multirronda antes de diseñar schema v6.
+3. Definir reglas de una variante multirronda antes de diseñar una versión de MatchState.
 4. Introducir un coordinador de match alrededor del motor de ronda, no dentro del tablero.
 5. Diseñar migración explícita solo cuando exista un contrato aprobado.
 

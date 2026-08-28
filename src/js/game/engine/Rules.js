@@ -9,8 +9,8 @@ export const RULES_CAPABILITIES = Object.freeze({
   specialDoubleEligibility: CAPABILITY_IMPLEMENTED,
   mainLineTopology: CAPABILITY_IMPLEMENTED,
   branchTopology: CAPABILITY_IMPLEMENTED,
+  roundCompletion: CAPABILITY_IMPLEMENTED,
 });
 
-// El reglamento completo no está listo mientras bonificación y resultado sigan pendientes.
-export const RULES_READY = false;
+export const RULES_READY = true;
 export const RULES_SPECIFICATION_COMPLETE = true;

@@ -38,7 +38,7 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
 ```text
                     motor de una ronda
                             │
-                       snapshot v5
+                       snapshot v6
                             │
                    proyecciones puras
                             │
@@ -60,7 +60,7 @@ Contiene representaciones de datos serializables: fichas, jugadores, equipos, ta
 
 ### `src/js/game/engine/`
 
-Es el lugar de las reglas puras y las transiciones de juego. El Bloque 2 implementa consultas de puertos, ramas, destinos y jugadas legales, más la primitiva topológica `applyPlay(state, action)`. El Bloque 3 añade `applyTurnAction(state, action)`, que impone el jugador actual, coordina `PASS`, avanza el ciclo antihorario y produce terminación básica. El Bloque 4 incorpora `getScoringTerms`, suma S, múltiplos de 5 y actualización del marcador dentro de esa transición superior. Bonificación y resultado definitivo continúan declarados como no implementados.
+Es el lugar de las reglas puras y las transiciones de juego. El Bloque 2 implementa consultas de puertos, ramas, destinos y jugadas legales, más la primitiva topológica `applyPlay(state, action)`. El Bloque 3 añade `applyTurnAction(state, action)`, que impone el jugador actual, coordina `PASS` y avanza el ciclo antihorario. El Bloque 4 incorpora términos de S, múltiplos de 5 y actualización del marcador. El Bloque 5 añade `RoundCompletion`, que deriva totales restantes, vencedor tradicional, bonificación y resultado final sin introducir multirronda.
 
 La dependencia interna queda orientada así:
 
@@ -71,6 +71,7 @@ API reglamentaria (`applyTurnAction` / `getAvailableActions`)
 coordinación de turno y validación de ronda
     │
     ├──────────────► política de puntuación (`Scoring`)
+    ├──────────────► cierre derivado (`RoundCompletion`)
     │                         │
     ▼                         │
 primitiva topológica `applyPlay`
@@ -108,7 +109,7 @@ Persistencia y red se añadirán en directorios propios cuando exista alcance de
 
 ### Coordinación Round / Match futura
 
-El snapshot v5 continúa representando el ciclo único desde reparto hasta salida o tranque. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
+El snapshot v6 representa el ciclo único desde reparto hasta resultado final. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
 
 ## Flujo de una acción reglamentaria
 
@@ -116,8 +117,8 @@ El snapshot v5 continúa representando el ciclo único desde reparto hasta salid
 2. El usuario expresa una intención, por ejemplo jugar una ficha en un puerto lógico.
 3. `InteractionController` elige una acción expuesta por `getAvailableActions` sin coordenadas.
 4. `applyTurnAction` valida snapshot, fase, jugador actual y legalidad.
-5. Para `PLAY_DOMINO`, compone `applyPlay`, deriva S sobre el tablero resultante, calcula puntos, actualiza el equipo del actor y enriquece el mismo evento; para `PASS`, registra directamente el evento canónico sin tocar el score.
-6. La transición reinicia o incrementa pases, detecta salida o tranque y, si continúa, avanza con `getCounterclockwiseSuccessor`.
+5. Para `PLAY_DOMINO`, compone `applyPlay`, deriva S sobre el tablero resultante, calcula puntos, actualiza el equipo del actor y enriquece el mismo evento; para `PASS`, registra directamente el evento canónico sin puntos.
+6. La transición reinicia o incrementa pases y detecta salida o tranque. Si termina, deriva el resultado y acredita la bonificación; si continúa, avanza con `getCounterclockwiseSuccessor`.
 7. El motor devuelve un snapshot validado o un error explícito sin mutar el estado original.
 8. La acción aceptada aparece exactamente una vez en el historial.
 9. La UI vuelve a renderizar; efectos y animaciones observan la transición, pero no la deciden.
@@ -126,9 +127,9 @@ El snapshot v5 continúa representando el ciclo único desde reparto hasta salid
 
 ### Orden de transición
 
-`PLAY_DOMINO` sigue: validar ronda → validar turno y jugada disponible → aplicar topología → calcular S → calcular puntos → actualizar `score.teams` → reiniciar pases → detectar mano vacía → terminar o avanzar jugador/turno → validar resultado.
+`PLAY_DOMINO` sigue: validar ronda → validar turno y jugada disponible → aplicar topología → calcular S → calcular puntos → actualizar `score.teams` → reiniciar pases → detectar mano vacía → si termina, derivar cierre y bonificar; si no, avanzar jugador/turno → validar resultado.
 
-`PASS` sigue: validar ronda → validar turno y ausencia de jugadas → registrar `PASS` → incrementar pases → terminar al cuarto o avanzar jugador/turno → validar resultado.
+`PASS` sigue: validar ronda → validar turno y ausencia de jugadas → registrar `PASS` → incrementar pases → al cuarto derivar cierre y bonificar; antes del cuarto, avanzar jugador/turno → validar resultado.
 
 ## Pureza y mutabilidad
 
@@ -136,7 +137,7 @@ Se favorecerán funciones puras y actualizaciones inmutables. No es requisito co
 
 ## Capacidades no implementadas
 
-Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. En el estado actual permanecen pendientes bonificación, suma de fichas restantes, vencedor tradicional del tranque y resultado definitivo.
+Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda está completo; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5` y renderers.
 
 ## GitHub Pages y ubicación de `index.html`
 

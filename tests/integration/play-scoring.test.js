@@ -132,7 +132,7 @@ test("la puntuación se acumula 0 → +2 → +0 → +3 para el mismo equipo", ()
   assert.equal(validateRoundState(state), state);
 });
 
-test("cuatro PASS terminan por tranque sin calcular ni conceder puntuación", () => {
+test("PASS no puntúa y el cuarto solo aplica la bonificación terminal", () => {
   let state = createBlockedTurnState();
   const scoreBefore = structuredClone(state.score);
   for (let index = 0; index < 4; index += 1) {
@@ -140,11 +140,18 @@ test("cuatro PASS terminan por tranque sin calcular ni conceder puntuación", ()
       type: "PASS",
       playerId: state.currentPlayerId,
     });
+    if (index < 3) {
+      assert.deepEqual(state.score, scoreBefore);
+    }
   }
 
   assert.equal(state.phase, "finished");
   assert.equal(state.roundResult.reason, "BLOCKED");
-  assert.deepEqual(state.score, scoreBefore);
+  const winnerTeamId = state.roundResult.traditionalWinnerTeamId;
+  assert.equal(
+    state.score.teams[winnerTeamId],
+    scoreBefore.teams[winnerTeamId] + state.roundResult.finalBonus,
+  );
   assert.deepEqual(state.history.at(-1).result, {});
   assert.equal("scoreAwarded" in state.history.at(-1).result, false);
   assert.equal("openEndsSum" in state.history.at(-1).result, false);
@@ -161,7 +168,10 @@ test("R-017: una jugada terminal puntúa antes de terminar por EMPTY_HAND", () =
 
   assert.equal(finished.history.at(-1).result.openEndsSum, 5);
   assert.equal(finished.history.at(-1).result.scoreAwarded, 1);
-  assert.equal(finished.score.teams[teamId], scoreBefore + 1);
+  assert.equal(
+    finished.score.teams[teamId],
+    scoreBefore + 1 + finished.roundResult.finalBonus,
+  );
   assert.equal(finished.phase, "finished");
   assert.equal(finished.roundResult.reason, "EMPTY_HAND");
   assert.equal(finished.currentPlayerId, playerId);

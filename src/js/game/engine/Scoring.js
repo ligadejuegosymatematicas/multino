@@ -1,7 +1,4 @@
-import {
-  CAPABILITY_IMPLEMENTED,
-  SPECIFIED_NOT_IMPLEMENTED,
-} from "../../utils/constants.js";
+import { CAPABILITY_IMPLEMENTED } from "../../utils/constants.js";
 import { domainAssert } from "../errors/DomainError.js";
 import { isDouble } from "../model/Domino.js";
 import {
@@ -28,13 +25,13 @@ const SCORING_TERM_REASONS = Object.freeze({
 export const SCORING_CAPABILITIES = Object.freeze({
   openEndSum: CAPABILITY_IMPLEMENTED,
   multipleOfFiveAward: CAPABILITY_IMPLEMENTED,
-  traditionalWinBonus: SPECIFIED_NOT_IMPLEMENTED,
-  blockedGameResult: SPECIFIED_NOT_IMPLEMENTED,
-  finalResult: SPECIFIED_NOT_IMPLEMENTED,
+  traditionalWinBonus: CAPABILITY_IMPLEMENTED,
+  blockedGameResult: CAPABILITY_IMPLEMENTED,
+  finalResult: CAPABILITY_IMPLEMENTED,
 });
 
 export const PLAY_SCORING_READY = true;
-export const SCORING_READY = false;
+export const SCORING_READY = true;
 
 function comparePlacementIds(first, second) {
   return (
@@ -112,4 +109,17 @@ export function calculateMoveScore(openEndsSum) {
   return openEndsSum % SCORING_DIVISOR === 0
     ? openEndsSum / SCORING_DIVISOR
     : 0;
+}
+
+/** R-023: redondeo reglamentario explícito del total rival dividido por 5. */
+export function calculateFinalBonus(remainingPips) {
+  domainAssert(
+    Number.isSafeInteger(remainingPips) && remainingPips >= 0,
+    "INVALID_REMAINING_PIPS",
+    "remainingPips debe ser un entero no negativo.",
+    { remainingPips },
+  );
+  const quotient = Math.floor(remainingPips / SCORING_DIVISOR);
+  const remainder = remainingPips % SCORING_DIVISOR;
+  return remainder <= 2 ? quotient : quotient + 1;
 }

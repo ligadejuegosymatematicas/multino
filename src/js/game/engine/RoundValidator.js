@@ -7,14 +7,13 @@ import { ACTION_TYPES } from "./ActionTypes.js";
 import { validateBoardState } from "./BoardValidator.js";
 import { getLegalPlays } from "./LegalPlays.js";
 import {
+  deriveRoundCompletion,
+  ROUND_END_REASONS,
+} from "./RoundCompletion.js";
+import {
   calculateMoveScore,
   calculateOpenEndsSum,
 } from "./Scoring.js";
-
-export const ROUND_END_REASONS = Object.freeze({
-  EMPTY_HAND: "EMPTY_HAND",
-  BLOCKED: "BLOCKED",
-});
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -203,15 +202,6 @@ function assertRegulatoryHistory(state) {
     );
   });
 
-  domainAssert(
-    Object.keys(expectedScoreByTeam).every(
-      (teamId) => state.score.teams[teamId] === expectedScoreByTeam[teamId],
-    ),
-    "SCORE_HISTORY_MISMATCH",
-    "score.teams debe coincidir exactamente con los puntos del historial.",
-    { score: state.score.teams, expectedScoreByTeam },
-  );
-
   const lastPlay = state.history.findLast(
     (entry) => entry.type === ACTION_TYPES.PLAY_DOMINO,
   );
@@ -228,10 +218,39 @@ function assertRegulatoryHistory(state) {
     );
   }
 
-  return expectedPlayerId;
+  return { expectedPlayerId, playScoreByTeam: expectedScoreByTeam };
 }
 
-function assertTerminalResult(state) {
+function assertScoreMatches(actualScoreByTeam, expectedScoreByTeam, code) {
+  domainAssert(
+    Object.keys(expectedScoreByTeam).every(
+      (teamId) => actualScoreByTeam[teamId] === expectedScoreByTeam[teamId],
+    ),
+    code,
+    "El marcador no coincide con sus componentes reglamentarios.",
+    { actualScoreByTeam, expectedScoreByTeam },
+  );
+}
+
+function assertRemainingPipsMatch(state, expectedRemainingPipsByTeam) {
+  const actual = state.roundResult.remainingPipsByTeam;
+  const teamIds = Object.keys(state.teams);
+  domainAssert(
+    isRecord(actual) &&
+      Object.keys(actual).length === teamIds.length &&
+      teamIds.every(
+        (teamId) =>
+          Number.isSafeInteger(actual[teamId]) &&
+          actual[teamId] >= 0 &&
+          actual[teamId] === expectedRemainingPipsByTeam[teamId],
+      ),
+    "INVALID_REMAINING_PIPS",
+    "remainingPipsByTeam debe coincidir exactamente con las manos terminales.",
+    { actual, expectedRemainingPipsByTeam },
+  );
+}
+
+function assertTerminalResult(state, playScoreByTeam) {
   const result = state.roundResult;
   domainAssert(
     isRecord(result) &&
@@ -255,9 +274,14 @@ function assertTerminalResult(state) {
         "reason",
         "finishingPlayerId",
         "finishingTeamId",
+        "traditionalWinnerTeamId",
+        "remainingPipsByTeam",
+        "finalBonus",
+        "winnerTeamId",
+        "isTie",
       ]),
       "INVALID_EMPTY_HAND_RESULT",
-      "EMPTY_HAND debe declarar únicamente jugador y equipo de salida.",
+      "EMPTY_HAND debe conservar la forma terminal canónica.",
       { roundResult: result },
     );
     const player = state.players[result.finishingPlayerId];
@@ -283,17 +307,72 @@ function assertTerminalResult(state) {
       "Solo el jugador de salida puede tener la mano vacía.",
       { emptyHands, roundResult: result },
     );
-    return;
+  } else {
+    domainAssert(
+      hasExactlyKeys(result, [
+        "reason",
+        "traditionalWinnerTeamId",
+        "remainingPipsByTeam",
+        "finalBonus",
+        "winnerTeamId",
+        "isTie",
+      ]) &&
+        state.consecutivePasses === 4 &&
+        lastEntry.type === ACTION_TYPES.PASS &&
+        Object.values(state.hands).every((hand) => hand.length > 0),
+      "INVALID_BLOCKED_RESULT",
+      "BLOCKED requiere cuatro pases, manos no vacías y resultado canónico.",
+      { roundResult: result, consecutivePasses: state.consecutivePasses },
+    );
   }
 
+  const expected = deriveRoundCompletion(state, {
+    reason: result.reason,
+    finishingPlayerId:
+      result.reason === ROUND_END_REASONS.EMPTY_HAND
+        ? result.finishingPlayerId
+        : null,
+    playScoreByTeam,
+  });
+  assertRemainingPipsMatch(
+    state,
+    expected.roundResult.remainingPipsByTeam,
+  );
   domainAssert(
-    hasExactlyKeys(result, ["reason"]) &&
-      state.consecutivePasses === 4 &&
-      lastEntry.type === ACTION_TYPES.PASS &&
-      Object.values(state.hands).every((hand) => hand.length > 0),
-    "INVALID_BLOCKED_RESULT",
-    "BLOCKED requiere exactamente cuatro pases y ninguna mano vacía.",
-    { roundResult: result, consecutivePasses: state.consecutivePasses },
+    result.traditionalWinnerTeamId ===
+      expected.roundResult.traditionalWinnerTeamId,
+    "INVALID_TRADITIONAL_WINNER",
+    "traditionalWinnerTeamId no coincide con salida o menor suma restante.",
+    {
+      actual: result.traditionalWinnerTeamId,
+      expected: expected.roundResult.traditionalWinnerTeamId,
+    },
+  );
+  domainAssert(
+    Number.isSafeInteger(result.finalBonus) &&
+      result.finalBonus >= 0 &&
+      result.finalBonus === expected.roundResult.finalBonus,
+    "INVALID_FINAL_BONUS",
+    "finalBonus no coincide con el redondeo reglamentario del total rival.",
+    { actual: result.finalBonus, expected: expected.roundResult.finalBonus },
+  );
+  assertScoreMatches(
+    state.score.teams,
+    expected.finalScoreByTeam,
+    "FINAL_SCORE_MISMATCH",
+  );
+  domainAssert(
+    typeof result.isTie === "boolean" &&
+      result.isTie === expected.roundResult.isTie &&
+      result.winnerTeamId === expected.roundResult.winnerTeamId,
+    "INVALID_ROUND_WINNER",
+    "winnerTeamId e isTie deben coincidir con el marcador final.",
+    {
+      winnerTeamId: result.winnerTeamId,
+      isTie: result.isTie,
+      expectedWinnerTeamId: expected.roundResult.winnerTeamId,
+      expectedIsTie: expected.roundResult.isTie,
+    },
   );
 }
 
@@ -330,7 +409,8 @@ export function validateRoundState(state) {
     { consecutivePasses: state.consecutivePasses },
   );
 
-  const nextPlayerId = assertRegulatoryHistory(state);
+  const { expectedPlayerId: nextPlayerId, playScoreByTeam } =
+    assertRegulatoryHistory(state);
   const trailingPasses = getTrailingPassCount(state.history);
   domainAssert(
     state.consecutivePasses === trailingPasses,
@@ -378,6 +458,11 @@ export function validateRoundState(state) {
         expectedPlayerId: nextPlayerId,
       },
     );
+    assertScoreMatches(
+      state.score.teams,
+      playScoreByTeam,
+      "SCORE_HISTORY_MISMATCH",
+    );
     return state;
   }
 
@@ -389,6 +474,6 @@ export function validateRoundState(state) {
     "El estado terminal conserva el número de la acción que terminó la ronda.",
     { turnNumber: state.turnNumber, historyLength: state.history.length },
   );
-  assertTerminalResult(state);
+  assertTerminalResult(state, playScoreByTeam);
   return state;
 }

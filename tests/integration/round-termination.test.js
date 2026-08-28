@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   applyPlay,
   applyTurnAction,
+  calculateRemainingPipsByTeam,
   getAvailableActions,
   getCounterclockwiseSuccessor,
   validateRoundState,
@@ -47,7 +48,15 @@ test("R-012/R-013: cuatro pases exactos terminan por BLOCKED sin quinto turno", 
 
   assert.equal(new Set(passers).size, 4);
   assert.equal(state.phase, "finished");
-  assert.deepEqual(state.roundResult, { reason: "BLOCKED" });
+  assert.deepEqual(state.roundResult.remainingPipsByTeam, { A: 50, B: 76 });
+  assert.deepEqual(state.roundResult, {
+    reason: "BLOCKED",
+    traditionalWinnerTeamId: "A",
+    remainingPipsByTeam: { A: 50, B: 76 },
+    finalBonus: 15,
+    winnerTeamId: "A",
+    isTie: false,
+  });
   assert.equal(state.currentPlayerId, passers[3]);
   assert.equal(state.turnNumber, initialTurnNumber + 3);
   assert.equal(state.history.length, initialHistoryLength + 4);
@@ -118,10 +127,16 @@ test("R-013/R-020: jugar la última ficha termina por EMPTY_HAND sin avanzar", (
 
   assert.equal(finished.hands[finishingPlayerId].length, 0);
   assert.equal(finished.phase, "finished");
+  const remainingPipsByTeam = calculateRemainingPipsByTeam(finished);
   assert.deepEqual(finished.roundResult, {
     reason: "EMPTY_HAND",
     finishingPlayerId,
     finishingTeamId,
+    traditionalWinnerTeamId: finishingTeamId,
+    remainingPipsByTeam,
+    finalBonus: 20,
+    winnerTeamId: finishingTeamId,
+    isTie: false,
   });
   assert.equal(finished.currentPlayerId, finishingPlayerId);
   assert.equal(finished.turnNumber, turnNumber);
@@ -131,11 +146,11 @@ test("R-013/R-020: jugar la última ficha termina por EMPTY_HAND sin avanzar", (
   assert.equal(finished.history.at(-1).result.scoreAwarded, 1);
   assert.equal(
     finished.score.teams[finishingTeamId],
-    scoreBefore.teams[finishingTeamId] + 1,
+    scoreBefore.teams[finishingTeamId] +
+      1 +
+      finished.roundResult.finalBonus,
   );
-  assert.equal("finalScore" in finished.roundResult, false);
-  assert.equal("bonus" in finished.roundResult, false);
-  assert.equal("winnerByScore" in finished.roundResult, false);
+  assert.equal("finalRoundScoreByTeam" in finished.roundResult, false);
   assert.equal(validateRoundState(finished), finished);
   assert.equal(
     validateRoundState(JSON.parse(JSON.stringify(finished))).phase,

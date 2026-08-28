@@ -1,6 +1,6 @@
 # Invariantes del motor
 
-Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. Los bloques 1 a 4 de Fase 1 validan el snapshot inicial, tablero, flujo reglamentario, terminación básica y puntuación durante las jugadas. Bonificación y resultado definitivo continúan pendientes.
+Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. Los cinco bloques de Fase 1 validan el snapshot inicial, tablero, flujo reglamentario, puntuación y cierre completo de una ronda.
 
 ## Snapshot autosuficiente
 
@@ -25,7 +25,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 
 ### Contrato inicial ya validado
 
-- `schemaVersion` es 5 y el snapshot creado está en `phase: "playing"`, `turnNumber: 1`.
+- `schemaVersion` es 6 y el snapshot creado está en `phase: "playing"`, `turnNumber: 1`.
 - `currentPlayerId` referencia al único jugador cuya mano contiene `6-6`.
 - El tablero, `specialDoublePlacementIds` e `history` comienzan vacíos.
 - Ambos equipos comienzan con marcador 0 y `consecutivePasses` comienza en 0.
@@ -95,6 +95,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - En `phase: "finished"`, `turnNumber` conserva el turno terminal, `currentPlayerId` conserva al actor y no se aceptan nuevas acciones.
 - `roundResult.reason = "BLOCKED"` exige cuatro eventos `PASS` consecutivos y ninguna mano vacía.
 - `roundResult.reason = "EMPTY_HAND"` identifica al jugador/equipo de salida, exige su mano vacía y una última acción `PLAY_DOMINO`.
+- El último `PLAY_DOMINO` o cuarto `PASS` es el único evento de la acción terminal; no existe un evento artificial `ROUND_FINISHED`.
 
 ## Puntuación
 
@@ -105,17 +106,23 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - La capacidad de conexión no se deduce del aporte a S (R-019, R-033).
 - `PLAY_DOMINO.result` contiene enteros no negativos `openEndsSum` y `scoreAwarded`; `PASS.result` continúa vacío.
 - `scoreAwarded` vale `openEndsSum / 5` solo cuando S es múltiplo de 5; en otro caso vale 0.
-- Durante este bloque, incluso en un snapshot terminal, `score` contiene únicamente puntos concedidos por jugadas.
-- Para cada equipo:
+- En un snapshot activo, para cada equipo:
 
 ```text
 score actual
 = suma de history[].result.scoreAwarded en PLAY_DOMINO de sus jugadores
 ```
 
-- Una discrepancia entre marcador e historial invalida el estado, pero la operación normal consulta `score` directamente.
+- En un snapshot terminal, `score` añade exactamente `roundResult.finalBonus` al vencedor tradicional, si existe.
+- `remainingPipsByTeam` coincide con la suma de ambos lados de todas las fichas conservadas por los dos jugadores de cada equipo.
+- En salida, `traditionalWinnerTeamId` es el equipo del jugador que vació la mano; en tranque es el equipo con menor total restante.
+- Totales restantes iguales en tranque implican vencedor tradicional nulo y bonificación 0.
+- Si existe vencedor tradicional, `finalBonus` redondea el total rival dividido por 5: residuos 0–2 bajan y 3–4 suben.
+- La bonificación se acredita únicamente al vencedor tradicional. Las fichas del compañero del jugador que salió no forman parte del total rival.
+- `winnerTeamId` identifica el marcador final mayor y puede diferir de `traditionalWinnerTeamId`.
+- Puntajes finales iguales implican `winnerTeamId: null` e `isTie: true`; en otro caso `isTie` es falso.
+- Una discrepancia entre marcador, historial y resultado terminal invalida el estado, pero la operación normal consulta `score` directamente.
 - El `openEndsSum` del último `PLAY_DOMINO` coincide con S derivada del tablero actual, incluso si después hubo pases.
-- Bonificación, vencedor tradicional del tranque, ganador y empate final siguen pendientes.
 
 ## K
 

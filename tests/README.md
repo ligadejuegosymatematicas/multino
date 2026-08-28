@@ -8,9 +8,9 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 - importación del motor sin DOM, HTML ni coordenadas;
 - tablero vacío conforme al contrato lógico;
-- estado v5 serializable, autosuficiente y sin colecciones compartidas;
+- estado v6 serializable, autosuficiente y sin colecciones compartidas;
 - ausencia de `stock`, `board.branches` y `placement.region`;
-- diagnóstico que distingue inicialización, tablero lógico disponible y mecánicas todavía no implementadas.
+- diagnóstico que declara listo el flujo completo de una ronda y mantiene fuera las capacidades futuras.
 
 ### Bloque 1 de Fase 1 — completado
 
@@ -21,7 +21,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/rules/shuffle.test.js`: R-029, permutación no mutante y fuente inyectable;
 - `tests/rules/deal.test.js`: R-006/R-029, cuatro manos disjuntas de siete y reparto reproducible;
 - `tests/rules/starting-player.test.js`: R-007, localización de `6-6` en cualquiera de las manos;
-- `tests/integration/create-match.test.js`: creación atómica del snapshot v5;
+- `tests/integration/create-match.test.js`: creación atómica del snapshot v6;
 - `tests/integration/initial-snapshot-validation.test.js`: corrupción dirigida de cada invariante inicial requerido.
 
 ### Bloque 2 de Fase 1 — completado
@@ -47,6 +47,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/integration/scoring-snapshot-validation.test.js`: corrupción de score, equipos, S, puntos, PASS y reconciliación marcador/historial;
 - tests anteriores actualizados para schema v5, historial puntuado y readiness parcial explícito.
 
+### Bloque 5 de Fase 1 — completado
+
+- `tests/rules/round-completion.test.js`: suma de valores restantes y redondeo reglamentario de R-023 para residuos 0–4;
+- `tests/integration/round-completion.test.js`: salida puntuable/no puntuable, tranque favorable a ambos equipos, igualdad de manos, vencedor tradicional distinto del ganador, empate final y ausencia de evento terminal artificial;
+- `tests/integration/terminal-snapshot-validation.test.js`: corrupción de razón, totales restantes, vencedor tradicional, bonificación, marcador final, ganador y empate;
+- fixtures terminales construidos desde transiciones reglamentarias y redistribuciones completas de las fichas aún no colocadas;
+- tests anteriores sincronizados con schema v6, bonificación terminal y readiness completo de una ronda.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.
@@ -54,13 +62,6 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - Tests de integración: composición pública y validación cruzada del snapshot.
 - La aleatoriedad se sustituye por fuentes controladas; ningún test depende de `Math.random`.
 
-## Backlog de bloques posteriores
-
-### Finalización y bonificación
-
-- R-020 a R-026: vencedor tradicional, bonificación, marcador final, ganador y empate.
-- suma de valores restantes y coherencia entre puntos por jugada, bonificación e historial terminal.
-
 ## Pendientes fuera del motor básico
 
-Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias partidas o meta acumulada, y privacidad/sincronización remota de Fase 6.
+Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias rondas o meta acumulada, variantes `n ≠ 5`, renderers y privacidad/sincronización remota de Fase 6.

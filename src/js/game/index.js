@@ -46,17 +46,19 @@ export {
 } from "./engine/Compatibility.js";
 export { getLegalPlays } from "./engine/LegalPlays.js";
 export {
+  calculateFinalBonus,
   calculateMoveScore,
   calculateOpenEndsSum,
   getScoringTerms,
   PLAY_SCORING_READY,
   SCORING_READY,
 } from "./engine/Scoring.js";
-export { applyPlay, BOARD_PLAY_READY } from "./engine/PlayTransition.js";
 export {
+  calculateRemainingPipsByTeam,
   ROUND_END_REASONS,
-  validateRoundState,
-} from "./engine/RoundValidator.js";
+} from "./engine/RoundCompletion.js";
+export { applyPlay, BOARD_PLAY_READY } from "./engine/PlayTransition.js";
+export { validateRoundState } from "./engine/RoundValidator.js";
 export {
   applyTurnAction,
   getAvailableActions,

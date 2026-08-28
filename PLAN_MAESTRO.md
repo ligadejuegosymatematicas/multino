@@ -7,7 +7,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | Fase | Estado | Resultado esperado |
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
-| 1 — Motor básico | EN CURSO — BLOQUE 4 COMPLETADO | Motor puro con tests |
+| 1 — Motor básico | COMPLETADA | Motor puro con tests |
 | 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
@@ -58,7 +58,9 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 **Bloque 4 — S y puntuación durante las jugadas: COMPLETADO.** Incluye términos explicables derivados del tablero, R-018 para chanchos, suma S, múltiplos de 5, actualización inmutable del marcador, puntuación de la jugada terminal e historial/validación coherentes en schema v5.
 
-**Siguiente bloque: NO INICIADO.** Permanecen fuera bonificación, vencedor tradicional del tranque, suma de fichas restantes, puntaje final, ganador y empate. No se inicia sin autorización.
+**Bloque 5 — Finalización completa de una ronda: COMPLETADO.** Incluye salida y tranque, sumas restantes por equipo, vencedor tradicional, bonificación, marcador final, ganador por puntaje, empate y validación terminal en schema v6.
+
+La Fase 1 cumple sus criterios de salida: una ronda puede jugarse y cerrarse íntegramente mediante la API pública del motor, sin DOM ni geometría. No se autoriza con ello multirronda, metas acumuladas, variantes de puntuación ni renderers.
 
 ### Puerta arquitectónica del Bloque 2 — resuelta
 

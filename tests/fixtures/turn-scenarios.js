@@ -152,6 +152,57 @@ function distributeExitHands(state, finishingPlayerId, dominoId) {
   return nextState;
 }
 
+function distributeTeamDominoes(state, dominoIdsByTeam) {
+  const nextState = structuredClone(state);
+  nextState.hands = Object.fromEntries(
+    Object.keys(nextState.players).map((playerId) => [playerId, []]),
+  );
+  const startingPlayerId = nextState.history[0].playerId;
+
+  for (const [teamId, dominoIds] of Object.entries(dominoIdsByTeam)) {
+    const playerIds = nextState.teams[teamId].playerIds;
+    const startingTeamPlayerId = playerIds.includes(startingPlayerId)
+      ? startingPlayerId
+      : null;
+    const otherPlayerId = playerIds.find(
+      (playerId) => playerId !== startingTeamPlayerId,
+    );
+    const pool = dominoIds.filter(
+      (dominoId) => dominoId !== STARTING_DOMINO_ID,
+    );
+
+    if (startingTeamPlayerId) {
+      nextState.hands[startingTeamPlayerId].push(STARTING_DOMINO_ID);
+      nextState.hands[otherPlayerId].push(pool.shift());
+      for (const dominoId of pool) {
+        const targetPlayerId =
+          nextState.hands[startingTeamPlayerId].length <=
+          nextState.hands[otherPlayerId].length
+            ? startingTeamPlayerId
+            : otherPlayerId;
+        nextState.hands[targetPlayerId].push(dominoId);
+      }
+      continue;
+    }
+
+    nextState.hands[playerIds[0]].push(pool.shift());
+    nextState.hands[playerIds[1]].push(pool.shift());
+    for (const dominoId of pool) {
+      const targetPlayerId =
+        nextState.hands[playerIds[0]].length <=
+        nextState.hands[playerIds[1]].length
+          ? playerIds[0]
+          : playerIds[1];
+      nextState.hands[targetPlayerId].push(dominoId);
+    }
+  }
+  return nextState;
+}
+
+function getRemainingDominoIds(state) {
+  return Object.values(state.hands).flat();
+}
+
 export function createBlockedTurnState() {
   const state = normalizeRegulatoryHistory(
     buildZeroEndedMainLine(CLOSED_ZERO_CHAIN),
@@ -161,6 +212,45 @@ export function createBlockedTurnState() {
     throw new Error("El escenario de bloqueo debe terminar únicamente en 0.");
   }
   return validateRoundState(state);
+}
+
+export function createBlockedOutcomeState(outcome) {
+  const state = createBlockedTurnState();
+  const remainingIds = getRemainingDominoIds(state);
+  let teamAIds;
+
+  if (outcome === "A") {
+    teamAIds = ["1-1", "2-2"];
+  } else if (outcome === "B") {
+    const teamBIds = [STARTING_DOMINO_ID, "1-1"];
+    teamAIds = remainingIds.filter(
+      (dominoId) => !teamBIds.includes(dominoId),
+    );
+  } else if (outcome === "TIE") {
+    const equalTeamBIds = [
+      STARTING_DOMINO_ID,
+      "1-5",
+      "1-3",
+      "2-2",
+      "2-6",
+      "3-6",
+      "5-5",
+      "1-4",
+      "2-3",
+    ];
+    teamAIds = remainingIds.filter(
+      (dominoId) => !equalTeamBIds.includes(dominoId),
+    );
+  } else {
+    throw new Error(`Resultado de tranque desconocido: ${outcome}`);
+  }
+
+  const teamBIds = remainingIds.filter(
+    (dominoId) => !teamAIds.includes(dominoId),
+  );
+  return validateRoundState(
+    distributeTeamDominoes(state, { A: teamAIds, B: teamBIds }),
+  );
 }
 
 export function createPassThenPlayState(passCount = 3) {
@@ -176,10 +266,10 @@ export function createPassThenPlayState(passCount = 3) {
   return validateRoundState(state);
 }
 
-export function createExitTurnState() {
+export function createExitTurnState(dominoId = "0-5") {
   let state = normalizeRegulatoryHistory(
     buildZeroEndedMainLine(RECOVERABLE_ZERO_CHAIN),
   );
-  state = distributeExitHands(state, state.currentPlayerId, "0-5");
+  state = distributeExitHands(state, state.currentPlayerId, dominoId);
   return validateRoundState(state);
 }

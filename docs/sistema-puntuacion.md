@@ -2,7 +2,7 @@
 
 ## Estado normativo
 
-La puntuación de una partida está formalizada por R-014 a R-026. El Bloque 4 implementa R-014 a R-019 para los puntos producidos durante jugadas. Vencedor tradicional, bonificación y resultado definitivo de R-020 a R-026 continúan pendientes.
+La puntuación de una ronda está implementada de extremo a extremo conforme a R-014 a R-026: puntos producidos por jugadas, vencedor tradicional, bonificación y resultado definitivo por puntaje.
 
 ## 1. Puntos después de una jugada
 
@@ -68,7 +68,7 @@ Cada chancho produce exactamente un término agrupado con `placementId`, `domino
 
 El término de un chancho con dos o más conexiones se conserva con contribución 0. Esto permite explicar que un chancho especial todavía puede tener destinos libres sin aportar a S.
 
-## 4. Vencedor tradicional — pendiente
+## 4. Vencedor tradicional
 
 Existe vencedor tradicional en dos casos:
 
@@ -77,7 +77,9 @@ Existe vencedor tradicional en dos casos:
 
 Si las sumas de ambos equipos son iguales en un tranque, no existe vencedor tradicional y ambos reciben bonificación 0 (R-022).
 
-## 5. Bonificación final — pendiente
+`calculateRemainingPipsByTeam(state)` suma ambos lados de cada ficha conservada por los dos jugadores de cada equipo. En salida, el vencedor tradicional es el equipo del jugador que vació su mano. En tranque, es el equipo con menor total; totales iguales producen `traditionalWinnerTeamId: null`.
+
+## 5. Bonificación final
 
 Si existe vencedor tradicional, `a` es la suma de los valores de las fichas restantes del equipo rival. Escribiendo `a = 5q + r`:
 
@@ -87,6 +89,8 @@ Si existe vencedor tradicional, `a` es la suma de los valores de las fichas rest
 | 3 o 4 | `q + 1` |
 
 Esto equivale al entero más cercano a `a / 5` (R-023).
+
+`calculateFinalBonus(a)` implementa explícitamente `q = floor(a / 5)` y la bifurcación por residuo; no delega la convención reglamentaria en `Math.round`. En salida, `a` contiene solo las manos del equipo rival: las fichas del compañero del jugador que salió no forman parte de la bonificación. En tranque, `a` es el total del equipo que perdió tradicionalmente. Sin vencedor tradicional, la bonificación es 0.
 
 Ejemplos normativos:
 
@@ -98,7 +102,7 @@ Ejemplos normativos:
 | 19 | 3 | 4 | 4 |
 | 20 | 4 | 0 | 4 |
 
-## 6. Puntaje final y resultado — pendiente
+## 6. Puntaje final y resultado
 
 Para cada equipo:
 
@@ -108,15 +112,17 @@ puntaje final = puntos durante el juego + bonificación final
 
 Gana el puntaje final mayor; puntajes finales iguales producen empate (R-024 a R-026).
 
+`traditionalWinnerTeamId` describe salida o menor total restante. `winnerTeamId` compara el marcador final después de la bonificación. Pueden identificar equipos distintos. Un empate se representa con `winnerTeamId: null` e `isTie: true`.
+
 ## Marcador normativo e historial
 
 - `score.teams[teamId]` se persiste en el snapshot y es el marcador operativo actual.
 - Cada acción reglamentaria `PLAY_DOMINO` aceptada registra `openEndsSum` y `scoreAwarded` para explicar cómo cambió ese marcador.
-- Durante el alcance actual, tanto en estado activo como terminal, `score` contiene solo puntos obtenidos después de jugadas.
+- En estado activo, `score` contiene solo puntos obtenidos después de jugadas. En estado terminal incorpora además `roundResult.finalBonus` una sola vez al vencedor tradicional.
 - El desglose de `scoringTerms` es derivado y no se persiste; únicamente se guarda el total S compacto del evento.
 - La UI representa `score`; no mantiene un marcador paralelo con autoridad.
 
-Snapshot e historial deben coincidir exactamente: por equipo, el marcador es la suma de `scoreAwarded` de sus jugadores. El motor no recorre el historial para conocer el marcador durante la operación normal; la reconciliación pertenece a la validación del snapshot.
+En una ronda activa, snapshot e historial coinciden exactamente: por equipo, el marcador es la suma de `scoreAwarded` de sus jugadores. En una ronda terminal, esa suma es el puntaje de juego y el marcador final añade únicamente `finalBonus` al `traditionalWinnerTeamId`. El motor no recorre el historial para operar; la reconciliación pertenece a la validación del snapshot.
 
 ## Proyección visual de S
 

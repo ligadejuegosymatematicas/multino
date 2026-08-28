@@ -268,7 +268,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-023 — Posponer RoundState/MatchState hasta aprobar multirronda
 
-**Estado:** Aceptada; la conservación específica de schema v3 queda sustituida por DEC-030 y DEC-033, sin alterar el aplazamiento de RoundState/MatchState.
+**Estado:** Aceptada; la conservación específica de schema v3 queda sustituida por DEC-030, DEC-033 y DEC-034, sin alterar el aplazamiento de RoundState/MatchState.
 
 **Decisión:** Mantener `createMatch` y un único snapshot de ronda mientras no exista una modalidad multirronda. Si se aprueba una serie o meta acumulada, introducir un coordinador MatchState alrededor de un RoundState equivalente al ciclo actual.
 
@@ -280,7 +280,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-024 — Aislar la política de puntuación sin habilitar variantes
 
-**Estado:** Aceptada e implementada para la puntuación durante jugadas; finalización y bonificación siguen pendientes.
+**Estado:** Aceptada e implementada para toda la puntuación de una ronda.
 
 **Decisión:** Implementar R-014–R-026 de modo que el literal 5 y el cálculo aprobado estén concentrados en el módulo de puntuación, no dispersos por tablero, UI o historial. No exponer todavía un divisor configurable.
 
@@ -451,3 +451,17 @@ La fase terminal es `finished` y contiene exclusivamente uno de estos resultados
 **Alternativas consideradas:** Reproducir toda la partida en cada validación; persistir `scoringTerms`; emitir un segundo evento de puntuación; calcular después de terminar; mantener schema v4 con resultados de jugada opcionales.
 
 **Consecuencias:** `PASS` conserva `result: {}` y no altera score. `applyPlay` sigue siendo una primitiva topológica que produce un evento aún no enriquecido; su resultado puede validarse con `validateBoardState`, pero solo la composición reglamentaria satisface v5. `PLAY_SCORING_READY` es verdadero, mientras `SCORING_READY` y `gameplayReady` permanecen falsos porque todavía incluyen bonificación y resultado completo.
+
+## DEC-034 — Cierre derivado, marcador terminal y schema v6
+
+**Estado:** Aceptada.
+
+**Decisión:** Al detectar salida o el cuarto pase, derivar una única terminación desde las manos y el puntaje de juego. `roundResult` persiste razón, sumas restantes por equipo, vencedor tradicional, bonificación, ganador por puntaje e indicador de empate; la salida conserva además jugador y equipo. `score.teams` pasa a ser el marcador final después de acreditar la bonificación una sola vez.
+
+No se persisten mapas redundantes de puntaje de juego o puntaje final: el primero es la suma de `history[].result.scoreAwarded` y el segundo ya es `score.teams`. No se emite `ROUND_FINISHED`, porque el cierre es resultado de la última acción y no una acción reglamentaria adicional. Elevar el snapshot a schema v6.
+
+**Motivo:** R-020 a R-026 exigen distinguir vencedor tradicional de ganador por puntaje y permiten empate. La forma mínima de v5 y su igualdad exacta `score = puntos históricos` ya no pueden representar ni validar esa semántica terminal.
+
+**Alternativas consideradas:** Persistir `playScoreByTeam` y `finalRoundScoreByTeam`; añadir un evento sintético terminal; calcular ganador solo en consultas; conservar v5 con campos opcionales; usar `Math.round(a / 5)` sin expresar la convención de residuos.
+
+**Consecuencias:** En `playing`, score continúa igualando los puntos de `PLAY_DOMINO`. En `finished`, equivale a esos puntos más `finalBonus` para `traditionalWinnerTeamId`. `remainingPipsByTeam`, ganador tradicional, bonificación y ganador final se validan contra manos, historial y marcador. `SCORING_READY`, `RULES_READY` y `gameplayReady` pasan a verdaderos exclusivamente para una ronda; multirronda, metas, variantes y renderers permanecen fuera de alcance.

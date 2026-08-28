@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y sus bloques 1, 2, 3 y 4 están completados**: el motor inicializa el snapshot v5, aplica el tablero lógico, coordina turnos y terminación básica, calcula S y concede puntos por múltiplos de 5. **Todavía no implementa bonificación, vencedor tradicional del tranque ni resultado definitivo por puntaje.**
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. Múltiples rondas, metas acumuladas, variantes y renderers continúan fuera de alcance.
 
 ## Documentos de autoridad
 
@@ -64,9 +64,10 @@ La fachada `src/js/game/index.js` expone:
 - `getOpenEndTargets(state)` para destinos abiertos individualizados;
 - `getLegalPlays(state, playerId)` para combinaciones completas de ficha y destino;
 - `getAvailableActions(state)` para las acciones reglamentarias del jugador actual;
-- `applyTurnAction(state, action)` para jugar o pasar con turno, historial y terminación básica;
+- `applyTurnAction(state, action)` para jugar o pasar con turno, historial y cierre completo de ronda;
 - `getScoringTerms(state)` y `calculateOpenEndsSum(state)` para explicar y sumar S;
 - `calculateMoveScore(openEndsSum)` para la política vigente de múltiplos de 5;
+- `calculateRemainingPipsByTeam(state)` y `calculateFinalBonus(a)` para explicar el cierre;
 - `validateRoundState(state)` para snapshots reglamentarios activos o terminados;
 - `applyPlay(state, action)` para una transición topológica inmutable de bajo nivel;
 - `getDerivedBranches(state)` y `validateBoardState(state)` para consulta y validación del tablero ocupado.

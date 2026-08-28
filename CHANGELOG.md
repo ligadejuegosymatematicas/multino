@@ -40,6 +40,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Historial `PLAY_DOMINO` con `openEndsSum` y `scoreAwarded`, sin persistir el desglose derivable de términos.
 - Validación exacta de `score.teams` contra puntos históricos y comprobación de S para la última jugada.
 - Tests de puntuación, acumulación por equipo, chanchos con 0–4 conexiones, PASS neutro y corrupción score/history.
+- Bloque 5 de Fase 1: cierre completo por salida o cuatro pases conforme a R-020 a R-026.
+- Consulta `calculateRemainingPipsByTeam` y política explícita `calculateFinalBonus` para residuos 0–4.
+- Resultado terminal con vencedor tradicional, totales restantes, bonificación, ganador por puntaje y empate.
+- Reconciliación del marcador terminal como puntos históricos más bonificación única y validación de todos sus componentes.
+- Tests de salida puntuable/no puntuable, tranque para ambos equipos, igualdad de manos, ganadores distintos, empate y corrupción terminal.
 
 ### Decidido
 
@@ -59,6 +64,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-025 a DEC-028 resuelven ARQ-PEND-001 a 005: acción discriminada, puertos neutrales, IDs derivados y consultas separadas.
 - DEC-029 a DEC-031 separan transición reglamentaria y topológica, formalizan `turnNumber`/estado terminal y fijan la consulta de acciones disponibles.
 - DEC-032 y DEC-033 fijan los términos de S, la auditoría compacta de puntuación y el schema v5.
+- DEC-034 fija el cierre derivado, la ausencia de evento terminal artificial y el schema v6.
 
 ### Cambiado
 
@@ -81,3 +87,6 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - No se añade migración v3→v4 porque no existen partidas persistidas reales; los snapshots ocupados del Bloque 2 siguen siendo válidos para `validateBoardState`, no para el nuevo contrato reglamentario.
 - Estado serializable elevado a schema v5: toda jugada reglamentaria registra S/puntos y el marcador debe ser su suma exacta por equipo.
 - Readiness separado: puntuación durante jugadas está disponible, mientras bonificación y resultado completo mantienen `SCORING_READY` y `gameplayReady` en `false`.
+- Estado serializable elevado a schema v6: el marcador terminal incluye la bonificación y `roundResult` conserva el resumen reglamentario completo.
+- `SCORING_READY`, `RULES_READY` y `gameplayReady` pasan a `true` para una ronda completa; multirronda, variantes y renderers no forman parte de ese readiness.
+- Fase 1 declarada completada tras satisfacer sus criterios de salida.
