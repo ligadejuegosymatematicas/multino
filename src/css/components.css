@@ -13,21 +13,30 @@
   font-size: 1.15rem;
 }
 
-.status-card {
-  padding: 1.25rem;
-  border: 1px solid #d5ded7;
-  border-radius: 0.75rem;
-  background: #ffffff;
+.prototype-badge {
+  margin: 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #bdd0cb;
+  border-radius: 999px;
+  color: var(--teal-dark);
+  background: #f8fbfa;
+  font-size: 0.78rem;
+  font-weight: 750;
 }
 
-.status-value {
-  margin-block-end: 0;
-  color: #216039;
-  font-weight: 650;
+.overview-card,
+.side-card,
+.round-result,
+.hand-panel {
+  padding: 1rem;
 }
 
-.status-pending {
-  color: #825b16;
+.overview-card h2,
+.side-card h2,
+.round-result h2,
+.hand-panel h2,
+.panel-heading h2 {
+  margin: 0;
 }
 
 .notice {
@@ -36,3 +45,232 @@
   font-size: 0.9rem;
 }
 
+.turn-panel,
+.scoring-panel {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.turn-panel strong,
+.scoring-sum {
+  font-size: 1.05rem;
+}
+
+.turn-panel span,
+.scoring-detail,
+.score-no-award {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.score-award {
+  color: #8b5010;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.score-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.score-team {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.55rem;
+  background: var(--surface-soft);
+}
+
+.score-team strong {
+  color: var(--teal-dark);
+  font-size: 1.35rem;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 0.65rem;
+}
+
+.section-kicker {
+  margin: 0 0 0.18rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.graph-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.legend-edge,
+.legend-target {
+  display: inline-block;
+  width: 1.5rem;
+  border-top: 4px solid #38545d;
+}
+
+.legend-target {
+  border-top-color: #607874;
+  border-top-style: dashed;
+}
+
+.selection-hint,
+.game-message {
+  min-height: 1.3rem;
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.game-message {
+  margin: 0.55rem 0 0;
+  color: var(--teal-dark);
+  font-weight: 700;
+}
+
+.player-counts {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-counts li {
+  padding: 0.45rem 0.55rem;
+  border-inline-start: 3px solid transparent;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 0.85rem;
+}
+
+.player-counts li.is-current {
+  border-inline-start-color: var(--teal);
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.privacy-note {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.round-result {
+  border-color: #c8bbdb;
+  background: #faf8fd;
+}
+
+.round-result p {
+  margin-block: 0.5rem;
+  font-size: 0.86rem;
+}
+
+.hand-heading-row {
+  margin-block-end: 0.85rem;
+}
+
+.hand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.2rem, 1fr));
+  gap: 0.6rem;
+}
+
+.hand-domino {
+  display: grid;
+  gap: 0.4rem;
+  min-height: 5.25rem;
+  padding: 0.65rem;
+  border: 1px solid #cbd6d3;
+  border-radius: 0.75rem;
+  color: var(--ink);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.hand-domino__values {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.hand-domino__divider {
+  width: 1px;
+  height: 1.65rem;
+  background: #9baba7;
+}
+
+.hand-domino__status {
+  color: var(--teal-dark);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.hand-domino.is-playable {
+  border-block-end: 4px solid var(--teal);
+}
+
+.hand-domino.is-selected {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgb(182 107 24 / 0.2);
+  transform: translateY(-2px);
+}
+
+.hand-domino.is-unplayable {
+  opacity: 0.48;
+}
+
+.hand-domino:disabled {
+  cursor: not-allowed;
+}
+
+.pass-action,
+.primary-action {
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--teal-dark);
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--teal-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pass-action:disabled {
+  border-color: #c4cdca;
+  color: #77827e;
+  background: #e8eceb;
+  cursor: not-allowed;
+}
+
+@media (max-width: 36rem) {
+  .graph-legend {
+    display: none;
+  }
+
+  .hand-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hand-domino {
+    min-width: 0;
+    padding-inline: 0.4rem;
+  }
+}

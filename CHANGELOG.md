@@ -50,6 +50,12 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Agrupación de extremos por valor, proyección visual sin coordenadas y consultas de jugadas/destinos por ficha.
 - Proyección explicativa de S basada exclusivamente en `getScoringTerms` y fachada compuesta `projectGraphView`.
 - Tests de grafo vacío, lazos, incidencia, identidad de extremos, legalidad proyectada, terminalidad, inmutabilidad y ausencia de DOM/geometría.
+- Segundo bloque de Fase 2 con un GraphRenderer SVG funcional como vista web predeterminada.
+- Heptágono elíptico estable, aristas ordinarias, lazos sólidos y una curva numerada por cada destino abierto individual.
+- Interacción reglamentaria completa desde mano, START, target concreto o PASS mediante `InteractionController` y `applyTurnAction`.
+- Paneles locales de turno, cantidades ocultas, marcador, S, puntos reales del último evento y resultado terminal completo.
+- Accesibilidad inicial con nombres ARIA, teclado, foco visible, targets táctiles y respeto de `prefers-reduced-motion`.
+- Tests de escena/markup SVG y controlador sin añadir un DOM artificial ni dependencias externas.
 
 ### Decidido
 
@@ -71,6 +77,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-032 y DEC-033 fijan los términos de S, la auditoría compacta de puntuación y el schema v5.
 - DEC-034 fija el cierre derivado, la ausencia de evento terminal artificial y el schema v6.
 - DEC-035 fija la capa `game/projections`, su API componible y la prohibición de usar el grafo de valores como autoridad reglamentaria.
+- DEC-036 fija SVG, geometría heptagonal descartable y el controlador como única frontera entre intención visual y transición reglamentaria.
 
 ### Cambiado
 

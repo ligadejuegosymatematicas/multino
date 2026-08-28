@@ -478,4 +478,16 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 
 **Alternativas consideradas:** Hacer que el renderer recorra directamente `board`; persistir el grafo de valores; crear una megaestructura obligatoria; agrupar extremos solo por valor; calcular legalidad o S dentro del renderer; introducir coordenadas preventivas.
 
-**Consecuencias:** El grafo de valores nunca valida jugadas ni reconstruye el tablero reglamentario. Las proyecciones son JSON serializables, descartables, inmutables respecto del snapshot y válidas también en `finished`. No cambia schema v6 ni `gameplayReady`. GraphRenderer, layout, curvas, SVG/Canvas, animaciones y Modo Tradicional siguen pendientes.
+**Consecuencias:** El grafo de valores nunca valida jugadas ni reconstruye el tablero reglamentario. Las proyecciones son JSON serializables, descartables, inmutables respecto del snapshot y válidas también en `finished`. No cambia schema v6 ni `gameplayReady`. Esta decisión no implementó renderers; el primer prototipo visual se autoriza posteriormente en DEC-036.
+
+## DEC-036 — Primer GraphRenderer SVG y controlador de intención
+
+**Estado:** Aceptada.
+
+**Decisión:** Implementar la primera vista jugable mediante SVG nativo y una geometría heptagonal estable generada por `GraphScene`. Materializar una arista sólida por ficha ordinaria, un lazo cerrado por chancho y una curva corta discontinua por cada target lógico. Mantener selección y foco como estado efímero de UI. Usar `InteractionController` para convertir únicamente un `START`, target individual o PASS ofrecido por las consultas públicas en `applyTurnAction`.
+
+**Motivo:** SVG conserva identidad, hit area, accesibilidad y eventos por elemento sin instalar librerías. La escena pura permite probar estructura y geometría sin incorporar un DOM artificial a la suite. El controlador evita que el renderer reconstruya legalidad o mantenga una segunda copia del tablero.
+
+**Alternativas consideradas:** Canvas único; librería de grafos; posicionamiento dinámico después de cada jugada; elegir solo por valor; mutar la escena tras una acción; probar píxeles con una dependencia DOM externa.
+
+**Consecuencias:** La UI vuelve a proyectar cada snapshot aceptado. `START` no crea una curva ficticia, PASS depende de `getAvailableActions`, puntos visibles provienen del último evento y `finished` conserva el grafo sin acciones. No cambia schema v6 ni el motor reglamentario. La densidad de cruces, etiquetas, layout premium, replay, Modo Tradicional y selector permanecen pendientes.

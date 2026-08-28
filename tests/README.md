@@ -62,6 +62,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/engine-boundaries.test.js` y cobertura específica verifican importación en Node y ausencia de DOM, Canvas, SVG, animaciones o coordenadas en la capa;
 - consistencia cruzada con `getOpenEndTargets`, `getLegalPlays` y `getScoringTerms`, sin introducir una segunda lógica reglamentaria.
 
+### Fase 2, Bloque 2 — primer GraphRenderer funcional completado
+
+- `tests/ui/graph-renderer.test.js`: siete vértices SVG, arista, lazo, identidad y multiplicidad de curvas, selección compatible, START separado e inmutabilidad de la proyección;
+- `tests/ui/interaction-controller.test.js`: selección de ficha, acción inicial, target exacto con `placementId + portId`, PASS desde la API, reproyección, último resultado puntuable, terminalidad e inmutabilidad;
+- la escena y el markup SVG se prueban como funciones puras; no se añadió JSDOM ni una dependencia destinada a comparar píxeles;
+- interacción de mouse/teclado, viewport, foco, ronda completa y lectura terminal se verifican manualmente en navegador local.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.
@@ -71,4 +78,4 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ## Pendientes fuera del motor básico
 
-Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias rondas o meta acumulada, variantes `n ≠ 5`, renderers y privacidad/sincronización remota de Fase 6.
+Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias rondas o meta acumulada, variantes `n ≠ 5`, Modo Tradicional, refinamiento premium y privacidad/sincronización remota de Fase 6.

@@ -3,10 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta
-      name="description"
-      content="Base arquitectónica del juego Dominó múltiplo de 5."
-    >
+    <meta name="description" content="Prototipo jugable del Modo Grafo para Dominó múltiplo de 5.">
     <title>Dominó múltiplo de 5</title>
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
@@ -14,44 +11,69 @@
     <link rel="stylesheet" href="./src/css/components.css">
   </head>
   <body>
+    <a class="skip-link" href="#hand-root">Ir a la mano</a>
     <main class="app-shell">
       <header class="app-header">
-        <p class="eyebrow">Fase 1 · Bloque inicial</p>
-        <h1>Dominó múltiplo de 5</h1>
-        <p class="lead">Proyecto inicializado</p>
+        <div>
+          <p class="eyebrow">Fase 2 · GraphRenderer funcional</p>
+          <h1>Dominó <span>×5</span></h1>
+          <p class="lead">Una ronda local sobre el grafo de valores.</p>
+        </div>
+        <p class="prototype-badge">Prototipo SVG · K=7</p>
       </header>
 
-      <section class="status-grid" aria-label="Estado del proyecto">
-        <article class="status-card">
-          <h2>Motor</h2>
-          <p id="engine-status" class="status-value" aria-live="polite">
-            Cargando…
-          </p>
+      <section class="round-overview" aria-label="Estado de la ronda">
+        <article class="overview-card">
+          <h2>Turno</h2>
+          <div id="turn-panel" class="turn-panel" aria-live="polite"></div>
         </article>
-
-        <article class="status-card">
-          <h2>Estado</h2>
-          <p id="state-status" class="status-value" aria-live="polite">
-            Preparando diagnóstico…
-          </p>
+        <article class="overview-card">
+          <h2>Marcador</h2>
+          <div id="score-panel" class="score-panel"></div>
         </article>
-
-        <article class="status-card">
-          <h2>Reglas jugables</h2>
-          <p id="rules-status" class="status-value status-pending">
-            Inicialización disponible · jugadas no implementadas
-          </p>
+        <article class="overview-card">
+          <h2>Suma abierta</h2>
+          <div id="scoring-panel" class="scoring-panel" aria-live="polite"></div>
         </article>
       </section>
 
-      <section id="board-root" class="board-placeholder" aria-label="Tablero">
-        <noscript>JavaScript es necesario para comprobar la carga del motor.</noscript>
+      <div class="play-layout">
+        <section class="graph-stage" aria-labelledby="graph-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Tablero</p>
+              <h2 id="graph-heading">Grafo de valores</h2>
+            </div>
+            <p class="graph-legend"><span class="legend-edge"></span> ficha <span class="legend-target"></span> destino</p>
+          </div>
+          <p id="selection-hint" class="selection-hint"></p>
+          <div id="graph-root" class="graph-root"></div>
+          <p id="game-message" class="game-message" aria-live="assertive"></p>
+        </section>
+
+        <aside class="round-sidebar" aria-label="Información local">
+          <section class="side-card">
+            <h2>Fichas restantes</h2>
+            <ul id="player-counts" class="player-counts"></ul>
+            <p class="privacy-note">Solo se muestran cantidades rivales.</p>
+          </section>
+          <section id="round-result" class="round-result" aria-live="polite" hidden></section>
+        </aside>
+      </div>
+
+      <section class="hand-panel" aria-labelledby="hand-heading">
+        <div class="panel-heading hand-heading-row">
+          <div>
+            <p class="section-kicker">Jugador actual</p>
+            <h2 id="hand-heading">Tu mano</h2>
+          </div>
+          <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+        </div>
+        <div id="hand-root" class="hand-grid"></div>
       </section>
 
-      <p class="notice">
-        Esta pantalla solo confirma la estructura técnica. No simula turnos,
-        jugadas ni puntuación.
-      </p>
+      <p class="notice">Las curvas son destinos jugables; el panel S es una lectura independiente de puntuación.</p>
+      <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>
     </main>
 
     <script type="module" src="./src/js/main.js"></script>

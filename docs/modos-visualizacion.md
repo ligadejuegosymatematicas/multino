@@ -89,7 +89,7 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 
 ## Modo Grafo predeterminado
 
-La preferencia actual de producto es abrir una partida en Modo Grafo. Esta elección no convierte el grafo de valores en estado normativo ni elimina el Modo Tradicional. Debe existir una opción visible para alternar de vista y cada renderer debe reconstruirse sin pérdida de información.
+La página abre actualmente una ronda local con el primer GraphRenderer SVG funcional. Esta elección no convierte el grafo de valores en estado normativo ni elimina el futuro Modo Tradicional. El selector de vista todavía no existe; cuando se autorice, cada renderer deberá reconstruirse sin pérdida de información.
 
 Conviene conservar la última preferencia de vista como ajuste local del usuario. No debe viajar dentro de un snapshot autoritativo ni producir diferencias en replay.
 
@@ -103,4 +103,4 @@ Conviene conservar la última preferencia de vista como ajuste local del usuario
 
 ## No implementado
 
-Permanecen pendientes GraphRenderer, TraditionalRenderer, selector de vista, geometría, SVG/Canvas, curvas reales, animaciones y controles definitivos. La capa pura no autoriza por sí sola ninguno de esos bloques visuales.
+Permanecen pendientes TraditionalRenderer, selector de vista, acabado premium, layout avanzado, gestión de densidad, replay, animaciones complejas y controles definitivos. El GraphRenderer actual es deliberadamente un prototipo funcional.

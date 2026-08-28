@@ -105,7 +105,7 @@ Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptador
 
 ### `src/js/ui/`
 
-Contiene renderers y el controlador de interacción. Traduce eventos del usuario a solicitudes de acción y snapshots a elementos visuales. Las coordenadas y rotaciones pertenecen aquí.
+Contiene `GraphScene`, `GraphRenderer`, renderers de paneles y `InteractionController`. `GraphScene` transforma la proyección en geometría SVG descartable; `GraphRenderer` materializa elementos accesibles; el controlador selecciona una acción canónica de `getAvailableActions` y entrega el nuevo snapshot a las mismas proyecciones. Las coordenadas, ángulos, estilos, selección efímera y foco pertenecen aquí.
 
 ### `src/js/utils/`
 
@@ -145,7 +145,7 @@ Se favorecerán funciones puras y actualizaciones inmutables. No es requisito co
 
 ## Capacidades no implementadas
 
-Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda y la proyección lógica del grafo están completos; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5`, geometría y renderers.
+Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda, sus proyecciones y el primer GraphRenderer funcional están completos; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5`, Modo Tradicional y refinamiento visual premium.
 
 ## GitHub Pages y ubicación de `index.html`
 

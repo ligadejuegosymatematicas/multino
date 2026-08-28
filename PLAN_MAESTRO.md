@@ -109,7 +109,9 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 1 — Capa de proyección pura para Modo Grafo: COMPLETADO.** Incluye grafo de valores, metadatos temporales, agrupación de extremos, jugadas por ficha, destinos concretos, explicación de S y fachada resumida para UI. No contiene DOM, coordenadas, geometría ni renderer.
 
-**Siguiente bloque: NO INICIADO.** Permanecen fuera GraphRenderer, layout, SVG/Canvas, curvas reales, animaciones, interacción visual y Modo Tradicional.
+**Bloque 2 — Primer GraphRenderer funcional: COMPLETADO.** Incluye SVG responsivo sobre heptágono estable, aristas y lazos inspeccionables, una curva individual por destino, mano local, selección ficha/target, START, PASS, puntuación, marcador y cierre de ronda. La UI solo despacha acciones ofrecidas por el motor y vuelve a proyectar el snapshot aceptado.
+
+**Siguiente bloque: NO INICIADO.** Permanecen fuera refinamiento visual premium, layout adaptativo avanzado, Modo Tradicional, selector de vista, replay y animaciones complejas.
 
 ### Alcance
 

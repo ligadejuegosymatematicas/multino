@@ -1,12 +1,240 @@
-.board-placeholder {
-  display: grid;
-  min-height: 10rem;
-  place-items: center;
-  padding: 1.5rem;
-  border: 1px dashed #91a398;
-  border-radius: 0.75rem;
-  color: #4d5b52;
-  background: #f9fbf8;
-  text-align: center;
+.graph-stage,
+.hand-panel,
+.overview-card,
+.side-card,
+.round-result {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 0.65rem 2rem rgb(23 45 45 / 0.055);
 }
 
+.graph-stage {
+  min-width: 0;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.graph-root {
+  position: relative;
+  min-height: 31rem;
+  overflow: hidden;
+  border: 1px solid #dbe3e1;
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at center, rgb(35 108 107 / 0.08), transparent 45%),
+    #fbfcfc;
+}
+
+.value-graph {
+  display: block;
+  width: 100%;
+  min-height: 31rem;
+  max-height: 43rem;
+}
+
+.graph-orbit {
+  fill: none;
+  stroke: #dce5e3;
+  stroke-width: 1.5;
+  stroke-dasharray: 2 10;
+}
+
+.graph-edge__line {
+  fill: none;
+  stroke: #38545d;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.graph-edge,
+.graph-loop {
+  cursor: pointer;
+}
+
+.graph-edge:focus-visible .graph-edge__line,
+.graph-loop:focus-visible .graph-loop__shape {
+  stroke: var(--focus);
+  stroke-width: 8;
+}
+
+.graph-edge__badge {
+  fill: #f8fbfa;
+  stroke: #38545d;
+  stroke-width: 1.5;
+}
+
+.graph-edge__label,
+.graph-loop__label {
+  fill: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.graph-loop__shape {
+  fill: rgb(107 92 145 / 0.08);
+  stroke: var(--violet);
+  stroke-width: 5;
+}
+
+.graph-loop__label {
+  fill: var(--violet);
+}
+
+.open-target {
+  color: #607874;
+}
+
+.open-target__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 44;
+  vector-effect: non-scaling-stroke;
+}
+
+.open-target__curve {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-dasharray: 6 6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.open-target__end {
+  fill: #ffffff;
+  stroke: currentColor;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.open-target__index {
+  fill: currentColor;
+  font-size: 9px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.open-target.is-legal {
+  color: var(--amber);
+  cursor: pointer;
+  animation: target-pulse 1.8s ease-in-out infinite;
+}
+
+.open-target.is-legal .open-target__curve {
+  stroke-width: 6;
+}
+
+.open-target.is-incompatible {
+  opacity: 0.28;
+}
+
+.open-target:focus-visible .open-target__curve,
+.open-target:focus-visible .open-target__end {
+  stroke: var(--focus);
+  stroke-width: 7;
+}
+
+.graph-vertex {
+  cursor: default;
+}
+
+.graph-vertex__touch {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 18;
+  vector-effect: non-scaling-stroke;
+}
+
+.graph-vertex__circle {
+  fill: #ffffff;
+  stroke: #365d5c;
+  stroke-width: 4;
+  transition: opacity 160ms ease, stroke-width 160ms ease;
+}
+
+.graph-vertex__value {
+  fill: var(--ink);
+  font-size: 27px;
+  font-weight: 760;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.graph-vertex.is-compatible {
+  cursor: pointer;
+}
+
+.graph-vertex.is-compatible .graph-vertex__circle {
+  stroke: var(--amber);
+  stroke-width: 7;
+}
+
+.graph-vertex.is-incompatible .graph-vertex__circle,
+.graph-vertex.is-incompatible .graph-vertex__value {
+  opacity: 0.48;
+}
+
+.graph-vertex:focus-visible .graph-vertex__circle {
+  stroke: var(--focus);
+  stroke-width: 8;
+}
+
+.graph-multiplicity {
+  fill: #4d5e62;
+  font-size: 14px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.start-action {
+  position: absolute;
+  inset: auto 50% 1rem auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.6rem 0.7rem 0.6rem 1rem;
+  border: 1px solid #d4dfdc;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 0.5rem 1.4rem rgb(22 48 47 / 0.12);
+  transform: translateX(50%);
+}
+
+.start-action p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@keyframes target-pulse {
+  0%, 100% { opacity: 0.76; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .open-target.is-legal {
+    animation: none;
+  }
+
+  .graph-vertex__circle {
+    transition: none;
+  }
+}
+
+@media (max-width: 36rem) {
+  .graph-root,
+  .value-graph {
+    min-height: 27rem;
+  }
+
+  .start-action p {
+    display: none;
+  }
+}

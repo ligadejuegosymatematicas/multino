@@ -1,8 +1,7 @@
 import { domainAssert } from "../errors/DomainError.js";
 import { validateBoardState } from "../engine/BoardValidator.js";
-import {
-  getLegalPlayProjection,
-} from "./LegalPlayProjection.js";
+import { getLatestActionProjection } from "./ActionProjection.js";
+import { getLegalPlayProjection } from "./LegalPlayProjection.js";
 import { getOpenEndVisualProjection } from "./OpenEndProjection.js";
 import { getScoringProjection } from "./ScoringProjection.js";
 import { getValueGraphProjection } from "./ValueGraphProjection.js";
@@ -46,6 +45,24 @@ export function projectGraphView(state, playerId = state.currentPlayerId) {
     }),
     legalPlays,
     scoring: getScoringProjection(state),
+    participants: {
+      players: state.seating.counterclockwisePlayerIds.map((seatedPlayerId) => {
+        const player = state.players[seatedPlayerId];
+        return {
+          playerId: seatedPlayerId,
+          displayName: player.displayName ?? seatedPlayerId,
+          teamId: player.teamId,
+          remainingDominoCount: state.hands[seatedPlayerId].length,
+          isCurrentPlayer: seatedPlayerId === state.currentPlayerId,
+        };
+      }),
+      teams: Object.values(state.teams).map((team) => ({
+        teamId: team.id,
+        displayName: team.displayName ?? team.id,
+        score: state.score.teams[team.id],
+      })),
+    },
+    latestAction: getLatestActionProjection(state),
     turn: {
       currentPlayerId: state.currentPlayerId,
       projectedPlayerId: playerId,
