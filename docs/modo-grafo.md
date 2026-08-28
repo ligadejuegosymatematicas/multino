@@ -246,3 +246,5 @@ La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y
 - comportamiento de inspección cuando una arista está ausente por permanecer en una mano oculta.
 
 Estas decisiones pertenecen al refinamiento posterior y no autorizan a iniciar el diseño premium.
+
+La evaluación específica de legibilidad topológica posterior a la primera prueba manual está en [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md). Propone estudiar una combinación de clasificación visual mínima, foco por selección y panel estructural derivado, sin convertir el grafo de valores en una mesa tradicional.

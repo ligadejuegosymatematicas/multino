@@ -503,3 +503,15 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 **Alternativas por comparar:** Índices ordinales; coordenadas firmadas alrededor de una ficha ancla; vecinos explícitos; pares `(t,±d)` para ramas; coordenadas estructuradas con `originPlacementId + originPortId + depth`; índices permanentes frente a inspección visual bajo demanda.
 
 **Restricción provisional:** No persistir metadata ni cambiar schema por esta cuestión. Si se autoriza, comenzar por una proyección topológica pura y demostrar que no participa en legalidad. El análisis completo está en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md).
+
+## ESTUDIO-002 — Legibilidad topológica del primer GraphRenderer
+
+**Estado:** En estudio; no autorizado para implementación.
+
+**Problema registrado:** Una ronda completa confirma que reconocer las fichas del grafo no basta para reconstruir mentalmente línea principal, ramas, raíces ni función topológica de los chanchos. El problema se agrava con K alto y grafos densos.
+
+**Hallazgo actual:** El `board` ya contiene todos los datos. Las proyecciones visuales vigentes no clasifican todavía cada arista/lazo por región, posición, raíz o capacidad especial. “Principal/rama” y “especial/ordinario” son ejes independientes: con K agotado puede existir un chancho ordinario en la línea principal.
+
+**Alternativas por comparar:** Estilo topológico permanente; inspección de secuencia al seleccionar; panel auxiliar jerárquico; modo opcional con etiquetas/coordenadas. La recomendación provisional es una combinación progresiva de las tres primeras y dejar las coordenadas como ayuda opcional.
+
+**Restricción provisional:** No modificar reglas, snapshot ni schema. Una futura implementación comenzaría en una proyección pura; GraphRenderer seguiría consumiendo datos derivados sin inspeccionar `board` ni decidir legalidad. Véase [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md).

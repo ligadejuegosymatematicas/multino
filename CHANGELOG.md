@@ -58,6 +58,8 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Tests de escena/markup SVG y controlador sin añadir un DOM artificial ni dependencias externas.
 - Estudio documental de reversibilidad entre grafo de valores y disposición tradicional, incluida la propuesta de índices firmados y coordenadas de ramas.
 - Confirmación de que la topología completa ya se deriva del board v6; cualquier explicación futura debe ser una proyección descartable, no metadata persistida.
+- Estudio de UX posterior a una ronda manual sobre legibilidad de línea principal, ramas, raíces, chanchos especiales y consumo de K.
+- Comparación documental de cuatro alternativas visuales y recomendación híbrida progresiva, sin cambios de motor, proyecciones, renderer ni schema.
 
 ### Decidido
 

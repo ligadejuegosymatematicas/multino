@@ -115,6 +115,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Estudio futuro registrado — reversibilidad Grafo/Tradicional: NO AUTORIZADO.** Debe comparar coordenadas topológicas, vecinos y modos de inspección. El análisis actual concluye que la secuencia lógica ya es derivable de `mainLine + placements + connections + ports`; no se justifica persistencia ni schema nuevo. Véase `docs/reversibilidad-grafo-tradicional.md`.
 
+**Estudio de UX posterior a prueba manual: NO AUTORIZADO.** El primer renderer no comunica todavía con suficiente claridad línea principal, ramas, raíces ni capacidad especial de chanchos. Antes del acabado premium se compararán estilo topológico permanente, inspección contextual, panel estructural y etiquetas opcionales. Véase `docs/ux-topologia-modo-grafo.md`.
+
 ### Alcance
 
 - Dibujar fichas.

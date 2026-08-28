@@ -189,6 +189,8 @@ La topología no debería aparecer completa todo el tiempo. En un grafo denso, �
 
 La recomendación preliminar es **inspección opcional bajo demanda**, no numeración permanente. Debe probarse antes del refinamiento definitivo.
 
+La prueba manual del primer GraphRenderer confirmó que también se necesita una clasificación permanente mínima de línea principal, ramas y chanchos especiales. La comparación detallada entre estilo permanente, inspección por selección, panel auxiliar y modo “Ver estructura” está en [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md). La recomendación sigue siendo provisional y no autoriza implementación.
+
 ## Casos que una futura evaluación debe cubrir
 
 - misma colección de fichas con dos topologías lógicas distintas;
