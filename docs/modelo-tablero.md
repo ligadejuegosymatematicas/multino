@@ -184,6 +184,12 @@ Esa proyección no es el grafo lógico del tablero:
 
 El detalle matemático y los límites de multiplicidad están en [`modo-grafo.md`](modo-grafo.md).
 
+### Reversibilidad lógica
+
+El grafo de valores aislado no permite reconstruir la cadena tradicional, pero el `board` actual sí. `mainLine.placementIds` fija el recorrido principal; `connections` y los puertos fijan cada adyacencia; las ramas se recorren en orden desde su `branch:*` de origen. Por ello, una futura vista tradicional puede derivar la topología completa sin historial y sin persistir índices nuevos.
+
+Esta reversibilidad se refiere a la estructura lógica. Coordenadas, rotaciones, espejo y quiebres del trazado siguen siendo elecciones no unívocas del renderer. La evaluación de coordenadas topológicas e inspección visual está registrada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md).
+
 ## Información normativa y derivada
 
 | Concepto | Tratamiento |
@@ -199,6 +205,7 @@ El detalle matemático y los límites de multiplicidad están en [`modo-grafo.md
 | ID de extremo abierto | Derivado de colocación y puerto |
 | Agrupación de extremos por valor | Proyección del renderer |
 | Grafo de valores `0–6` | Proyección del renderer |
+| Índices/coordenadas topológicas para UI | Derivados; no persistir |
 | Aporte a S | Derivado del valor y número de conexiones |
 | Coordenadas y rotación | Efímero del renderer |
 

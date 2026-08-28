@@ -28,10 +28,11 @@ Para diseño futuro de producto y renderers:
 
 - [`docs/modos-visualizacion.md`](docs/modos-visualizacion.md)
 - [`docs/modo-grafo.md`](docs/modo-grafo.md)
+- [`docs/reversibilidad-grafo-tradicional.md`](docs/reversibilidad-grafo-tradicional.md)
 - [`docs/variantes-futuras.md`](docs/variantes-futuras.md)
 - [`docs/modelo-round-match.md`](docs/modelo-round-match.md)
 
-Estos cuatro documentos no son normativos y no sustituyen `REGLAS.md`.
+Estos cinco documentos no son normativos y no sustituyen `REGLAS.md`.
 
 ## Requisitos
 

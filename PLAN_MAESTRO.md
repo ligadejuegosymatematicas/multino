@@ -113,6 +113,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Siguiente bloque: NO INICIADO.** Permanecen fuera refinamiento visual premium, layout adaptativo avanzado, Modo Tradicional, selector de vista, replay y animaciones complejas.
 
+**Estudio futuro registrado — reversibilidad Grafo/Tradicional: NO AUTORIZADO.** Debe comparar coordenadas topológicas, vecinos y modos de inspección. El análisis actual concluye que la secuencia lógica ya es derivable de `mainLine + placements + connections + ports`; no se justifica persistencia ni schema nuevo. Véase `docs/reversibilidad-grafo-tradicional.md`.
+
 ### Alcance
 
 - Dibujar fichas.

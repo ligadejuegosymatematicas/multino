@@ -91,6 +91,8 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 
 La página abre actualmente una ronda local con el primer GraphRenderer SVG funcional. Esta elección no convierte el grafo de valores en estado normativo ni elimina el futuro Modo Tradicional. El selector de vista todavía no existe; cuando se autorice, cada renderer deberá reconstruirse sin pérdida de información.
 
+La diferencia entre reconstruir la topología lógica y escoger una geometría tradicional está analizada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). La conclusión provisional es usar una proyección derivada, no metadata persistida.
+
 Conviene conservar la última preferencia de vista como ajuste local del usuario. No debe viajar dentro de un snapshot autoritativo ni producir diferencias en replay.
 
 ## Accesibilidad e interacción

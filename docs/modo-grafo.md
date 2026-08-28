@@ -2,7 +2,7 @@
 
 ## Propósito y alcance
 
-El Modo Grafo es la representación predeterminada prevista del juego aprobado, no una regla nueva. Este documento fija el modelo matemático de la vista, evalúa sus objetivos interactivos y deja decisiones visuales abiertas. No implementa el renderer.
+El Modo Grafo es la representación predeterminada del juego aprobado, no una regla nueva. Este documento fija el modelo matemático de la vista, describe el primer renderer funcional y mantiene separadas las decisiones todavía abiertas de refinamiento.
 
 ## Modelo matemático exacto
 
@@ -67,6 +67,8 @@ Los módulos dentro de `src/js/game/projections/` consumen el snapshot y consult
 Un lazo usa `a === b` e `isLoop: true`. `placementId` individualiza cada arista. `playSequence`, `turnNumber`, `playerId` y `teamId` se derivan del evento `PLAY_DOMINO` correspondiente. La proyección ordena aristas por `placement-N` y no persiste orientación visual.
 
 Dos snapshots con las mismas fichas jugadas pueden producir exactamente este mismo grafo y conservar distinta línea principal o distintas ramas. Por ello, el grafo de valores nunca valida legalidad, reconstruye conexiones ni sustituye `board`.
+
+El problema inverso queda registrado en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). La conclusión provisional es que el grafo de valores pierde la secuencia, pero el `board` no: línea principal, conexiones, puertos y ramas derivadas bastan para construir más adelante una proyección topológica explicativa sin cambiar schema.
 
 ## Identidad individual de los extremos
 

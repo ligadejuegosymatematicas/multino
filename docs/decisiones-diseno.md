@@ -491,3 +491,15 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 **Alternativas consideradas:** Canvas único; librería de grafos; posicionamiento dinámico después de cada jugada; elegir solo por valor; mutar la escena tras una acción; probar píxeles con una dependencia DOM externa.
 
 **Consecuencias:** La UI vuelve a proyectar cada snapshot aceptado. `START` no crea una curva ficticia, PASS depende de `getAvailableActions`, puntos visibles provienen del último evento y `finished` conserva el grafo sin acciones. No cambia schema v6 ni el motor reglamentario. La densidad de cruces, etiquetas, layout premium, replay, Modo Tradicional y selector permanecen pendientes.
+
+## ESTUDIO-001 — Reversibilidad topológica entre Modo Grafo y Modo Tradicional
+
+**Estado:** En estudio; no autorizado para implementación.
+
+**Problema registrado:** El grafo de valores permite conocer qué fichas están jugadas, pero no contiene por sí solo la secuencia de placements, sus puertos ni el origen y recorrido de ramas. Una misma colección de aristas puede corresponder a tableros lógicos diferentes.
+
+**Hallazgo actual:** El snapshot v6 no perdió esa información. `mainLine.placementIds`, `connections`, puertos canónicos, `specialDoublePlacementIds` y las ramas derivadas permiten reconstruir de forma unívoca la topología tradicional. Solo geometría, rotación y espejo permanecen indeterminados, como corresponde al renderer.
+
+**Alternativas por comparar:** Índices ordinales; coordenadas firmadas alrededor de una ficha ancla; vecinos explícitos; pares `(t,±d)` para ramas; coordenadas estructuradas con `originPlacementId + originPortId + depth`; índices permanentes frente a inspección visual bajo demanda.
+
+**Restricción provisional:** No persistir metadata ni cambiar schema por esta cuestión. Si se autoriza, comenzar por una proyección topológica pura y demostrar que no participa en legalidad. El análisis completo está en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md).

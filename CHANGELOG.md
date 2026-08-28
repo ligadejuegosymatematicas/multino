@@ -56,6 +56,8 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Paneles locales de turno, cantidades ocultas, marcador, S, puntos reales del último evento y resultado terminal completo.
 - Accesibilidad inicial con nombres ARIA, teclado, foco visible, targets táctiles y respeto de `prefers-reduced-motion`.
 - Tests de escena/markup SVG y controlador sin añadir un DOM artificial ni dependencias externas.
+- Estudio documental de reversibilidad entre grafo de valores y disposición tradicional, incluida la propuesta de índices firmados y coordenadas de ramas.
+- Confirmación de que la topología completa ya se deriva del board v6; cualquier explicación futura debe ser una proyección descartable, no metadata persistida.
 
 ### Decidido
 
