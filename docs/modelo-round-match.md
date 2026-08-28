@@ -2,7 +2,7 @@
 
 ## Estado de la propuesta
 
-El snapshot v3 no se modifica en esta intervención. Actualmente representa una partida completa desde el reparto hasta salida o tranque; en terminología futura, ese ciclo corresponde principalmente a una **ronda**.
+El snapshot v4 representa actualmente una partida completa desde el reparto hasta salida o tranque; en terminología futura, ese ciclo corresponde principalmente a una **ronda**. La incorporación de `roundResult` no introduce todavía un coordinador multirronda.
 
 La separación aquí descrita solo será necesaria si se aprueban múltiples rondas o condiciones de victoria acumuladas.
 
@@ -27,7 +27,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 
 ```js
 {
-  schemaVersion: 4, // solo ilustrativo; no aprobado
+  schemaVersion: 5, // solo ilustrativo; no aprobado
   matchId: "...",
   phase: "playing",
 
@@ -66,7 +66,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 }
 ```
 
-La forma es deliberadamente conceptual. No autoriza `schemaVersion: 4`, nuevos campos ni migraciones.
+La forma es deliberadamente conceptual. No autoriza `schemaVersion: 5`, nuevos campos ni migraciones.
 
 ## Propiedad de cada dato
 
@@ -147,9 +147,9 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 
 ## Estrategia de evolución
 
-1. Mantener snapshot v3 y `createMatch` sin refactor durante el motor de una ronda.
+1. Mantener snapshot v4 y `createMatch` sin refactor durante el motor de una ronda.
 2. Evitar que el módulo de puntuación aprobado disperse el literal 5 o conozca una meta de match.
-3. Definir reglas de una variante multirronda antes de diseñar schema v4.
+3. Definir reglas de una variante multirronda antes de diseñar schema v5.
 4. Introducir un coordinador de match alrededor del motor de ronda, no dentro del tablero.
 5. Diseñar migración explícita solo cuando exista un contrato aprobado.
 

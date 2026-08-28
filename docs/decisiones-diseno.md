@@ -268,9 +268,9 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-023 — Posponer RoundState/MatchState hasta aprobar multirronda
 
-**Estado:** Aceptada.
+**Estado:** Aceptada; la conservación específica de schema v3 queda sustituida por DEC-030, sin alterar el aplazamiento de RoundState/MatchState.
 
-**Decisión:** Mantener snapshot v3 y `createMatch` durante el motor de una única ronda. Si se aprueba una serie o meta acumulada, introducir un coordinador MatchState alrededor de un RoundState equivalente al ciclo actual.
+**Decisión:** Mantener `createMatch` y un único snapshot de ronda mientras no exista una modalidad multirronda. Si se aprueba una serie o meta acumulada, introducir un coordinador MatchState alrededor de un RoundState equivalente al ciclo actual.
 
 **Motivo:** La separación es útil para mejores-de-N y metas, pero hoy no existe una regla que defina acumulación, empates de ronda o cierre de series.
 
@@ -373,3 +373,53 @@ ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El des
 **Alternativas consideradas:** Un único array con interpretación contextual; extremos agrupados solo por valor; devolver puntuación provisional 0.
 
 **Consecuencias:** El Modo Grafo podrá seleccionar destinos concretos. Este bloque no expone `getScoringTerms` ni registra `scoreAwarded`; el módulo de puntuación posterior deberá consumir el mismo tablero sin redefinir extremos.
+
+## DEC-029 — Separar transición reglamentaria y primitiva topológica
+
+**Estado:** Aceptada.
+
+**Decisión:** Mantener `applyPlay(state, action)` como primitiva topológica y añadir `applyTurnAction(state, action)` como transición reglamentaria. La capa superior acepta exclusivamente `PLAY_DOMINO` y `PASS`, exige `currentPlayerId`, valida la acción disponible, compone `applyPlay` para colocar y coordina pases, avance y terminación básica.
+
+**Motivo:** Los tests de tablero necesitan construir topologías sin simular una ronda completa, mientras UI, replay reglamentario y futuros adaptadores no deben poder omitir el turno.
+
+**Alternativas consideradas:** Convertir `applyPlay` en la única transición completa; duplicar la colocación dentro del coordinador; retirar inmediatamente la exportación pública de bajo nivel.
+
+**Consecuencias:** `applyPlay` continúa pública por compatibilidad y tests, pero se documenta como API de bajo nivel no destinada a UI. `PLAY_DOMINO` sigue registrándose dentro de esa primitiva y `applyTurnAction` no duplica el evento. Un bloque posterior podrá envolver la misma transición para añadir puntuación sin mover reglas al tablero.
+
+## DEC-030 — Turno reglamentario y snapshot terminal mínimo
+
+**Estado:** Aceptada.
+
+**Decisión:** Elevar el snapshot a schema v4. En una ronda activa, `turnNumber` identifica la próxima acción reglamentaria y vale `history.length + 1`. Después de una acción no terminal aumenta una unidad. Si la acción termina la ronda, el snapshot conserva su número, de modo que `turnNumber === history.length === history.at(-1).turn`. `currentPlayerId` conserva al actor terminal.
+
+La fase terminal es `finished` y contiene exclusivamente uno de estos resultados:
+
+```js
+{ reason: "BLOCKED" }
+```
+
+```js
+{
+  reason: "EMPTY_HAND",
+  finishingPlayerId,
+  finishingTeamId
+}
+```
+
+**Motivo:** No debe fabricarse un quinto turno después del tranque ni un sucesor después de la salida. Al mismo tiempo, el snapshot debe permitir distinguir ambos cierres sin inventar puntuación, bonificación o ganador.
+
+**Alternativas consideradas:** Incrementar siempre `turnNumber`; persistir `nextPlayerId: null`; incluir ganador tradicional o marcador final incompletos; conservar schema v3 porque `roundResult` es aditivo.
+
+**Consecuencias:** `roundResult` está ausente en `playing` y presente en `finished`. Schema v4 hace visible que los snapshots ocupados ahora exigen un evento único por turno y semántica reglamentaria, aunque la topología del tablero no cambie. No se implementa migración v3→v4 porque no existen partidas persistidas reales. `validateRoundState` comprueba la relación entre fase, turno, historial, pases, actor y manos. La puntuación terminal continúa pendiente.
+
+## DEC-031 — Acciones disponibles para el jugador actual
+
+**Estado:** Aceptada.
+
+**Decisión:** Exponer `getAvailableActions(state)`. En `playing` devuelve todas las acciones `PLAY_DOMINO` de `currentPlayerId` cuando existe al menos una; si no existe ninguna devuelve exactamente `{ type: "PASS", playerId }`. En `finished` devuelve `[]`.
+
+**Motivo:** La UI y las simulaciones necesitan una consulta que no obligue a reinterpretar `getLegalPlays` ni a decidir por su cuenta cuándo aparece el pase.
+
+**Alternativas consideradas:** Usar directamente `getLegalPlays` y fabricar `PASS` en cada consumidor; incluir simultáneamente `PASS` y jugadas legales; exponer comandos de UI específicos.
+
+**Consecuencias:** `getLegalPlays` conserva su responsabilidad topológica y puede consultar manos concretas. La selección reglamentaria depende de `getAvailableActions`; `PASS` nunca aparece si existe una jugada legal, incluido el tablero vacío del primer turno.

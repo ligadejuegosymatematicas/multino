@@ -43,6 +43,15 @@ export {
 } from "./engine/Compatibility.js";
 export { getLegalPlays } from "./engine/LegalPlays.js";
 export { applyPlay, BOARD_PLAY_READY } from "./engine/PlayTransition.js";
+export {
+  ROUND_END_REASONS,
+  validateRoundState,
+} from "./engine/RoundValidator.js";
+export {
+  applyTurnAction,
+  getAvailableActions,
+  TURN_MANAGER_READY,
+} from "./engine/TurnManager.js";
 
 export function getEngineStatus() {
   return {
@@ -53,6 +62,7 @@ export function getEngineStatus() {
     specificationComplete: RULES_SPECIFICATION_COMPLETE,
     matchSetupReady: MATCH_SETUP_READY,
     boardPlayReady: BOARD_PLAY_READY,
+    turnFlowReady: TURN_MANAGER_READY,
     gameplayReady: RULES_READY && SCORING_READY && TURN_MANAGER_READY,
   };
 }

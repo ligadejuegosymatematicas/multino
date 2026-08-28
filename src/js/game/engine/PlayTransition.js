@@ -51,6 +51,12 @@ function canonicalTarget(target) {
 export function applyPlay(state, action) {
   validateBoardState(state);
   domainAssert(
+    state.phase === "playing",
+    "ROUND_ALREADY_FINISHED",
+    "No se pueden colocar fichas en una ronda terminada.",
+    { phase: state.phase },
+  );
+  domainAssert(
     isRecord(action) && action.type === ACTION_TYPES.PLAY_DOMINO,
     "INVALID_PLAY_ACTION",
     "applyPlay requiere una acción PLAY_DOMINO.",

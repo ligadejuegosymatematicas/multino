@@ -38,7 +38,7 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
 ```text
                     motor de una ronda
                             │
-                       snapshot v3
+                       snapshot v4
                             │
                    proyecciones puras
                             │
@@ -60,7 +60,24 @@ Contiene representaciones de datos serializables: fichas, jugadores, equipos, ta
 
 ### `src/js/game/engine/`
 
-Es el lugar de las reglas puras y las transiciones de juego. El Bloque 2 implementa consultas de puertos, ramas, destinos y jugadas legales, más `applyPlay(state, action)`: devuelve un snapshot nuevo o un error de dominio sin mutar la entrada. Turnos, pases, puntuación y finalización continúan declarados como no implementados y no devuelven resultados ficticios.
+Es el lugar de las reglas puras y las transiciones de juego. El Bloque 2 implementa consultas de puertos, ramas, destinos y jugadas legales, más la primitiva topológica `applyPlay(state, action)`. El Bloque 3 añade `applyTurnAction(state, action)`, que impone el jugador actual, compone `applyPlay`, coordina `PASS`, avanza el ciclo antihorario y produce terminación básica por salida o tranque. Puntuación, bonificación y resultado definitivo continúan declarados como no implementados y no devuelven resultados ficticios.
+
+La dependencia interna queda orientada así:
+
+```text
+API reglamentaria (`applyTurnAction` / `getAvailableActions`)
+    │
+    ▼
+coordinación de turno y validación de ronda
+    │
+    ▼
+primitiva topológica `applyPlay`
+    │
+    ▼
+consultas, puertos, conexiones y tablero lógico
+```
+
+`applyPlay` permanece exportada para tests y herramientas de bajo nivel, pero la UI no debe usarla como transición de juego.
 
 ### `src/js/game/setup/`
 
@@ -88,19 +105,27 @@ Persistencia y red se añadirán en directorios propios cuando exista alcance de
 
 ### Coordinación Round / Match futura
 
-El snapshot v3 continúa representando el ciclo único desde reparto hasta salida o tranque. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
+El snapshot v4 continúa representando el ciclo único desde reparto hasta salida o tranque. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
 
-## Flujo de una acción de tablero
+## Flujo de una acción reglamentaria
 
 1. La UI muestra un snapshot recibido.
 2. El usuario expresa una intención, por ejemplo jugar una ficha en un puerto lógico.
-3. `InteractionController` crea una acción de dominio sin coordenadas.
-4. La API pública del motor valida la acción usando `REGLAS.md` y el estado actual.
-5. El motor devuelve un nuevo snapshot y un resultado, o un error explícito sin mutar el estado original.
-6. La acción aceptada se registra en el historial.
-7. La UI vuelve a renderizar; efectos y animaciones observan la transición, pero no la deciden.
+3. `InteractionController` elige una acción expuesta por `getAvailableActions` sin coordenadas.
+4. `applyTurnAction` valida snapshot, fase, jugador actual y legalidad.
+5. Para `PLAY_DOMINO`, compone `applyPlay`; para `PASS`, registra directamente el evento canónico.
+6. La transición reinicia o incrementa pases, detecta salida o tranque y, si continúa, avanza con `getCounterclockwiseSuccessor`.
+7. El motor devuelve un snapshot validado o un error explícito sin mutar el estado original.
+8. La acción aceptada aparece exactamente una vez en el historial.
+9. La UI vuelve a renderizar; efectos y animaciones observan la transición, pero no la deciden.
 
-En el Bloque 2, `applyPlay` termina tras el paso topológico e histórico: no avanza turno ni toca pases o marcador. Esa coordinación se añadirá en una capa de transición de turno cuando sea autorizada.
+`applyPlay` continúa terminando tras el paso topológico e histórico: no avanza turno ni toca pases o marcador. `applyTurnAction` es la capa que completa la acción reglamentaria sin calcular puntuación. Para evitar duplicación, el evento `PLAY_DOMINO` sigue siendo escrito únicamente por `applyPlay`; la capa superior solo agrega eventos `PASS`.
+
+### Orden de transición
+
+`PLAY_DOMINO` sigue: validar ronda → validar turno y jugada disponible → aplicar topología → reiniciar pases → detectar mano vacía → terminar o avanzar jugador/turno → validar resultado.
+
+`PASS` sigue: validar ronda → validar turno y ausencia de jugadas → registrar `PASS` → incrementar pases → terminar al cuarto o avanzar jugador/turno → validar resultado.
 
 ## Pureza y mutabilidad
 
@@ -108,7 +133,7 @@ Se favorecerán funciones puras y actualizaciones inmutables. No es requisito co
 
 ## Capacidades no implementadas
 
-Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido”, “0 puntos” o “siguiente jugador” como valor provisional, porque ese valor podría confundirse con comportamiento real.
+Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. En el estado actual permanecen pendientes S, puntuación por múltiplos de 5, bonificación, vencedor tradicional del tranque y resultado definitivo.
 
 ## GitHub Pages y ubicación de `index.html`
 

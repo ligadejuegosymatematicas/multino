@@ -28,6 +28,12 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - API pública `getOpenEndTargets`, `getLegalPlays`, `applyPlay`, `getDerivedBranches` y `validateBoardState`.
 - Historial `PLAY_DOMINO` con IDs secuenciales derivados del snapshot y `connectionId: null` para la primera ficha.
 - Tests ejecutables de los casos topológicos A–H, destinos repetidos, máximos de extremos y corrupción controlada de invariantes.
+- Bloque 3 de Fase 1: transición reglamentaria `applyTurnAction`, consulta `getAvailableActions` y validador `validateRoundState`.
+- Acciones `PASS`, avance antihorario, `turnNumber` secuencial, reinicio de pases y terminación por salida o cuatro pases.
+- Snapshot terminal mínimo con `phase: "finished"` y `roundResult` discriminado por `EMPTY_HAND` o `BLOCKED`.
+- Estado serializable elevado a schema v4 para formalizar turno reglamentario, historial único y fase terminal.
+- Historial canónico de un evento por acción reglamentaria y eventos `PASS` con `payload` y `result` vacíos.
+- Tests de integración para turno incorrecto, pase legal/ilegal, bloqueo, salida, inmutabilidad y corrupción terminal.
 
 ### Decidido
 
@@ -45,6 +51,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-019 a DEC-024: distinguir ambos grafos, renderers intercambiables, extremos derivados dirigibles, configuración separada de vista, Round/Match pospuesto y política de puntuación aislada.
 - Modo Grafo previsto como representación predeterminada, con Modo Tradicional disponible sobre el mismo snapshot.
 - DEC-025 a DEC-028 resuelven ARQ-PEND-001 a 005: acción discriminada, puertos neutrales, IDs derivados y consultas separadas.
+- DEC-029 a DEC-031 separan transición reglamentaria y topológica, formalizan `turnNumber`/estado terminal y fijan la consulta de acciones disponibles.
 
 ### Cambiado
 
@@ -62,3 +69,6 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Agenda ARQ-PEND-001 a 005 para contrato de colocación, puertos canónicos, IDs deterministas, transición atómica y consultas derivadas antes del Bloque 2.
 - Bloque 2 completado sin introducir flujo de turnos, puntuación, pases, tranque ni finalización.
 - Corregida la cota global de destinos a `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`; el máximo ocho por valor queda demostrado y cubierto por una construcción ejecutable.
+- `validateBoardState` admite validar la topología de snapshots activos o terminados; `applyPlay` continúa rechazando colocaciones en una ronda terminada.
+- Capacidades de transición de turno, pase y bloqueo marcadas como implementadas; puntuación y resultado definitivo continúan no implementados.
+- No se añade migración v3→v4 porque no existen partidas persistidas reales; los snapshots ocupados del Bloque 2 siguen siendo válidos para `validateBoardState`, no para el nuevo contrato reglamentario.

@@ -6,11 +6,11 @@ El snapshot contiene toda la información necesaria para continuar desde el pres
 
 `history` sigue siendo obligatorio para auditoría, debugging, replay, comprobación de invariantes y sincronización futura, pero no es la fuente necesaria del marcador, los pases consecutivos ni la capacidad especial actual.
 
-## Esquema propuesto v3
+## Esquema vigente v4
 
 ```js
 {
-  schemaVersion: 3,
+  schemaVersion: 4,
   matchId: null,
   phase: "setup",
   turnNumber: 0,
@@ -48,11 +48,11 @@ Los mapas `teams`, `hands` y `score.teams` usan los mismos IDs de equipo o jugad
 
 ## Snapshot inicial implementado
 
-`createMatch` construye la transición conceptual `setup → playing` de forma atómica. No publica el estado intermedio. Un resultado exitoso conserva la forma v3 anterior con estos valores iniciales:
+`createMatch` construye la transición conceptual `setup → playing` de forma atómica. No publica el estado intermedio. Un resultado exitoso usa la forma v4 con estos valores iniciales:
 
 ```js
 {
-  schemaVersion: 3,
+  schemaVersion: 4,
   phase: "playing",
   turnNumber: 1,
   currentPlayerId: "<jugador que posee 6-6>",
@@ -82,10 +82,39 @@ No existe `stock`: la unión de las manos es exactamente el catálogo. `effectiv
 - Marcador actual por equipo.
 - K reglamentario original.
 - Historial de acciones aceptadas.
+- En estado terminal, motivo de cierre y actor/equipo de salida cuando corresponda.
 
 Con estos campos, el motor puede enumerar las jugadas del jugador actual, decidir si un pase completa el tranque, consultar la capacidad de cada chancho y continuar el marcador sin reconstruir acciones anteriores.
 
-El Bloque 2 implementa la parte topológica mediante una operación de bajo nivel que recibe `playerId` explícito. Después de la primera colocación no autoriza ni avanza por sí misma el turno: `currentPlayerId`, `turnNumber`, `consecutivePasses` y `score` quedan intactos hasta que un bloque posterior incorpore el coordinador de turnos y puntuación.
+`applyPlay` implementa la parte topológica mediante una operación de bajo nivel que recibe `playerId` explícito y no altera turno, pases ni marcador. El Bloque 3 incorpora `applyTurnAction`: restringe al jugador actual, valida contra `getAvailableActions`, compone `applyPlay`, coordina pases y produce terminación básica. `score` permanece intacto hasta el bloque de puntuación.
+
+## Fase y resultado terminal
+
+Mientras la ronda está activa usa `phase: "playing"` y no contiene la propiedad `roundResult`. Al terminar usa una de estas formas mínimas:
+
+```js
+{
+  phase: "finished",
+  roundResult: {
+    reason: "EMPTY_HAND",
+    finishingPlayerId: "P3",
+    finishingTeamId: "A"
+  }
+}
+```
+
+```js
+{
+  phase: "finished",
+  roundResult: {
+    reason: "BLOCKED"
+  }
+}
+```
+
+`EMPTY_HAND` identifica al jugador cuya mano quedó vacía y su equipo. `BLOCKED` no declara ganador: las manos restantes permiten que el bloque posterior calcule el vencedor tradicional. No existen todavía `finalScore`, `bonus`, `winnerByScore` ni campos equivalentes.
+
+El Bloque 3 eleva `schemaVersion` a 4. Aunque `roundResult` es un campo discriminado nuevo, también cambia la semántica obligatoria de `turnNumber` y del historial reglamentario en snapshots ocupados. Mantener v3 ocultaría esa incompatibilidad. No existen partidas persistidas reales que requieran migración.
 
 ## Marcador normativo
 
@@ -107,6 +136,17 @@ score actual
 
 Una discrepancia entre snapshot e historial invalida el estado; no obliga al motor a recalcular el presente durante la operación normal.
 
+## Número de turno
+
+En `phase: "playing"`, `turnNumber` es el número de la acción reglamentaria que está por ejecutarse:
+
+- el snapshot inicial usa 1;
+- cada `PLAY_DOMINO` o `PASS` no terminal registra ese número y deja el siguiente snapshot con `turnNumber + 1`;
+- cada entrada reglamentaria cumple `history.sequence === history.turn`;
+- no existen dos acciones reglamentarias con el mismo turno.
+
+En `phase: "finished"` no existe una próxima acción. El snapshot conserva en `turnNumber` el número de la acción que terminó la ronda, que coincide con `history.length` y con `history.at(-1).turn`. `currentPlayerId` conserva al actor terminal y no avanza a un jugador ficticio.
+
 ## Pases consecutivos
 
 `consecutivePasses` se persiste porque determina si el próximo pase produce tranque:
@@ -117,6 +157,8 @@ Una discrepancia entre snapshot e historial invalida el estado; no obliga al mot
 - alcanza 4 cuando la partida termina por R-012.
 
 El historial permite verificar el contador, pero no es necesario para consultarlo.
+
+El evento `PASS` no duplica el contador. `consecutivePasses` se valida contando la cola de eventos `PASS`; el cuarto pase produce `phase: "finished"` y `reason: "BLOCKED"`.
 
 ## Condición especial
 
@@ -143,12 +185,12 @@ También son derivadas la proyección de las fichas sobre el grafo de valores `0
 
 ## Historial
 
-Propuesta de acción:
+Acción `PLAY_DOMINO` vigente:
 
 ```js
 {
   sequence: 10,
-  turn: 1,
+  turn: 10,
   playerId: "A2",
   type: "PLAY_DOMINO",
   payload: {
@@ -168,6 +210,21 @@ Propuesta de acción:
 
 Para la primera ficha, `payload.target` es `{ kind: "START" }` y `connectionId` es `null`. El Bloque 2 no escribe `scoreAwarded: 0`: el campo se incorporará cuando exista un cálculo real. El historial conserva causalidad y orden. Puede reproducir o auditar el snapshot, pero una carga válida no necesita reproducirlo antes de continuar.
 
+Acción `PASS` vigente:
+
+```js
+{
+  sequence: 11,
+  turn: 11,
+  playerId: "B1",
+  type: "PASS",
+  payload: {},
+  result: {}
+}
+```
+
+`consecutivePassesAfter` y `finished` no se duplican dentro del evento: se derivan de la secuencia y del snapshot resultante. `applyTurnAction` produce exactamente una entrada por acción. Para `PLAY_DOMINO`, reutiliza la entrada creada por `applyPlay`; para `PASS`, crea la forma anterior.
+
 ## Sin pozo
 
 No existe `stock`. Al comenzar el juego, las 28 fichas están distribuidas entre cuatro manos de siete conforme a R-006 y R-029. Una colección temporal usada dentro de una operación atómica de reparto no pertenece a un snapshot válido.
@@ -177,23 +234,23 @@ No existe `stock`. Al comenzar el juego, las 28 fichas están distribuidas entre
 - Solo tipos JSON y referencias por ID.
 - K se valida como entero no negativo y se conserva aunque sea mayor que 7.
 - Los cuatro jugadores, dos equipos, 28 fichas y ubicaciones deben ser coherentes.
-- Marcador y contador de pases son enteros no negativos.
+- Marcador y contador de pases son enteros no negativos; el contador no supera 4.
 - Tablero, lista especial e historial deben satisfacer sus invariantes cruzados.
 - `schemaVersion` se incrementa ante cambios incompatibles.
 
-El validador inicial implementado comprueba schema, participantes, equipos, alternancia, K, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío y serialización JSON. `validateBoardState` añade para tableros ocupados IDs canónicos, línea principal, puertos, compatibilidad, ramas, condición especial, ubicación única e historial de colocaciones. La coherencia de puntuación, turnos, pases y estados terminales corresponde a bloques posteriores.
+El validador inicial comprueba schema, participantes, equipos, alternancia, K, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío, ausencia de `roundResult` y serialización JSON. `validateBoardState` valida la topología tanto en `playing` como en `finished`. `validateRoundState` añade turnos únicos, orden antihorario, jugador actual, cola de pases, forma de eventos, coherencia de `roundResult`, mano vacía y bloqueo. La coherencia de puntuación, bonificación y resultado definitivo corresponde al bloque posterior.
 
-El esquema v3 sustituye al v2 antes de existir partidas persistidas reales. No se implementan migraciones en esta intervención.
+El esquema v4 sustituye al v3 para formalizar acciones reglamentarias únicas, turno secuencial y fase terminal. No se implementa migración v3→v4 porque no existen partidas persistidas reales. Un snapshot ocupado construido por el Bloque 2 puede seguir validándose topológicamente mediante `validateBoardState`, pero no se presenta como snapshot reglamentario v4.
 
 ## Guardado, replay y red
 
-- **Guardar:** persiste el snapshot v3 autosuficiente y el historial asociado.
+- **Guardar:** persiste el snapshot v4 autosuficiente y el historial asociado.
 - **Cargar:** valida el snapshot directamente; no necesita reproducir el historial.
 - **Replay:** usa el historial cuando el usuario solicita reconstrucción temporal.
 - **Red:** puede enviar snapshots autoritativos compactos y acciones incrementales, con proyecciones que oculten manos ajenas.
 
 ## Round y Match futuros
 
-Aunque la API actual se denomina `createMatch`, el snapshot v3 cubre un único ciclo desde reparto hasta salida o tranque. No se renombra ni refactoriza mientras solo exista esa modalidad.
+Aunque la API actual se denomina `createMatch`, el snapshot v4 cubre un único ciclo desde reparto hasta salida o tranque. No se renombra ni refactoriza mientras solo exista esa modalidad.
 
-Si se aprueban múltiples rondas, un futuro `MatchState` podrá envolver un `RoundState` equivalente al estado actual y añadir política de victoria, rondas ganadas o puntos acumulados. Esa evolución requerirá reglas y versión de esquema propias; no justifica agregar campos preventivos a v3. Véase [`modelo-round-match.md`](modelo-round-match.md).
+Si se aprueban múltiples rondas, un futuro `MatchState` podrá envolver un `RoundState` equivalente al estado actual y añadir política de victoria, rondas ganadas o puntos acumulados. Esa evolución requerirá reglas y versión de esquema propias; no justifica agregar campos preventivos a v4. Véase [`modelo-round-match.md`](modelo-round-match.md).

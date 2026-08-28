@@ -139,12 +139,12 @@ function assertHistory(state) {
   }
 }
 
-/** Valida el subconjunto operativo del snapshot usado por el Bloque 2. */
+/** Valida el subconjunto topológico de un snapshot activo o terminado. */
 export function validateBoardState(state) {
   domainAssert(
-    isRecord(state) && state.phase === "playing",
+    isRecord(state) && ["playing", "finished"].includes(state.phase),
     "INVALID_PLAYABLE_STATE",
-    "El tablero requiere un snapshot en phase=playing.",
+    "El tablero requiere un snapshot en phase=playing o phase=finished.",
     { phase: state?.phase },
   );
   domainAssert(
@@ -161,7 +161,7 @@ export function validateBoardState(state) {
       Array.isArray(board.specialDoublePlacementIds) &&
       !Object.hasOwn(board, "branches"),
     "INVALID_BOARD_SHAPE",
-    "El tablero no coincide con el esquema lógico v3.",
+    "El tablero no coincide con el esquema lógico vigente.",
     { board },
   );
 

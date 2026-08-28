@@ -8,7 +8,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 - importación del motor sin DOM, HTML ni coordenadas;
 - tablero vacío conforme al contrato lógico;
-- estado v3 serializable, autosuficiente y sin colecciones compartidas;
+- estado v4 serializable, autosuficiente y sin colecciones compartidas;
 - ausencia de `stock`, `board.branches` y `placement.region`;
 - diagnóstico que distingue inicialización, tablero lógico disponible y mecánicas todavía no implementadas.
 
@@ -21,7 +21,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/rules/shuffle.test.js`: R-029, permutación no mutante y fuente inyectable;
 - `tests/rules/deal.test.js`: R-006/R-029, cuatro manos disjuntas de siete y reparto reproducible;
 - `tests/rules/starting-player.test.js`: R-007, localización de `6-6` en cualquiera de las manos;
-- `tests/integration/create-match.test.js`: creación atómica del snapshot v3;
+- `tests/integration/create-match.test.js`: creación atómica del snapshot v4;
 - `tests/integration/initial-snapshot-validation.test.js`: corrupción dirigida de cada invariante inicial requerido.
 
 ### Bloque 2 de Fase 1 — completado
@@ -33,6 +33,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/integration/board-invariants.test.js`: corrupción dirigida de camino principal, puertos, valores, ramas, chanchos, ubicación y K efectivo;
 - `tests/integration/board-public-api.test.js`: fachada pública, carga JSON, historial y límite deliberado sin avance de turno ni puntuación.
 
+### Bloque 3 de Fase 1 — completado
+
+- `tests/integration/turn-actions.test.js`: primera acción, jugador actual, acciones disponibles, pase legal/ilegal, avance antihorario, turno, historial e inmutabilidad;
+- `tests/integration/round-termination.test.js`: reinicio después de uno, dos o tres pases, cuatro pases exactos, salida, estado terminal y rechazo de acciones posteriores;
+- `tests/integration/terminal-snapshot-validation.test.js`: corrupción dirigida de `roundResult`, turno terminal, mano/equipo de salida, tranque e historial `PASS`;
+- `tests/fixtures/turn-scenarios.js`: cadenas válidas sin jugadas para construir pases, bloqueo y salida sin geometría ni puntuación.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.
@@ -42,17 +49,11 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ## Backlog de bloques posteriores
 
-### Turnos, pases y terminación
-
-- R-008/R-010/R-011: elección inicial, una jugada legal o pase solo si corresponde.
-- R-012/R-013: contador de pases, reinicio y tranque.
-- R-013/R-020: salida, terminación y vencedor tradicional.
-
 ### Puntuación y resultado
 
 - R-014 a R-017: cálculo de S, múltiplos de cinco y última jugada.
 - R-018/R-019/R-033: aporte numérico de un chancho; la capacidad ya está cubierta en el caso H del Bloque 2.
-- R-021 a R-026: tranque, bonificación, marcador final, ganador y empate.
+- R-021 a R-026: vencedor tradicional del tranque, bonificación, marcador final, ganador y empate.
 - Coherencia entre `score`, historial y bonificación terminal.
 
 ## Pendientes fuera del motor básico

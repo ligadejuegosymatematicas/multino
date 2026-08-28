@@ -111,6 +111,12 @@ test("valida contador inicial de pases", () => {
   });
 });
 
+test("un snapshot inicial activo no admite roundResult", () => {
+  expectCorruption("UNEXPECTED_ROUND_RESULT", (snapshot) => {
+    snapshot.roundResult = { reason: "BLOCKED" };
+  });
+});
+
 test("R-007: valida que currentPlayerId posea 6-6", () => {
   expectCorruption("INVALID_STARTING_PLAYER", (snapshot) => {
     snapshot.currentPlayerId =

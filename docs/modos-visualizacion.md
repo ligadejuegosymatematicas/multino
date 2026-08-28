@@ -26,7 +26,7 @@ Ambas vistas reciben el mismo snapshot lógico y deben permitir alternar durante
       GraphRenderer      TraditionalRenderer
 ```
 
-Cambiar de renderer no baraja, reparte, juega, pasa, puntúa ni modifica el turno. La preferencia visual pertenece a UI o configuración local del usuario, no a `config` reglamentaria ni al snapshot v3.
+Cambiar de renderer no baraja, reparte, juega, pasa, puntúa ni modifica el turno. La preferencia visual pertenece a UI o configuración local del usuario, no a `config` reglamentaria ni al snapshot v4.
 
 ## Configuración de partida y representación
 

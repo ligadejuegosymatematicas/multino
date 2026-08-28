@@ -32,10 +32,10 @@ test("cada estado inicial mantiene colecciones independientes", () => {
   assert.deepEqual(second.score.teams, {});
 });
 
-test("el estado v3 es autosuficiente y no modela pozo ni ramas persistidas", () => {
+test("el estado v4 es autosuficiente y no modela pozo ni ramas persistidas", () => {
   const state = createEmptyGameState();
 
-  assert.equal(state.schemaVersion, 3);
+  assert.equal(state.schemaVersion, 4);
   assert.equal(state.consecutivePasses, 0);
   assert.deepEqual(state.score, { teams: {} });
   assert.equal("stock" in state, false);

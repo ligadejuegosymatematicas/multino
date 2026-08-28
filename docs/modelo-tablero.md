@@ -28,7 +28,7 @@ El tablero es un grafo lógico de colocaciones, puertos y conexiones. Su topolog
 }
 ```
 
-El Bloque 2 conserva exactamente este esquema v3: no añadió `branches`, orientación ni contadores de IDs.
+El Bloque 2 fijó esta forma de tablero dentro de schema v3. El schema v4 del Bloque 3 conserva el tablero sin `branches`, orientación ni contadores de IDs.
 
 ## Contrato ejecutable de acciones
 

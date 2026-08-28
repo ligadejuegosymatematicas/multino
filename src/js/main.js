@@ -21,11 +21,13 @@ renderScoreStatus(
   document.querySelector("#rules-status"),
   engineStatus.gameplayReady
     ? "Disponibles"
-    : engineStatus.boardPlayReady
-      ? "Tablero lógico disponible · flujo de turnos y puntuación pendientes"
-      : engineStatus.matchSetupReady
-        ? "Inicialización disponible · jugadas no implementadas"
-      : "Inicialización no disponible",
+    : engineStatus.turnFlowReady
+      ? "Turnos y terminación básica disponibles · puntuación pendiente"
+      : engineStatus.boardPlayReady
+        ? "Tablero lógico disponible · flujo de turnos pendiente"
+        : engineStatus.matchSetupReady
+          ? "Inicialización disponible · jugadas no implementadas"
+          : "Inicialización no disponible",
 );
 
 renderBoardPlaceholder(document.querySelector("#board-root"));

@@ -93,7 +93,7 @@ function assertEmptyInitialBoard(board) {
   domainAssert(
     valid,
     "INITIAL_BOARD_NOT_EMPTY",
-    "El tablero inicial debe estar vacío y respetar el esquema v3.",
+    "El tablero inicial debe estar vacío y respetar el esquema v4.",
     { board },
   );
 }
@@ -139,6 +139,11 @@ export function validateInitialMatchSnapshot(snapshot) {
     "INVALID_INITIAL_PASSES",
     "consecutivePasses debe comenzar en cero.",
     { consecutivePasses: snapshot.consecutivePasses },
+  );
+  domainAssert(
+    !Object.hasOwn(snapshot, "roundResult"),
+    "UNEXPECTED_ROUND_RESULT",
+    "Una partida inicial en phase=playing no puede contener roundResult.",
   );
   domainAssert(
     !Object.hasOwn(snapshot, "stock"),

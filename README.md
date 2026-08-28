@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y sus bloques 1 y 2 están completados**: el motor inicializa el snapshot v3 y ya puede enumerar y aplicar colocaciones sobre la línea principal y sus ramas. **Todavía no implementa el flujo de turnos, puntuación, pases, tranque ni finalización.**
+La **Fase 0 — Especificación y arquitectura** está completada. La **Fase 1 está en curso y sus bloques 1, 2 y 3 están completados**: el motor inicializa el snapshot v4, aplica el tablero lógico y coordina jugadas, pases, turnos, salida y tranque. **Todavía no implementa puntuación, bonificación ni resultado definitivo por puntaje.**
 
 ## Documentos de autoridad
 
@@ -63,10 +63,13 @@ La fachada `src/js/game/index.js` expone:
 - `createMatch` y `validateInitialMatchSnapshot` para inicialización;
 - `getOpenEndTargets(state)` para destinos abiertos individualizados;
 - `getLegalPlays(state, playerId)` para combinaciones completas de ficha y destino;
-- `applyPlay(state, action)` para una transición topológica inmutable;
+- `getAvailableActions(state)` para las acciones reglamentarias del jugador actual;
+- `applyTurnAction(state, action)` para jugar o pasar con turno, historial y terminación básica;
+- `validateRoundState(state)` para snapshots reglamentarios activos o terminados;
+- `applyPlay(state, action)` para una transición topológica inmutable de bajo nivel;
 - `getDerivedBranches(state)` y `validateBoardState(state)` para consulta y validación del tablero ocupado.
 
-`applyPlay` es deliberadamente una operación de bajo nivel en este bloque: registra la colocación, pero no avanza el turno ni calcula puntuación.
+La UI futura debe usar `getAvailableActions` y `applyTurnAction`. `applyPlay` permanece pública para tests del tablero y consumidores técnicos compatibles, pero no impone el turno ni representa una acción reglamentaria completa. Ninguna transición calcula todavía puntuación.
 
 ## Estructura general
 

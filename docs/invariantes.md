@@ -1,6 +1,6 @@
 # Invariantes del motor
 
-Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. Los bloques 1 y 2 de Fase 1 validan el snapshot inicial y el tablero ocupado, respectivamente. Turnos completos, puntuación y estados terminales continúan pendientes.
+Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arquitectónicas. Los bloques 1, 2 y 3 de Fase 1 validan el snapshot inicial, el tablero ocupado y el flujo reglamentario con terminación básica. Puntuación, bonificación y resultado definitivo continúan pendientes.
 
 ## Snapshot autosuficiente
 
@@ -25,7 +25,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 
 ### Contrato inicial ya validado
 
-- `schemaVersion` es 3 y el snapshot creado está en `phase: "playing"`, `turnNumber: 1`.
+- `schemaVersion` es 4 y el snapshot creado está en `phase: "playing"`, `turnNumber: 1`.
 - `currentPlayerId` referencia al único jugador cuya mano contiene `6-6`.
 - El tablero, `specialDoublePlacementIds` e `history` comienzan vacíos.
 - Ambos equipos comienzan con marcador 0 y `consecutivePasses` comienza en 0.
@@ -84,12 +84,21 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - El jugador inicial posee `6–6`, pero su primera ficha no está forzada (R-007, R-008).
 - El sucesor sigue el orden antihorario persistido (R-009).
 - Una jugada aceptada coloca exactamente una ficha (R-010).
+- `applyTurnAction` acepta únicamente `PLAY_DOMINO` y `PASS` de `currentPlayerId` en `phase: "playing"`.
+- En una ronda activa, `turnNumber = history.length + 1` e identifica la próxima acción.
+- Cada evento reglamentario usa `sequence === turn` y los actores recorren el ciclo antihorario sin saltos.
 - `consecutivePasses` aumenta únicamente con un pase aceptado y se reinicia con una jugada aceptada.
 - Un pase solo se acepta cuando no existe jugada legal (R-011).
 - `consecutivePasses = 4` termina la partida por tranque (R-012, R-013).
 - Una mano vacía después de una jugada termina la partida por salida (R-013, R-020).
+- En `phase: "playing"` no existe `roundResult`, ninguna mano está vacía y `consecutivePasses < 4`.
+- En `phase: "finished"`, `turnNumber` conserva el turno terminal, `currentPlayerId` conserva al actor y no se aceptan nuevas acciones.
+- `roundResult.reason = "BLOCKED"` exige cuatro eventos `PASS` consecutivos y ninguna mano vacía.
+- `roundResult.reason = "EMPTY_HAND"` identifica al jugador/equipo de salida, exige su mano vacía y una última acción `PLAY_DOMINO`.
 
 ## Puntuación
+
+Los invariantes de esta sección están especificados pero todavía no tienen comportamiento ejecutable en el Bloque 3.
 
 - Después de cada jugada aceptada se calcula una vez `S` y se actualiza `score` (R-014 a R-017).
 - Un chancho `N` aporta `2N` con 0 o 1 conexión y 0 con 2, 3 o 4 (R-018, R-033).

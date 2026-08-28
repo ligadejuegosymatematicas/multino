@@ -7,7 +7,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | Fase | Estado | Resultado esperado |
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
-| 1 — Motor básico | EN CURSO — BLOQUE 2 COMPLETADO | Motor puro con tests |
+| 1 — Motor básico | EN CURSO — BLOQUE 3 COMPLETADO | Motor puro con tests |
 | 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
@@ -54,7 +54,9 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 **Bloque 2 — Núcleo lógico del tablero: COMPLETADO.** Incluye puertos canónicos, primera colocación, línea principal ordenada, chanchos especiales, ramas derivadas, destinos individualizados, enumeración de ficha+destino, aplicación inmutable, historial y validación topológica.
 
-**Siguiente bloque: NO INICIADO.** Permanecen fuera el flujo de turnos, puntuación, pases, tranque, finalización y bonificación. No se inicia sin autorización.
+**Bloque 3 — Turnos, pases y terminación básica: COMPLETADO.** Incluye transición reglamentaria sobre la primitiva topológica, restricción al jugador actual, acciones disponibles, pase obligatorio, avance antihorario, contador de turnos, reinicio de pases, salida y tranque con snapshot terminal v4 validado.
+
+**Siguiente bloque: NO INICIADO.** Permanecen fuera el cálculo de S, puntuación por múltiplos de 5, bonificación, vencedor tradicional del tranque, puntaje final, ganador y empate. No se inicia sin autorización.
 
 ### Puerta arquitectónica del Bloque 2 — resuelta
 
