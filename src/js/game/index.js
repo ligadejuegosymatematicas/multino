@@ -7,7 +7,10 @@ import {
   RULES_READY,
   RULES_SPECIFICATION_COMPLETE,
 } from "./engine/Rules.js";
-import { SCORING_READY } from "./engine/Scoring.js";
+import {
+  PLAY_SCORING_READY,
+  SCORING_READY,
+} from "./engine/Scoring.js";
 import { TURN_MANAGER_READY } from "./engine/TurnManager.js";
 import { BOARD_PLAY_READY } from "./engine/PlayTransition.js";
 import { MATCH_SETUP_READY } from "./setup/createMatch.js";
@@ -42,6 +45,13 @@ export {
   isDominoCompatibleWithValue,
 } from "./engine/Compatibility.js";
 export { getLegalPlays } from "./engine/LegalPlays.js";
+export {
+  calculateMoveScore,
+  calculateOpenEndsSum,
+  getScoringTerms,
+  PLAY_SCORING_READY,
+  SCORING_READY,
+} from "./engine/Scoring.js";
 export { applyPlay, BOARD_PLAY_READY } from "./engine/PlayTransition.js";
 export {
   ROUND_END_REASONS,
@@ -63,6 +73,7 @@ export function getEngineStatus() {
     matchSetupReady: MATCH_SETUP_READY,
     boardPlayReady: BOARD_PLAY_READY,
     turnFlowReady: TURN_MANAGER_READY,
+    playScoringReady: PLAY_SCORING_READY,
     gameplayReady: RULES_READY && SCORING_READY && TURN_MANAGER_READY,
   };
 }

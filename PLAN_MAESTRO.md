@@ -7,7 +7,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | Fase | Estado | Resultado esperado |
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
-| 1 — Motor básico | EN CURSO — BLOQUE 3 COMPLETADO | Motor puro con tests |
+| 1 — Motor básico | EN CURSO — BLOQUE 4 COMPLETADO | Motor puro con tests |
 | 2 — Renderer del tablero | NO INICIADA | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
@@ -56,7 +56,9 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 **Bloque 3 — Turnos, pases y terminación básica: COMPLETADO.** Incluye transición reglamentaria sobre la primitiva topológica, restricción al jugador actual, acciones disponibles, pase obligatorio, avance antihorario, contador de turnos, reinicio de pases, salida y tranque con snapshot terminal v4 validado.
 
-**Siguiente bloque: NO INICIADO.** Permanecen fuera el cálculo de S, puntuación por múltiplos de 5, bonificación, vencedor tradicional del tranque, puntaje final, ganador y empate. No se inicia sin autorización.
+**Bloque 4 — S y puntuación durante las jugadas: COMPLETADO.** Incluye términos explicables derivados del tablero, R-018 para chanchos, suma S, múltiplos de 5, actualización inmutable del marcador, puntuación de la jugada terminal e historial/validación coherentes en schema v5.
+
+**Siguiente bloque: NO INICIADO.** Permanecen fuera bonificación, vencedor tradicional del tranque, suma de fichas restantes, puntaje final, ganador y empate. No se inicia sin autorización.
 
 ### Puerta arquitectónica del Bloque 2 — resuelta
 
@@ -70,7 +72,7 @@ DEC-025 a DEC-028 y sus tests cerraron:
 - la asignación canónica de puertos simétricos;
 - la generación determinista de IDs y el límite transaccional de una acción.
 
-ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes, puntuación ni match. Los términos de puntuación continúan como un contrato separado para el bloque que implemente R-014–R-019.
+ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El Bloque 4 implementa el contrato separado de términos de puntuación sin fusionarlo con los destinos jugables.
 
 ### Alcance
 

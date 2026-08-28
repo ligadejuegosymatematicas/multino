@@ -1,5 +1,7 @@
 import { getOpenEndTargets } from "../../src/js/game/engine/BoardQueries.js";
 import { validateRoundState } from "../../src/js/game/engine/RoundValidator.js";
+import { applyTurnAction } from "../../src/js/game/engine/TurnManager.js";
+import { createEmptyBoard } from "../../src/js/game/model/Board.js";
 import { getCounterclockwiseSuccessor } from "../../src/js/game/setup/Seating.js";
 import { STARTING_DOMINO_ID } from "../../src/js/game/setup/StartingPlayer.js";
 import {
@@ -49,23 +51,35 @@ function getStartingPlayerId(state) {
 }
 
 function normalizeRegulatoryHistory(state) {
-  const nextState = structuredClone(state);
-  const playerIds = nextState.seating.counterclockwisePlayerIds;
-  const startingPlayerId = getStartingPlayerId(nextState);
+  const playerIds = state.seating.counterclockwisePlayerIds;
+  const startingPlayerId = getStartingPlayerId(state);
   const startingIndex = playerIds.indexOf(startingPlayerId);
+  const actions = state.history.map((entry, index) => ({
+    type: entry.type,
+    playerId: playerIds[(startingIndex + index) % playerIds.length],
+    dominoId: entry.payload.dominoId,
+    target: structuredClone(entry.payload.target),
+  }));
 
-  nextState.history.forEach((entry, index) => {
-    entry.sequence = index + 1;
-    entry.turn = index + 1;
-    entry.playerId = playerIds[(startingIndex + index) % playerIds.length];
-  });
-  nextState.currentPlayerId =
-    playerIds[(startingIndex + nextState.history.length) % playerIds.length];
-  nextState.turnNumber = nextState.history.length + 1;
-  nextState.consecutivePasses = 0;
-  nextState.phase = "playing";
-  delete nextState.roundResult;
-  return nextState;
+  let replayState = structuredClone(state);
+  replayState.board = createEmptyBoard();
+  replayState.history = [];
+  replayState.score.teams = Object.fromEntries(
+    Object.keys(replayState.teams).map((teamId) => [teamId, 0]),
+  );
+  replayState.currentPlayerId = startingPlayerId;
+  replayState.turnNumber = 1;
+  replayState.consecutivePasses = 0;
+  replayState.phase = "playing";
+  delete replayState.roundResult;
+
+  for (const action of actions) {
+    replayState.hands[action.playerId].push(action.dominoId);
+  }
+  for (const action of actions) {
+    replayState = applyTurnAction(replayState, action);
+  }
+  return replayState;
 }
 
 function successorAfter(state, playerId, count) {

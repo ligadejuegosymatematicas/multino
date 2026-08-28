@@ -4,6 +4,7 @@ import test from "node:test";
 import { getEngineStatus } from "../src/js/game/index.js";
 import { RULES_CAPABILITIES } from "../src/js/game/engine/Rules.js";
 import {
+  PLAY_SCORING_READY,
   SCORING_CAPABILITIES,
   SCORING_READY,
 } from "../src/js/game/engine/Scoring.js";
@@ -17,6 +18,7 @@ test("el diagnóstico distingue especificación completa de motor implementado",
   assert.equal(status.matchSetupReady, true);
   assert.equal(status.boardPlayReady, true);
   assert.equal(status.turnFlowReady, true);
+  assert.equal(status.playScoringReady, true);
   assert.equal(status.gameplayReady, false);
   assert.equal(typeof status.stateSchemaVersion, "number");
   assert.equal(RULES_CAPABILITIES.randomDeal, "IMPLEMENTADA");
@@ -33,9 +35,19 @@ test("el diagnóstico distingue especificación completa de motor implementado",
   assert.equal(TURN_CAPABILITIES.passing, "IMPLEMENTADA");
   assert.equal(TURN_CAPABILITIES.fourPassBlock, "IMPLEMENTADA");
   assert.equal(SCORING_READY, false);
-  assert.ok(
-    Object.values(SCORING_CAPABILITIES).every(
-      (capability) => capability === "ESPECIFICADA — NO IMPLEMENTADA",
-    ),
+  assert.equal(PLAY_SCORING_READY, true);
+  assert.equal(SCORING_CAPABILITIES.openEndSum, "IMPLEMENTADA");
+  assert.equal(SCORING_CAPABILITIES.multipleOfFiveAward, "IMPLEMENTADA");
+  assert.equal(
+    SCORING_CAPABILITIES.traditionalWinBonus,
+    "ESPECIFICADA — NO IMPLEMENTADA",
+  );
+  assert.equal(
+    SCORING_CAPABILITIES.blockedGameResult,
+    "ESPECIFICADA — NO IMPLEMENTADA",
+  );
+  assert.equal(
+    SCORING_CAPABILITIES.finalResult,
+    "ESPECIFICADA — NO IMPLEMENTADA",
   );
 });

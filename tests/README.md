@@ -8,7 +8,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 - importación del motor sin DOM, HTML ni coordenadas;
 - tablero vacío conforme al contrato lógico;
-- estado v4 serializable, autosuficiente y sin colecciones compartidas;
+- estado v5 serializable, autosuficiente y sin colecciones compartidas;
 - ausencia de `stock`, `board.branches` y `placement.region`;
 - diagnóstico que distingue inicialización, tablero lógico disponible y mecánicas todavía no implementadas.
 
@@ -21,7 +21,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/rules/shuffle.test.js`: R-029, permutación no mutante y fuente inyectable;
 - `tests/rules/deal.test.js`: R-006/R-029, cuatro manos disjuntas de siete y reparto reproducible;
 - `tests/rules/starting-player.test.js`: R-007, localización de `6-6` en cualquiera de las manos;
-- `tests/integration/create-match.test.js`: creación atómica del snapshot v4;
+- `tests/integration/create-match.test.js`: creación atómica del snapshot v5;
 - `tests/integration/initial-snapshot-validation.test.js`: corrupción dirigida de cada invariante inicial requerido.
 
 ### Bloque 2 de Fase 1 — completado
@@ -38,7 +38,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/integration/turn-actions.test.js`: primera acción, jugador actual, acciones disponibles, pase legal/ilegal, avance antihorario, turno, historial e inmutabilidad;
 - `tests/integration/round-termination.test.js`: reinicio después de uno, dos o tres pases, cuatro pases exactos, salida, estado terminal y rechazo de acciones posteriores;
 - `tests/integration/terminal-snapshot-validation.test.js`: corrupción dirigida de `roundResult`, turno terminal, mano/equipo de salida, tranque e historial `PASS`;
-- `tests/fixtures/turn-scenarios.js`: cadenas válidas sin jugadas para construir pases, bloqueo y salida sin geometría ni puntuación.
+- `tests/fixtures/turn-scenarios.js`: cadenas reglamentarias puntuadas para construir pases, bloqueo y salida sin geometría.
+
+### Bloque 4 de Fase 1 — completado
+
+- `tests/rules/scoring.test.js`: términos ordinarios, R-018 con 0–4 conexiones, fuentes repetidas, separación destinos/términos, suma S y múltiplos de 5;
+- `tests/integration/play-scoring.test.js`: primeras jugadas puntuables, asignación por equipo, acumulación `+2/+0/+3`, PASS neutro y última jugada puntuable;
+- `tests/integration/scoring-snapshot-validation.test.js`: corrupción de score, equipos, S, puntos, PASS y reconciliación marcador/historial;
+- tests anteriores actualizados para schema v5, historial puntuado y readiness parcial explícito.
 
 ## Convenciones
 
@@ -49,12 +56,10 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ## Backlog de bloques posteriores
 
-### Puntuación y resultado
+### Finalización y bonificación
 
-- R-014 a R-017: cálculo de S, múltiplos de cinco y última jugada.
-- R-018/R-019/R-033: aporte numérico de un chancho; la capacidad ya está cubierta en el caso H del Bloque 2.
-- R-021 a R-026: vencedor tradicional del tranque, bonificación, marcador final, ganador y empate.
-- Coherencia entre `score`, historial y bonificación terminal.
+- R-020 a R-026: vencedor tradicional, bonificación, marcador final, ganador y empate.
+- suma de valores restantes y coherencia entre puntos por jugada, bonificación e historial terminal.
 
 ## Pendientes fuera del motor básico
 

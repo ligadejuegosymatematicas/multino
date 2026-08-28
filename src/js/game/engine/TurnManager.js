@@ -9,6 +9,10 @@ import {
   validateRoundState,
 } from "./RoundValidator.js";
 import { getNextHistorySequence } from "./SequentialIds.js";
+import {
+  calculateMoveScore,
+  calculateOpenEndsSum,
+} from "./Scoring.js";
 
 export const TURN_CAPABILITIES = Object.freeze({
   initialPlayer: CAPABILITY_IMPLEMENTED,
@@ -95,6 +99,14 @@ function applyRegulatoryPlay(state, action, availableActions) {
   );
 
   const nextState = applyPlay(state, legalAction);
+  const openEndsSum = calculateOpenEndsSum(nextState);
+  const scoreAwarded = calculateMoveScore(openEndsSum);
+  const scoringTeamId = nextState.players[action.playerId].teamId;
+  nextState.score.teams[scoringTeamId] += scoreAwarded;
+  Object.assign(nextState.history.at(-1).result, {
+    openEndsSum,
+    scoreAwarded,
+  });
   nextState.consecutivePasses = 0;
   if (nextState.hands[action.playerId].length === 0) {
     finishByEmptyHand(nextState, action.playerId);
@@ -133,7 +145,7 @@ function applyRegulatoryPass(state, action, availableActions) {
 
 /**
  * Transición reglamentaria: valida turno, compone la primitiva topológica y
- * coordina pase, avance y terminación básica sin calcular puntuación.
+ * coordina puntuación de jugada, pase, avance y terminación básica.
  */
 export function applyTurnAction(state, action) {
   validateRoundState(state);

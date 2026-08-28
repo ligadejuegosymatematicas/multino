@@ -268,7 +268,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-023 — Posponer RoundState/MatchState hasta aprobar multirronda
 
-**Estado:** Aceptada; la conservación específica de schema v3 queda sustituida por DEC-030, sin alterar el aplazamiento de RoundState/MatchState.
+**Estado:** Aceptada; la conservación específica de schema v3 queda sustituida por DEC-030 y DEC-033, sin alterar el aplazamiento de RoundState/MatchState.
 
 **Decisión:** Mantener `createMatch` y un único snapshot de ronda mientras no exista una modalidad multirronda. Si se aprueba una serie o meta acumulada, introducir un coordinador MatchState alrededor de un RoundState equivalente al ciclo actual.
 
@@ -280,7 +280,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-024 — Aislar la política de puntuación sin habilitar variantes
 
-**Estado:** Aceptada como restricción para el futuro bloque de puntuación.
+**Estado:** Aceptada e implementada para la puntuación durante jugadas; finalización y bonificación siguen pendientes.
 
 **Decisión:** Implementar R-014–R-026 de modo que el literal 5 y el cálculo aprobado estén concentrados en el módulo de puntuación, no dispersos por tablero, UI o historial. No exponer todavía un divisor configurable.
 
@@ -324,7 +324,7 @@ Fijar la API que recibe snapshot más acción, devuelve un snapshot nuevo y vali
 
 Separar contratos para `openEndTargets`, `legalMoves` y `scoringTerms`. Pueden compartir derivación, pero no deben ser un único array interpretado de manera distinta por motor y renderers.
 
-ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El desglose de términos de puntuación permanece separado y se completará únicamente en el bloque que implemente R-014–R-019.
+ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El Bloque 4 completa el desglose separado de puntuación conforme a DEC-032.
 
 ## DEC-025 — Acción de jugada discriminada y transición de tablero
 
@@ -366,13 +366,13 @@ ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El des
 
 **Estado:** Aceptada.
 
-**Decisión:** `getOpenEndTargets` deriva destinos individualizados; `getLegalPlays` produce el producto válido ficha+destino; la futura `getScoringTerms` será un contrato distinto. `START` no es un extremo abierto y, con tablero vacío, la consulta de extremos devuelve `[]`.
+**Decisión:** `getOpenEndTargets` deriva destinos individualizados; `getLegalPlays` produce el producto válido ficha+destino; `getScoringTerms` deriva contribuciones numéricas explicables mediante un contrato distinto. `START` no es un extremo abierto y, con tablero vacío, la consulta de extremos devuelve `[]`.
 
 **Motivo:** Varios destinos pueden compartir valor, y los chanchos prueban que un puerto disponible no equivale a un término de S.
 
 **Alternativas consideradas:** Un único array con interpretación contextual; extremos agrupados solo por valor; devolver puntuación provisional 0.
 
-**Consecuencias:** El Modo Grafo podrá seleccionar destinos concretos. Este bloque no expone `getScoringTerms` ni registra `scoreAwarded`; el módulo de puntuación posterior deberá consumir el mismo tablero sin redefinir extremos.
+**Consecuencias:** El Modo Grafo podrá seleccionar destinos concretos y explicar S sin equiparar puertos libres a aportes. `getScoringTerms` consume el mismo tablero y no redefine `getOpenEndTargets`.
 
 ## DEC-029 — Separar transición reglamentaria y primitiva topológica
 
@@ -384,7 +384,7 @@ ARQ-PEND-001 a 005 quedaron resueltos antes y durante la implementación. El des
 
 **Alternativas consideradas:** Convertir `applyPlay` en la única transición completa; duplicar la colocación dentro del coordinador; retirar inmediatamente la exportación pública de bajo nivel.
 
-**Consecuencias:** `applyPlay` continúa pública por compatibilidad y tests, pero se documenta como API de bajo nivel no destinada a UI. `PLAY_DOMINO` sigue registrándose dentro de esa primitiva y `applyTurnAction` no duplica el evento. Un bloque posterior podrá envolver la misma transición para añadir puntuación sin mover reglas al tablero.
+**Consecuencias:** `applyPlay` continúa pública por compatibilidad y tests, pero se documenta como API de bajo nivel no destinada a UI. `PLAY_DOMINO` sigue registrándose dentro de esa primitiva y `applyTurnAction` no duplica el evento; el Bloque 4 enriquece esa misma entrada y actualiza el marcador sin mover reglas al tablero.
 
 ## DEC-030 — Turno reglamentario y snapshot terminal mínimo
 
@@ -410,7 +410,7 @@ La fase terminal es `finished` y contiene exclusivamente uno de estos resultados
 
 **Alternativas consideradas:** Incrementar siempre `turnNumber`; persistir `nextPlayerId: null`; incluir ganador tradicional o marcador final incompletos; conservar schema v3 porque `roundResult` es aditivo.
 
-**Consecuencias:** `roundResult` está ausente en `playing` y presente en `finished`. Schema v4 hace visible que los snapshots ocupados ahora exigen un evento único por turno y semántica reglamentaria, aunque la topología del tablero no cambie. No se implementa migración v3→v4 porque no existen partidas persistidas reales. `validateRoundState` comprueba la relación entre fase, turno, historial, pases, actor y manos. La puntuación terminal continúa pendiente.
+**Consecuencias:** `roundResult` está ausente en `playing` y presente en `finished`. Schema v4 hizo visible que los snapshots ocupados exigen un evento único por turno y semántica reglamentaria, aunque la topología del tablero no cambie. No se implementó migración v3→v4 porque no existen partidas persistidas reales. `validateRoundState` comprueba la relación entre fase, turno, historial, pases, actor y manos. La bonificación y el resultado definitivo continúan pendientes.
 
 ## DEC-031 — Acciones disponibles para el jugador actual
 
@@ -423,3 +423,31 @@ La fase terminal es `finished` y contiene exclusivamente uno de estos resultados
 **Alternativas consideradas:** Usar directamente `getLegalPlays` y fabricar `PASS` en cada consumidor; incluir simultáneamente `PASS` y jugadas legales; exponer comandos de UI específicos.
 
 **Consecuencias:** `getLegalPlays` conserva su responsabilidad topológica y puede consultar manos concretas. La selección reglamentaria depende de `getAvailableActions`; `PASS` nunca aparece si existe una jugada legal, incluido el tablero vacío del primer turno.
+
+## DEC-032 — Términos explicables de S separados de los destinos
+
+**Estado:** Aceptada.
+
+**Decisión:** `getScoringTerms(state)` devuelve, en orden de `placement-N`, un término por cada lado libre de una ficha no doble. El término identifica `placementId`, `dominoId`, `portId`, valor, contribución y motivo. Una ficha no doble completamente conectada no produce términos. Cada chancho produce en cambio un único término agrupado con `connectionCount`: aporta `2N` con cero o una conexión y 0 desde la segunda, aunque sea especial y conserve puertos libres.
+
+`calculateOpenEndsSum(state)` se limita a sumar `contribution` de esos términos. `calculateMoveScore(S)` concentra el divisor reglamentario 5 y devuelve `S / 5` solo cuando S es múltiplo de 5.
+
+**Motivo:** R-018 cuenta un chancho como unidad de puntuación y no por cantidad de puertos visibles. La UI necesita explicar S sin confundir capacidad de conexión con aporte numérico.
+
+**Alternativas consideradas:** Sumar directamente `getOpenEndTargets`; omitir términos de aporte 0; recalcular S por una segunda ruta; persistir todo el desglose en cada evento.
+
+**Consecuencias:** Un chancho con dos o más conexiones sigue apareciendo con contribución 0 para que la explicación sea explícita. Destinos y términos pueden tener cardinalidades distintas. El desglose permanece derivado; el historial persiste solo el total y los puntos.
+
+## DEC-033 — Auditoría de puntuación y schema v5
+
+**Estado:** Aceptada.
+
+**Decisión:** Después de `applyPlay`, `applyTurnAction` calcula S sobre el tablero resultante, calcula los puntos, los suma al equipo obtenido de `players[playerId].teamId` y añade `openEndsSum` y `scoreAwarded` al evento `PLAY_DOMINO` ya existente. Solo después reinicia pases y comprueba salida. Elevar el snapshot reglamentario a schema v5.
+
+`validateRoundState` exige que cada jugada tenga enteros no negativos compatibles con la política de múltiplos de 5, que `score.teams` sea exactamente la suma de `scoreAwarded` por equipo y que el S de la última jugada coincida con el tablero actual. No reconstruye todos los tableros históricos.
+
+**Motivo:** El marcador debe ser operativo sin replay, pero auditable contra un historial compacto. La última jugada terminal también debe puntuar antes del cierre conforme a R-017.
+
+**Alternativas consideradas:** Reproducir toda la partida en cada validación; persistir `scoringTerms`; emitir un segundo evento de puntuación; calcular después de terminar; mantener schema v4 con resultados de jugada opcionales.
+
+**Consecuencias:** `PASS` conserva `result: {}` y no altera score. `applyPlay` sigue siendo una primitiva topológica que produce un evento aún no enriquecido; su resultado puede validarse con `validateBoardState`, pero solo la composición reglamentaria satisface v5. `PLAY_SCORING_READY` es verdadero, mientras `SCORING_READY` y `gameplayReady` permanecen falsos porque todavía incluyen bonificación y resultado completo.

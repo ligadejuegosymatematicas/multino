@@ -34,6 +34,12 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Estado serializable elevado a schema v4 para formalizar turno reglamentario, historial único y fase terminal.
 - Historial canónico de un evento por acción reglamentaria y eventos `PASS` con `payload` y `result` vacíos.
 - Tests de integración para turno incorrecto, pase legal/ilegal, bloqueo, salida, inmutabilidad y corrupción terminal.
+- Bloque 4 de Fase 1: `getScoringTerms`, `calculateOpenEndsSum` y `calculateMoveScore` para R-014 a R-019.
+- Términos explicables por lado ordinario abierto y término agrupado por chancho según su cantidad de conexiones.
+- Puntuación por múltiplos de 5 integrada en `applyTurnAction`, incluida la última jugada antes de terminar por salida.
+- Historial `PLAY_DOMINO` con `openEndsSum` y `scoreAwarded`, sin persistir el desglose derivable de términos.
+- Validación exacta de `score.teams` contra puntos históricos y comprobación de S para la última jugada.
+- Tests de puntuación, acumulación por equipo, chanchos con 0–4 conexiones, PASS neutro y corrupción score/history.
 
 ### Decidido
 
@@ -52,6 +58,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Modo Grafo previsto como representación predeterminada, con Modo Tradicional disponible sobre el mismo snapshot.
 - DEC-025 a DEC-028 resuelven ARQ-PEND-001 a 005: acción discriminada, puertos neutrales, IDs derivados y consultas separadas.
 - DEC-029 a DEC-031 separan transición reglamentaria y topológica, formalizan `turnNumber`/estado terminal y fijan la consulta de acciones disponibles.
+- DEC-032 y DEC-033 fijan los términos de S, la auditoría compacta de puntuación y el schema v5.
 
 ### Cambiado
 
@@ -72,3 +79,5 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - `validateBoardState` admite validar la topología de snapshots activos o terminados; `applyPlay` continúa rechazando colocaciones en una ronda terminada.
 - Capacidades de transición de turno, pase y bloqueo marcadas como implementadas; puntuación y resultado definitivo continúan no implementados.
 - No se añade migración v3→v4 porque no existen partidas persistidas reales; los snapshots ocupados del Bloque 2 siguen siendo válidos para `validateBoardState`, no para el nuevo contrato reglamentario.
+- Estado serializable elevado a schema v5: toda jugada reglamentaria registra S/puntos y el marcador debe ser su suma exacta por equipo.
+- Readiness separado: puntuación durante jugadas está disponible, mientras bonificación y resultado completo mantienen `SCORING_READY` y `gameplayReady` en `false`.

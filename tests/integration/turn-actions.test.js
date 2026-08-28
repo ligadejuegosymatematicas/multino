@@ -60,8 +60,14 @@ test("R-009/R-010: una jugada reglamentaria avanza turno y agrega un solo evento
   assert.equal(nextState.history[0].turn, 1);
   assert.equal(nextState.history[0].sequence, 1);
   assert.equal(nextState.history[0].type, "PLAY_DOMINO");
-  assert.deepEqual(nextState.score, scoreBefore);
-  assert.equal("scoreAwarded" in nextState.history[0].result, false);
+  const { openEndsSum, scoreAwarded } = nextState.history[0].result;
+  assert.equal(Number.isSafeInteger(openEndsSum), true);
+  assert.equal(Number.isSafeInteger(scoreAwarded), true);
+  const scoringTeamId = state.players[state.currentPlayerId].teamId;
+  assert.equal(
+    nextState.score.teams[scoringTeamId],
+    scoreBefore.teams[scoringTeamId] + scoreAwarded,
+  );
   assert.deepEqual(state.history, []);
   assert.equal(state.turnNumber, 1);
   assert.equal(validateRoundState(nextState), nextState);

@@ -17,10 +17,10 @@ function createValidMatch(overrides = {}) {
   });
 }
 
-test("R-003/R-005/R-006/R-007/R-009/R-027/R-029: createMatch produce un snapshot v4 preparado", () => {
+test("R-003/R-005/R-006/R-007/R-009/R-027/R-029: createMatch produce un snapshot v5 preparado", () => {
   const snapshot = createValidMatch({ matchId: "match-test" });
 
-  assert.equal(snapshot.schemaVersion, 4);
+  assert.equal(snapshot.schemaVersion, 5);
   assert.equal(snapshot.matchId, "match-test");
   assert.equal(snapshot.phase, "playing");
   assert.equal(snapshot.turnNumber, 1);

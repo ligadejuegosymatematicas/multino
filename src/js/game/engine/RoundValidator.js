@@ -6,6 +6,10 @@ import { STARTING_DOMINO_ID } from "../setup/StartingPlayer.js";
 import { ACTION_TYPES } from "./ActionTypes.js";
 import { validateBoardState } from "./BoardValidator.js";
 import { getLegalPlays } from "./LegalPlays.js";
+import {
+  calculateMoveScore,
+  calculateOpenEndsSum,
+} from "./Scoring.js";
 
 export const ROUND_END_REASONS = Object.freeze({
   EMPTY_HAND: "EMPTY_HAND",
@@ -106,9 +110,24 @@ function assertPlayHistoryShape(entry) {
     isRecord(entry.payload) &&
       typeof entry.payload.dominoId === "string" &&
       isRecord(target) &&
-      isRecord(result),
+      hasExactlyKeys(result, [
+        "placementId",
+        "connectionId",
+        "openEndsSum",
+        "scoreAwarded",
+      ]),
     "INVALID_PLAY_HISTORY",
     "Una acción PLAY_DOMINO debe conservar payload y result canónicos.",
+    { entry },
+  );
+  domainAssert(
+    Number.isSafeInteger(result.openEndsSum) &&
+      result.openEndsSum >= 0 &&
+      Number.isSafeInteger(result.scoreAwarded) &&
+      result.scoreAwarded >= 0 &&
+      result.scoreAwarded === calculateMoveScore(result.openEndsSum),
+    "INVALID_PLAY_SCORING",
+    "PLAY_DOMINO debe registrar S y los puntos compatibles con múltiplos de 5.",
     { entry },
   );
 
@@ -146,6 +165,9 @@ function assertRegulatoryHistory(state) {
   );
 
   let expectedPlayerId = startingPlayerId;
+  const expectedScoreByTeam = Object.fromEntries(
+    Object.keys(state.teams).map((teamId) => [teamId, 0]),
+  );
   state.history.forEach((entry, index) => {
     domainAssert(
       entry.turn === index + 1 && entry.sequence === index + 1,
@@ -162,6 +184,8 @@ function assertRegulatoryHistory(state) {
 
     if (entry.type === ACTION_TYPES.PLAY_DOMINO) {
       assertPlayHistoryShape(entry);
+      const teamId = state.players[entry.playerId].teamId;
+      expectedScoreByTeam[teamId] += entry.result.scoreAwarded;
     } else {
       domainAssert(
         entry.type === ACTION_TYPES.PASS &&
@@ -178,6 +202,31 @@ function assertRegulatoryHistory(state) {
       expectedPlayerId,
     );
   });
+
+  domainAssert(
+    Object.keys(expectedScoreByTeam).every(
+      (teamId) => state.score.teams[teamId] === expectedScoreByTeam[teamId],
+    ),
+    "SCORE_HISTORY_MISMATCH",
+    "score.teams debe coincidir exactamente con los puntos del historial.",
+    { score: state.score.teams, expectedScoreByTeam },
+  );
+
+  const lastPlay = state.history.findLast(
+    (entry) => entry.type === ACTION_TYPES.PLAY_DOMINO,
+  );
+  if (lastPlay) {
+    const currentOpenEndsSum = calculateOpenEndsSum(state);
+    domainAssert(
+      lastPlay.result.openEndsSum === currentOpenEndsSum,
+      "OPEN_ENDS_SUM_MISMATCH",
+      "El S de la última jugada debe coincidir con el tablero actual.",
+      {
+        recordedOpenEndsSum: lastPlay.result.openEndsSum,
+        currentOpenEndsSum,
+      },
+    );
+  }
 
   return expectedPlayerId;
 }

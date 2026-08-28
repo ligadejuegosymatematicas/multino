@@ -11,6 +11,6 @@ export const RULES_CAPABILITIES = Object.freeze({
   branchTopology: CAPABILITY_IMPLEMENTED,
 });
 
-// El reglamento completo no está listo mientras puntuación y resultado sigan pendientes.
+// El reglamento completo no está listo mientras bonificación y resultado sigan pendientes.
 export const RULES_READY = false;
 export const RULES_SPECIFICATION_COMPLETE = true;

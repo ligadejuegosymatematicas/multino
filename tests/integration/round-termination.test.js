@@ -127,7 +127,12 @@ test("R-013/R-020: jugar la última ficha termina por EMPTY_HAND sin avanzar", (
   assert.equal(finished.turnNumber, turnNumber);
   assert.equal(finished.turnNumber, finished.history.length);
   assert.equal(finished.consecutivePasses, 0);
-  assert.deepEqual(finished.score, scoreBefore);
+  assert.equal(finished.history.at(-1).result.openEndsSum, 5);
+  assert.equal(finished.history.at(-1).result.scoreAwarded, 1);
+  assert.equal(
+    finished.score.teams[finishingTeamId],
+    scoreBefore.teams[finishingTeamId] + 1,
+  );
   assert.equal("finalScore" in finished.roundResult, false);
   assert.equal("bonus" in finished.roundResult, false);
   assert.equal("winnerByScore" in finished.roundResult, false);

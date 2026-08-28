@@ -47,7 +47,7 @@ Una futura arquitectura podría expresar una política como:
 }
 ```
 
-Esto no requiere generalizar ahora el snapshot v4. Cuando se implemente la puntuación aprobada, conviene concentrar el literal 5 dentro del módulo o política de puntuación, en vez de dispersarlo por tablero, UI e historial.
+Esto no requiere generalizar ahora el snapshot v5. La puntuación aprobada concentra el literal 5 dentro del módulo de puntuación, en vez de dispersarlo por tablero, UI e historial.
 
 ### Vacío que impide generalizarla hoy
 

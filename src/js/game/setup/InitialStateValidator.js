@@ -93,7 +93,7 @@ function assertEmptyInitialBoard(board) {
   domainAssert(
     valid,
     "INITIAL_BOARD_NOT_EMPTY",
-    "El tablero inicial debe estar vacío y respetar el esquema v4.",
+    "El tablero inicial debe estar vacío y respetar el esquema v5.",
     { board },
   );
 }

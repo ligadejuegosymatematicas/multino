@@ -2,7 +2,7 @@
 
 ## Estado de la propuesta
 
-El snapshot v4 representa actualmente una partida completa desde el reparto hasta salida o tranque; en terminología futura, ese ciclo corresponde principalmente a una **ronda**. La incorporación de `roundResult` no introduce todavía un coordinador multirronda.
+El snapshot v5 representa actualmente una partida completa desde el reparto hasta salida o tranque; en terminología futura, ese ciclo corresponde principalmente a una **ronda**. La incorporación de puntuación por jugada no introduce todavía un coordinador multirronda.
 
 La separación aquí descrita solo será necesaria si se aprueban múltiples rondas o condiciones de victoria acumuladas.
 
@@ -27,7 +27,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 
 ```js
 {
-  schemaVersion: 5, // solo ilustrativo; no aprobado
+  schemaVersion: 6, // solo ilustrativo; no aprobado
   matchId: "...",
   phase: "playing",
 
@@ -66,7 +66,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
 }
 ```
 
-La forma es deliberadamente conceptual. No autoriza `schemaVersion: 5`, nuevos campos ni migraciones.
+La forma es deliberadamente conceptual. No autoriza `schemaVersion: 6`, nuevos campos ni migraciones.
 
 ## Propiedad de cada dato
 
@@ -147,9 +147,9 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 
 ## Estrategia de evolución
 
-1. Mantener snapshot v4 y `createMatch` sin refactor durante el motor de una ronda.
+1. Mantener snapshot v5 y `createMatch` sin refactor durante el motor de una ronda.
 2. Evitar que el módulo de puntuación aprobado disperse el literal 5 o conozca una meta de match.
-3. Definir reglas de una variante multirronda antes de diseñar schema v5.
+3. Definir reglas de una variante multirronda antes de diseñar schema v6.
 4. Introducir un coordinador de match alrededor del motor de ronda, no dentro del tablero.
 5. Diseñar migración explícita solo cuando exista un contrato aprobado.
 
@@ -163,4 +163,4 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 - retención de historiales completos;
 - privacidad de rondas anteriores en multijugador.
 
-Ninguna de estas decisiones bloquea el Bloque 2 si ese bloque continúa limitado al motor de una única ronda aprobada.
+Ninguna de estas decisiones bloquea el motor actual mientras continúe limitado a una única ronda aprobada.
