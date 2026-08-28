@@ -75,6 +75,7 @@ export {
 } from "./projections/LegalPlayProjection.js";
 export { getScoringProjection } from "./projections/ScoringProjection.js";
 export { getLatestActionProjection } from "./projections/ActionProjection.js";
+export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
 export { projectGraphView } from "./projections/GraphViewProjection.js";
 
 export function getEngineStatus() {

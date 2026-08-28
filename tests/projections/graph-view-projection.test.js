@@ -157,6 +157,7 @@ test("la capa de proyección no contiene DOM, renderizado ni coordenadas", async
     new URL("../../src/js/game/projections/OpenEndProjection.js", import.meta.url),
     new URL("../../src/js/game/projections/LegalPlayProjection.js", import.meta.url),
     new URL("../../src/js/game/projections/ScoringProjection.js", import.meta.url),
+    new URL("../../src/js/game/projections/TopologyProjection.js", import.meta.url),
     new URL("../../src/js/game/projections/GraphViewProjection.js", import.meta.url),
   ];
   const forbidden = [

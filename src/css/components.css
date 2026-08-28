@@ -116,16 +116,35 @@
   font-size: 0.75rem;
 }
 
-.legend-edge,
+.legend-main,
+.legend-branch,
 .legend-target {
   display: inline-block;
   width: 1.5rem;
   border-top: 4px solid #38545d;
 }
 
+.legend-branch {
+  border-top-color: #6f657d;
+  border-top-style: dashed;
+}
+
 .legend-target {
   border-top-color: #607874;
-  border-top-style: dashed;
+  border-top-style: dotted;
+}
+
+.legend-special {
+  display: inline-grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 1px solid #8b5010;
+  border-radius: 50%;
+  color: #74400b;
+  background: #fff8eb;
+  font-size: 0.65rem;
+  font-weight: 900;
 }
 
 .selection-hint,

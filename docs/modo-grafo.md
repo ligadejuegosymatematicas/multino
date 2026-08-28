@@ -226,7 +226,7 @@ Cada `PLAY_DOMINO` aceptado agrega una única arista o lazo; `PASS` no agrega ni
 
 El prototipo usa SVG sin dependencias. Frente a Canvas, SVG permite que vértices, aristas, lazos y targets conserven elementos individuales, nombres accesibles, foco y eventos de mouse, tacto o teclado. `GraphScene.js` produce geometría descartable; `GraphRenderer.js` la serializa y conecta intenciones. Ninguno recibe permiso para decidir legalidad o modificar snapshots.
 
-Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha ordinaria usa una línea sólida con etiqueta; un chancho usa un lazo cerrado sólido, separado visualmente de las curvas cortas discontinuas. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada.
+Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha principal usa un trazo continuo; una ficha de rama usa un trazo segmentado, también identificado en la leyenda. Un chancho conserva su lazo cerrado y los especiales añaden el distintivo textual `E`. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que una rama ya jugada no se confunde con un destino.
 
 Cada entrada de `openEndTargets` produce exactamente una curva numerada con su propio hit area y `data-target-id`. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, el vértice dirige al usuario hacia las curvas individualizadas y no elige por valor.
 
@@ -236,15 +236,22 @@ El panel S consume `getScoringProjection`. Los puntos de la última jugada provi
 
 La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y trazos de interacción con tamaño no escalable. El pulso legal es discreto y se elimina con `prefers-reduced-motion`. La entrada web crea deliberadamente una sola ronda local con cuatro nombres de demostración y K=7; no incorpora configuración, networking ni nueva ronda. El acabado sigue siendo de evaluación: en grafos densos, etiquetas y cruces necesitarán una estrategia posterior de reducción, foco o detalle bajo demanda.
 
+## Primera capa de legibilidad topológica
+
+`getBoardTopologyProjection(state)` deriva, sin persistir, una entrada por placement con región, estructura, orden, raíz/profundidad lateral, condición de chancho, condición especial, rol ordinario por K o por rama, conexiones, capacidad y ramas iniciadas. También entrega línea y ramas ordenadas más `{ configuredK, effectiveK, enabledCount, remainingCapacity }`.
+
+`projectGraphView` compone esta consulta. GraphRenderer no consulta `board`. `GraphScene` enlaza cada arista/lazo por `placementId` y aplica únicamente estado visual: principal/rama, especial, estructura inspeccionada, raíz y atenuación.
+
+La vista muestra `Especiales: s/effectiveK`. Al activar una ficha jugada se resalta toda su línea o rama; en una rama también se destaca el chancho raíz. El inspector explica posición o profundidad y, para un chancho, uno de los roles `Especial de línea principal`, `Ordinario de línea principal` u `Ordinario en rama`, además de conexiones/capacidad y ramas iniciadas cuando corresponde. La selección se cierra repitiendo la ficha, con el botón o mediante `Escape`; nunca entra al snapshot.
+
 ## Decisiones todavía abiertas
 
 - refinamiento del heptágono estable y posible adaptación sin semántica reglamentaria;
 - umbral exacto para pasar de segmentos a expansión híbrida;
-- apariencia diferenciada de línea principal y ramas en el grafo de valores;
 - representación accesible de destinos que producen el mismo valor pero distinta topología;
 - reducción de cruces y etiquetas en un grafo casi completo;
 - comportamiento de inspección cuando una arista está ausente por permanecer en una mano oculta.
 
 Estas decisiones pertenecen al refinamiento posterior y no autorizan a iniciar el diseño premium.
 
-La evaluación específica de legibilidad topológica posterior a la primera prueba manual está en [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md). Propone estudiar una combinación de clasificación visual mínima, foco por selección y panel estructural derivado, sin convertir el grafo de valores en una mesa tradicional.
+La evaluación específica de legibilidad topológica posterior a la primera prueba manual está en [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md). La clasificación mínima y el foco por selección ya están implementados; el panel estructural derivado continúa como alternativa futura sin convertir el grafo de valores en una mesa tradicional.

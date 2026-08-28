@@ -111,11 +111,13 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 2 — Primer GraphRenderer funcional: COMPLETADO.** Incluye SVG responsivo sobre heptágono estable, aristas y lazos inspeccionables, una curva individual por destino, mano local, selección ficha/target, START, PASS, puntuación, marcador y cierre de ronda. La UI solo despacha acciones ofrecidas por el motor y vuelve a proyectar el snapshot aceptado.
 
-**Siguiente bloque: NO INICIADO.** Permanecen fuera refinamiento visual premium, layout adaptativo avanzado, Modo Tradicional, selector de vista, replay y animaciones complejas.
+**Bloque 3 — Primera legibilidad topológica: COMPLETADO.** Añade proyección pura de línea/ramas/chanchos/K, diferenciación permanente sobria, resumen de especiales e inspección contextual que resalta una estructura y su raíz. No cambia motor, schema ni reglas.
 
-**Estudio futuro registrado — reversibilidad Grafo/Tradicional: NO AUTORIZADO.** Debe comparar coordenadas topológicas, vecinos y modos de inspección. El análisis actual concluye que la secuencia lógica ya es derivable de `mainLine + placements + connections + ports`; no se justifica persistencia ni schema nuevo. Véase `docs/reversibilidad-grafo-tradicional.md`.
+**Siguiente bloque: NO INICIADO.** Permanecen fuera refinamiento visual premium, panel estructural completo, coordenadas visibles, layout adaptativo avanzado, Modo Tradicional, selector de vista, replay y animaciones complejas.
 
-**Estudio de UX posterior a prueba manual: NO AUTORIZADO.** El primer renderer no comunica todavía con suficiente claridad línea principal, ramas, raíces ni capacidad especial de chanchos. Antes del acabado premium se compararán estilo topológico permanente, inspección contextual, panel estructural y etiquetas opcionales. Véase `docs/ux-topologia-modo-grafo.md`.
+**Estudio futuro registrado — reversibilidad Grafo/Tradicional: PARCIALMENTE MATERIALIZADO.** La primera proyección topológica confirma que la secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. Coordenadas, vecinos visibles y panel estructural completo continúan en estudio. Véase `docs/reversibilidad-grafo-tradicional.md`.
+
+**Estudio de UX posterior a prueba manual: PRIMERA CAPA COMPLETADA.** Se adoptó la combinación mínima de estilo topológico permanente e inspección contextual. Panel estructural, etiquetas/coordenadas y acabado premium permanecen pendientes. Véase `docs/ux-topologia-modo-grafo.md`.
 
 ### Alcance
 

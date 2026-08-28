@@ -8,21 +8,52 @@ function escapeAttribute(value) {
     .replaceAll(">", "&gt;");
 }
 
-function renderEdge(edge) {
-  const label = `Ficha ${edge.a}-${edge.b}, jugada por ${edge.playerId} en la acción ${edge.turnNumber}`;
+function getTopologyClasses(edge) {
+  return [
+    edge.topology.region === "main" ? "is-main" : "is-branch",
+    edge.topology.isSpecialDouble ? "is-special-double" : "",
+    edge.isInspected ? "is-inspected" : "",
+    edge.isTopologyHighlighted ? "is-topology-highlighted" : "",
+    edge.isTopologyRoot ? "is-topology-root" : "",
+    edge.isTopologyDimmed ? "is-topology-dimmed" : "",
+  ].filter(Boolean).join(" ");
+}
+
+function describeTopology(topology) {
+  return topology.region === "main"
+    ? `línea principal, posición ${topology.order}`
+    : `rama desde ${topology.originPlacementId} por ${topology.originPortId}, profundidad ${topology.depth}`;
+}
+
+function renderSpecialMarker(edge) {
+  if (!edge.topology.isSpecialDouble) {
+    return "";
+  }
   return `
-    <g class="graph-edge" data-placement-id="${escapeAttribute(edge.placementId)}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
+      <g class="graph-special-marker" aria-hidden="true">
+        <circle cx="${edge.labelX + 31}" cy="${edge.labelY}" r="10"></circle>
+        <text x="${edge.labelX + 31}" y="${edge.labelY}">E</text>
+      </g>`;
+}
+
+function renderEdge(edge) {
+  const label = `Ficha ${edge.a}-${edge.b}, ${describeTopology(edge.topology)}, jugada por ${edge.playerId} en la acción ${edge.turnNumber}`;
+  return `
+    <g class="graph-edge ${getTopologyClasses(edge)}" data-placement-id="${escapeAttribute(edge.placementId)}" data-region="${edge.topology.region}" data-special-double="${edge.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${edge.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-edge__line" d="${edge.path}"></path>
       <rect class="graph-edge__badge" x="${edge.labelX - 21}" y="${edge.labelY - 12}" width="42" height="24" rx="12"></rect>
       <text class="graph-edge__label" x="${edge.labelX}" y="${edge.labelY}">${edge.a}·${edge.b}</text>
+      ${renderSpecialMarker(edge)}
     </g>`;
 }
 
 function renderLoop(loop) {
+  const label = `Chancho ${loop.a}-${loop.b}, ${describeTopology(loop.topology)}, ${loop.topology.isSpecialDouble ? "especial" : "ordinario"}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`;
   return `
-    <g class="graph-loop" data-placement-id="${escapeAttribute(loop.placementId)}" role="button" tabindex="0" aria-label="${escapeAttribute(`Chancho ${loop.a}-${loop.b}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`)}">
+    <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-loop__shape" d="${loop.path}"></path>
       <text class="graph-loop__label" x="${loop.labelX}" y="${loop.labelY}">${loop.a}|${loop.b}</text>
+      ${renderSpecialMarker(loop)}
     </g>`;
 }
 
@@ -63,17 +94,60 @@ function renderVertex(vertex, hasSelection) {
 
 /** Serialización SVG comprobable sin instalar un DOM de tests. */
 export function renderGraphSvgMarkup(scene) {
+  const specialSummary = `Especiales: ${scene.topologySummary.enabledCount}/${scene.topologySummary.effectiveK}`;
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. Las líneas sólidas son fichas jugadas y las curvas cortas son destinos disponibles.</desc>
+      <desc id="graph-description">Siete valores fijos. El trazo continuo identifica la línea principal, el trazo segmentado identifica ramas y las curvas cortas son destinos disponibles.</desc>
       <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
       <g class="graph-open-targets">${scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
       <g class="graph-multiplicities">${scene.multiplicities.map((item) => `<text class="graph-multiplicity" x="${item.x}" y="${item.y}" aria-hidden="true">×${item.count}</text>`).join("")}</g>
       <g class="graph-vertices">${scene.vertices.map((vertex) => renderVertex(vertex, scene.hasSelection)).join("")}</g>
+      <g class="graph-special-summary" role="note" aria-label="${escapeAttribute(specialSummary)}">
+        <rect x="16" y="16" width="142" height="34" rx="17"></rect>
+        <text x="87" y="33">${specialSummary}</text>
+      </g>
     </svg>`;
+}
+
+function describeDoubleRole(doubleRole) {
+  switch (doubleRole) {
+    case "SPECIAL_MAIN":
+      return "Especial de línea principal";
+    case "ORDINARY_MAIN_K_EXHAUSTED":
+      return "Ordinario de línea principal";
+    case "ORDINARY_BRANCH":
+      return "Ordinario en rama";
+    default:
+      return null;
+  }
+}
+
+export function renderTopologyInspectionMarkup(inspection) {
+  if (!inspection) {
+    return "";
+  }
+  const topology = inspection.topology;
+  const region = topology.region === "main"
+    ? `Línea principal · posición ${topology.order}`
+    : `Rama desde ${inspection.rootDominoId?.replace("-", "|") ?? topology.originPlacementId} · ${topology.originPortId} · profundidad ${topology.depth}`;
+  const doubleRole = describeDoubleRole(topology.doubleRole);
+  const doubleDetails = doubleRole
+    ? `<p class="topology-inspector__double"><strong>${doubleRole}</strong><span>Conexiones: ${topology.connectionCount}/${topology.connectionCapacity}</span>${topology.isSpecialDouble ? `<span>Ramas iniciadas: ${topology.startedBranchCount}/2</span>` : ""}</p>`
+    : "";
+
+  return `
+    <aside class="topology-inspector" data-topology-inspection aria-label="Inspección topológica de ${escapeAttribute(inspection.dominoId)}">
+      <div>
+        <p class="topology-inspector__kicker">Estructura lógica</p>
+        <h3>Ficha ${escapeAttribute(inspection.dominoId.replace("-", "|"))}</h3>
+        <p class="topology-inspector__region">${escapeAttribute(region)}</p>
+        ${doubleDetails}
+      </div>
+      <button type="button" class="topology-inspector__close" data-clear-topology-inspection aria-label="Cerrar inspección topológica">Cerrar</button>
+    </aside>`;
 }
 
 function activateOnKeyboard(element, callback) {
@@ -95,16 +169,23 @@ export class GraphRenderer {
 
   render(
     presentation,
-    { onTarget, onStart, onInspectEdge, onMessage } = {},
+    {
+      onTarget,
+      onStart,
+      onInspectEdge,
+      onClearInspection,
+      onMessage,
+    } = {},
   ) {
     const scene = createGraphScene(presentation.view, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
+      inspectedPlacementId: presentation.inspectedPlacementId,
     });
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
       : "";
-    this.container.innerHTML = `${renderGraphSvgMarkup(scene)}${startMarkup}`;
+    this.container.innerHTML = `${renderGraphSvgMarkup(scene)}${startMarkup}${renderTopologyInspectionMarkup(scene.inspection)}`;
 
     const targetById = new Map(
       scene.openTargets.map((target) => [target.id, target]),
@@ -153,6 +234,21 @@ export class GraphRenderer {
     this.container
       .querySelector("[data-start-action]")
       ?.addEventListener("click", () => onStart?.({ kind: "START" }));
+
+    const clearInspection = () => onClearInspection?.();
+    this.container
+      .querySelector("[data-clear-topology-inspection]")
+      ?.addEventListener("click", clearInspection);
+    for (const element of this.container.querySelectorAll(
+      ".value-graph, [data-topology-inspection]",
+    )) {
+      element.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && scene.inspection) {
+          event.preventDefault();
+          clearInspection();
+        }
+      });
+    }
 
     return scene;
   }

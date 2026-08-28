@@ -494,7 +494,7 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 
 ## ESTUDIO-001 — Reversibilidad topológica entre Modo Grafo y Modo Tradicional
 
-**Estado:** En estudio; no autorizado para implementación.
+**Estado:** Primera proyección materializada; reversibilidad visual completa todavía en estudio.
 
 **Problema registrado:** El grafo de valores permite conocer qué fichas están jugadas, pero no contiene por sí solo la secuencia de placements, sus puertos ni el origen y recorrido de ramas. Una misma colección de aristas puede corresponder a tableros lógicos diferentes.
 
@@ -502,16 +502,30 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 
 **Alternativas por comparar:** Índices ordinales; coordenadas firmadas alrededor de una ficha ancla; vecinos explícitos; pares `(t,±d)` para ramas; coordenadas estructuradas con `originPlacementId + originPortId + depth`; índices permanentes frente a inspección visual bajo demanda.
 
-**Restricción provisional:** No persistir metadata ni cambiar schema por esta cuestión. Si se autoriza, comenzar por una proyección topológica pura y demostrar que no participa en legalidad. El análisis completo está en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md).
+**Restricción vigente:** No persistir metadata ni cambiar schema por esta cuestión. La proyección topológica implementada demuestra que no necesita participar en legalidad. Coordenadas, vecinos y reconstrucción visual ampliada siguen pendientes. El análisis completo está en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md).
 
 ## ESTUDIO-002 — Legibilidad topológica del primer GraphRenderer
 
-**Estado:** En estudio; no autorizado para implementación.
+**Estado:** Primera capa resuelta; ampliaciones todavía en estudio.
 
 **Problema registrado:** Una ronda completa confirma que reconocer las fichas del grafo no basta para reconstruir mentalmente línea principal, ramas, raíces ni función topológica de los chanchos. El problema se agrava con K alto y grafos densos.
 
-**Hallazgo actual:** El `board` ya contiene todos los datos. Las proyecciones visuales vigentes no clasifican todavía cada arista/lazo por región, posición, raíz o capacidad especial. “Principal/rama” y “especial/ordinario” son ejes independientes: con K agotado puede existir un chancho ordinario en la línea principal.
+**Hallazgo actual:** El `board` ya contiene todos los datos. La primera proyección clasifica ahora cada arista/lazo por región, posición, raíz y capacidad especial. “Principal/rama” y “especial/ordinario” permanecen como ejes independientes: con K agotado puede existir un chancho ordinario en la línea principal.
 
 **Alternativas por comparar:** Estilo topológico permanente; inspección de secuencia al seleccionar; panel auxiliar jerárquico; modo opcional con etiquetas/coordenadas. La recomendación provisional es una combinación progresiva de las tres primeras y dejar las coordenadas como ayuda opcional.
 
-**Restricción provisional:** No modificar reglas, snapshot ni schema. Una futura implementación comenzaría en una proyección pura; GraphRenderer seguiría consumiendo datos derivados sin inspeccionar `board` ni decidir legalidad. Véase [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md).
+**Restricción vigente:** No modificar reglas, snapshot ni schema. GraphRenderer consume datos derivados sin inspeccionar `board` ni decidir legalidad. El panel completo y las etiquetas opcionales siguen fuera de esta primera capa. Véase [`ux-topologia-modo-grafo.md`](ux-topologia-modo-grafo.md).
+
+## DEC-037 — Proyección topológica e inspección progresiva
+
+**Estado:** Aceptada.
+
+**Decisión:** Exponer `getBoardTopologyProjection(state)` como consulta pura derivada de línea, placements, conexiones, puertos, lista especial y ramas. Componerla en `projectGraphView`; GraphRenderer no lee `board`. Mantener inspección en `InteractionController` como estado efímero que identifica solo un `placementId` y se limpia después de una acción.
+
+La vista diferencia principal/rama con trazo continuo/segmentado, añade `E` a chanchos especiales, muestra `Especiales: s/effectiveK` y, bajo selección, resalta la estructura completa más la raíz lateral. El inspector explica los tres roles de chancho y su capacidad.
+
+**Motivo:** La prueba manual confirmó que el grafo de valores era jugable pero no hacía visible la topología que ya conserva el snapshot. Una capa derivada resuelve clasificación e inspección sin duplicar estado ni convertir el grafo en una mesa tradicional.
+
+**Alternativas consideradas:** Estilos permanentes únicamente; índices globales; panel estructural completo; lectura directa de `board` desde UI; persistir región/coordenadas; rediseño premium simultáneo.
+
+**Consecuencias:** No cambia schema v6, motor, reglas, legalidad, puntuación ni turnos. Panel completo, coordenadas visibles, replay, Modo Tradicional y refinamiento premium siguen pendientes.

@@ -4,6 +4,7 @@ import { getLatestActionProjection } from "./ActionProjection.js";
 import { getLegalPlayProjection } from "./LegalPlayProjection.js";
 import { getOpenEndVisualProjection } from "./OpenEndProjection.js";
 import { getScoringProjection } from "./ScoringProjection.js";
+import { getBoardTopologyProjection } from "./TopologyProjection.js";
 import { getValueGraphProjection } from "./ValueGraphProjection.js";
 
 /** Fachada compuesta y descartable para un futuro GraphRenderer. */
@@ -16,6 +17,7 @@ export function projectGraphView(state, playerId = state.currentPlayerId) {
     { playerId },
   );
   const graph = getValueGraphProjection(state);
+  const topology = getBoardTopologyProjection(state);
   const openEndsByValue = getOpenEndVisualProjection(state);
   const openTargetCountByValue = new Map(
     openEndsByValue.map((group) => [group.value, group.count]),
@@ -31,6 +33,7 @@ export function projectGraphView(state, playerId = state.currentPlayerId) {
       openTargetCount: openTargetCountByValue.get(vertex.value) ?? 0,
     })),
     edges: graph.edges,
+    topology,
     openEndsByValue,
     hand: state.hands[playerId].map((dominoId) => {
       const domino = state.dominoes[dominoId];

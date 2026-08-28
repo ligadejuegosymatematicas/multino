@@ -49,6 +49,18 @@
 .graph-edge,
 .graph-loop {
   cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.graph-edge.is-branch .graph-edge__line,
+.graph-loop.is-branch .graph-loop__shape {
+  stroke: #6f657d;
+  stroke-dasharray: 14 6;
+  stroke-width: 4;
+}
+
+.graph-edge.is-branch .graph-edge__badge {
+  stroke: #6f657d;
 }
 
 .graph-edge:focus-visible .graph-edge__line,
@@ -78,8 +90,48 @@
   stroke-width: 5;
 }
 
+.graph-loop.is-special-double .graph-loop__shape {
+  stroke-width: 7;
+  filter: drop-shadow(0 0 5px rgb(107 92 145 / 0.32));
+}
+
 .graph-loop__label {
   fill: var(--violet);
+}
+
+.graph-special-marker circle {
+  fill: #fff8eb;
+  stroke: #8b5010;
+  stroke-width: 2;
+}
+
+.graph-special-marker text {
+  fill: #74400b;
+  font-size: 10px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.graph-edge.is-topology-dimmed,
+.graph-loop.is-topology-dimmed {
+  opacity: 0.14;
+}
+
+.graph-edge.is-topology-highlighted .graph-edge__line,
+.graph-loop.is-topology-highlighted .graph-loop__shape {
+  stroke-width: 8;
+}
+
+.graph-edge.is-topology-root .graph-edge__line,
+.graph-loop.is-topology-root .graph-loop__shape {
+  stroke: var(--amber);
+  stroke-width: 9;
+}
+
+.graph-edge.is-inspected .graph-edge__badge {
+  stroke: var(--focus);
+  stroke-width: 3;
 }
 
 .open-target {
@@ -191,6 +243,20 @@
   text-anchor: middle;
 }
 
+.graph-special-summary rect {
+  fill: rgb(255 255 255 / 0.94);
+  stroke: #9a89b5;
+  stroke-width: 1.5;
+}
+
+.graph-special-summary text {
+  fill: #514567;
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
 .start-action {
   position: absolute;
   inset: auto 50% 1rem auto;
@@ -213,6 +279,75 @@
   font-size: 0.85rem;
 }
 
+.topology-inspector {
+  position: absolute;
+  inset: auto auto 1rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(25rem, calc(100% - 2rem));
+  padding: 0.8rem 0.85rem;
+  border: 1px solid #a79abb;
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 0.65rem 1.8rem rgb(31 29 43 / 0.16);
+}
+
+.topology-inspector p,
+.topology-inspector h3 {
+  margin: 0;
+}
+
+.topology-inspector__kicker {
+  color: #6d617f;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.topology-inspector h3 {
+  margin-block: 0.15rem;
+  font-size: 1rem;
+}
+
+.topology-inspector__region,
+.topology-inspector__double span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.topology-inspector__double {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.65rem;
+  margin-block-start: 0.35rem !important;
+}
+
+.topology-inspector__double strong {
+  flex-basis: 100%;
+  color: #514567;
+  font-size: 0.78rem;
+}
+
+.topology-inspector__close {
+  min-width: 4.25rem;
+  min-height: 2.3rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #80718f;
+  border-radius: 999px;
+  color: #514567;
+  background: #ffffff;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.topology-inspector__close:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 @keyframes target-pulse {
   0%, 100% { opacity: 0.76; }
   50% { opacity: 1; }
@@ -226,6 +361,11 @@
   .graph-vertex__circle {
     transition: none;
   }
+
+  .graph-edge,
+  .graph-loop {
+    transition: none;
+  }
 }
 
 @media (max-width: 36rem) {
@@ -236,5 +376,10 @@
 
   .start-action p {
     display: none;
+  }
+
+  .topology-inspector {
+    inset: auto 0.5rem 0.5rem;
+    width: auto;
   }
 }

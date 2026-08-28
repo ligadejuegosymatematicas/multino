@@ -32,6 +32,7 @@ export class InteractionController {
 
     this.state = initialState;
     this.selectedDominoId = null;
+    this.inspectedPlacementId = null;
     this.requestAction = requestAction;
     this.onChange = onChange;
   }
@@ -54,6 +55,7 @@ export class InteractionController {
     return {
       view,
       selectedDominoId: this.selectedDominoId,
+      inspectedPlacementId: this.inspectedPlacementId,
       selectedLegalTargets,
       canPass: availableActions.some((action) => action.type === "PASS"),
       isFinished: this.state.phase === "finished",
@@ -74,6 +76,25 @@ export class InteractionController {
     }
     this.selectedDominoId =
       this.selectedDominoId === dominoId ? null : dominoId;
+    this.#emitChange();
+  }
+
+  inspectPlacement(placementId) {
+    const view = projectGraphView(this.state, this.state.currentPlayerId);
+    if (!view.edges.some((edge) => edge.placementId === placementId)) {
+      throw new Error("La ficha jugada no existe en el grafo actual.");
+    }
+    this.inspectedPlacementId =
+      this.inspectedPlacementId === placementId ? null : placementId;
+    this.#emitChange();
+    return this.inspectedPlacementId;
+  }
+
+  clearInspection() {
+    if (this.inspectedPlacementId === null) {
+      return;
+    }
+    this.inspectedPlacementId = null;
     this.#emitChange();
   }
 
@@ -107,6 +128,7 @@ export class InteractionController {
     const nextState = this.requestAction(this.state, action);
     this.state = nextState;
     this.selectedDominoId = null;
+    this.inspectedPlacementId = null;
     this.#emitChange();
     return nextState;
   }

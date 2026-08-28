@@ -2,9 +2,9 @@
 
 ## Estado de esta nota
 
-**Problema de diseño en estudio. No autorizado para implementación.**
+**Primera proyección topológica implementada; reconstrucción visual completa todavía en estudio.**
 
-Esta nota registra una cuestión futura del renderer. No modifica reglas, motor, snapshot, schema, proyecciones existentes ni interfaz. Su objetivo es distinguir qué información se pierde al proyectar el tablero sobre siete valores y evaluar cómo hacer visible la topología tradicional sin convertirla en una segunda fuente de verdad.
+Esta nota registra una cuestión del renderer. La primera capa ya deriva clasificación, orden y ramas sin modificar reglas, motor, snapshot ni schema. Su objetivo más amplio sigue siendo distinguir qué información se pierde al proyectar el tablero sobre siete valores y evaluar cómo hacer visible la topología tradicional sin convertirla en una segunda fuente de verdad.
 
 ## Pregunta central
 
@@ -142,38 +142,18 @@ El signo, sin embargo, vuelve a asignar semántica visual izquierda/derecha a pu
 
 `originPlacementId + originPortId` identifica la rama; `depth` ordena sus fichas desde el chancho. `originMainOffset` sería una comodidad visual derivada, no parte de la identidad. Como shorthand de UI todavía podría mostrarse `(t, b, d)` o `(t, ±d)`, pero la proyección no necesita reducir el puerto a un signo.
 
-## Forma conceptual de una proyección futura
+## Primera proyección implementada
 
-Sin fijar todavía una API, una consulta como `getBoardTopologyProjection(state)` podría producir:
+`getBoardTopologyProjection(state)` materializa la parte mínima ya autorizada:
 
-```js
-{
-  mainLine: {
-    anchorPlacementId: "placement-1",
-    placements: [
-      {
-        placementId: "placement-8",
-        orderIndex: 0,
-        signedOffset: -2,
-        predecessorPlacementId: null,
-        successorPlacementId: "placement-4"
-      }
-    ]
-  },
-  branches: [
-    {
-      originPlacementId: "placement-17",
-      originPortId: "branch:1",
-      placements: [
-        { placementId: "placement-20", depth: 1 },
-        { placementId: "placement-24", depth: 2 }
-      ]
-    }
-  ]
-}
-```
+- `mainLine.placementIds` y ramas ordenadas con raíz y puerto;
+- una entrada por placement con `region`, `structureId` y `order` uno-basado;
+- `originPlacementId`, `originPortId` y `depth` para ramas;
+- clasificación de chancho y rol especial/ordinario;
+- conexiones, capacidad, puertos libres y ramas iniciadas;
+- resumen de K configurado, efectivo, especiales habilitados y capacidad restante.
 
-Los nombres y campos son solamente ilustrativos. Antes de implementarla habrá que decidir si conviene exponer offsets, vecinos, conexiones, puertos de entrada/salida o una combinación mínima. La consulta debe derivarse del `board`, ser inmutable y no ser consumida por validadores de legalidad.
+La consulta se deriva del `board`, es inmutable respecto del snapshot y no participa en validadores ni legalidad. No incorpora todavía ancla, offset firmado, predecesor/sucesor ni coordenadas visibles. Esos campos continúan como alternativas para un futuro panel o modo de inspección más completo.
 
 ## Alternativas visuales futuras
 
@@ -210,4 +190,4 @@ La prueba manual del primer GraphRenderer confirmó que también se necesita una
 
 El grafo de valores actual pierde la secuencia tradicional, pero el snapshot reglamentario no la pierde. `mainLine + placements + connections + ports`, junto con ramas derivadas, ya permite reconstruir completamente la topología lógica.
 
-En consecuencia, no se justifica un cambio de schema ni metadata persistida. El problema futuro es diseñar una proyección topológica explicativa y una interacción visual que hagan visible esa información sin sobrecargar el GraphRenderer.
+En consecuencia, no se justifica un cambio de schema ni metadata persistida. `getBoardTopologyProjection` materializa ya la primera capa explicativa y GraphRenderer permite inspeccionar una línea o rama. Permanecen pendientes el panel estructural completo, las coordenadas opcionales y la evaluación de cómo ampliar esa información sin sobrecargar el grafo.

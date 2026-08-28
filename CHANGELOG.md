@@ -60,6 +60,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Confirmación de que la topología completa ya se deriva del board v6; cualquier explicación futura debe ser una proyección descartable, no metadata persistida.
 - Estudio de UX posterior a una ronda manual sobre legibilidad de línea principal, ramas, raíces, chanchos especiales y consumo de K.
 - Comparación documental de cuatro alternativas visuales y recomendación híbrida progresiva, sin cambios de motor, proyecciones, renderer ni schema.
+- Tercer bloque de Fase 2 con `getBoardTopologyProjection`, clasificación derivada de línea principal/ramas y roles de chanchos sin modificar schema v6.
+- Diferenciación permanente mediante trazo continuo/segmentado, distintivo textual `E` y resumen `Especiales: s/effectiveK` sin depender solo del color.
+- Inspección efímera de fichas jugadas con estructura completa resaltada, raíz lateral destacada, resto atenuado y cierre por botón o `Escape`.
+- Detalle de chanchos con rol topológico, conexiones/capacidad y ramas iniciadas; cobertura automática de K agotado, profundidad y grafo denso.
 
 ### Decidido
 

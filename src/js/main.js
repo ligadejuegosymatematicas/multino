@@ -52,9 +52,20 @@ function render(presentation) {
       runIntent(() => controller.submitTarget(target), "Jugada aplicada."),
     onStart: (target) =>
       runIntent(() => controller.submitTarget(target), "Primera jugada aplicada."),
-    onInspectEdge: (edge) =>
-      setMessage(
-        `Ficha ${edge.dominoId} jugada por ${edge.playerId} en la acción ${edge.turnNumber}.`,
+    onInspectEdge: (edge) => {
+      const wasInspected =
+        controller.getPresentation().inspectedPlacementId === edge.placementId;
+      runIntent(
+        () => controller.inspectPlacement(edge.placementId),
+        wasInspected
+          ? "Inspección topológica cerrada."
+          : `Inspeccionando ${edge.dominoId}: su estructura está resaltada.`,
+      );
+    },
+    onClearInspection: () =>
+      runIntent(
+        () => controller.clearInspection(),
+        "Inspección topológica cerrada.",
       ),
     onMessage: setMessage,
   });

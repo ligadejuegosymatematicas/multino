@@ -69,6 +69,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - la escena y el markup SVG se prueban como funciones puras; no se añadió JSDOM ni una dependencia destinada a comparar píxeles;
 - interacción de mouse/teclado, viewport, foco, ronda completa y lectura terminal se verifican manualmente en navegador local.
 
+### Fase 2, Bloque 3 — primera legibilidad topológica completada
+
+- `tests/projections/topology-projection.test.js`: línea/rama, orden, raíz, profundidad, chancho especial, ordinario por K agotado, ordinario lateral, resumen efectivo e inmutabilidad;
+- `tests/ui/graph-renderer.test.js`: clases permanentes, distintivo especial, `s/effectiveK`, resaltado de estructura, raíz lateral, inspector de los tres roles de chancho y escenario denso con 18 fichas/16 targets;
+- `tests/ui/interaction-controller.test.js`: inspección efímera alternable, rechazo de placements inexistentes y limpieza tras una acción sin contaminar el snapshot;
+- CSS y leyenda se verifican para asegurar patrones/etiquetas además del color; botón y `Escape` se comprobaron manualmente en navegador local.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

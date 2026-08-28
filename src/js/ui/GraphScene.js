@@ -115,18 +115,80 @@ function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
 }
 
+function createTopologyInspection(
+  view,
+  inspectedPlacementId,
+  topologyByPlacementId,
+) {
+  if (inspectedPlacementId === null) {
+    return null;
+  }
+
+  const placement = topologyByPlacementId.get(inspectedPlacementId);
+  const edge = view.edges.find(
+    (candidate) => candidate.placementId === inspectedPlacementId,
+  );
+  if (!placement || !edge) {
+    return null;
+  }
+
+  const branch = placement.region === "branch"
+    ? view.topology.branches.find(
+        (candidate) => candidate.id === placement.structureId,
+      )
+    : null;
+  const structurePlacementIds = placement.region === "main"
+    ? view.topology.mainLine.placementIds
+    : branch.placementIds;
+  const rootEdge = branch
+    ? view.edges.find(
+        (candidate) =>
+          candidate.placementId === branch.originPlacementId,
+      )
+    : null;
+
+  return {
+    placementId: inspectedPlacementId,
+    dominoId: edge.dominoId,
+    a: edge.a,
+    b: edge.b,
+    topology: placement,
+    structurePlacementIds: [...structurePlacementIds],
+    rootPlacementId: branch?.originPlacementId ?? null,
+    rootDominoId: rootEdge?.dominoId ?? null,
+  };
+}
+
 /**
  * Geometría descartable del renderer. Consume proyección, nunca el snapshot.
  */
 export function createGraphScene(
   view,
-  { selectedDominoId = null, legalTargets = [] } = {},
+  {
+    selectedDominoId = null,
+    legalTargets = [],
+    inspectedPlacementId = null,
+  } = {},
 ) {
   const positions = new Map(
     view.vertices.map((vertex) => [vertex.value, getVertexPosition(vertex.value)]),
   );
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const hasSelection = selectedDominoId !== null;
+  const topologyByPlacementId = new Map(
+    view.topology.placements.map((placement) => [
+      placement.placementId,
+      placement,
+    ]),
+  );
+  const inspection = createTopologyInspection(
+    view,
+    inspectedPlacementId,
+    topologyByPlacementId,
+  );
+  const highlightedPlacementIds = new Set(
+    inspection?.structurePlacementIds ?? [],
+  );
   const loopValues = new Set(
     view.edges.filter((edge) => edge.isLoop).map((edge) => edge.a),
   );
@@ -162,12 +224,29 @@ export function createGraphScene(
   const edges = [];
   const loops = [];
   for (const edge of view.edges) {
+    const topology = topologyByPlacementId.get(edge.placementId);
+    const topologyState = {
+      topology,
+      isInspected: edge.placementId === inspection?.placementId,
+      isTopologyHighlighted: highlightedPlacementIds.has(edge.placementId),
+      isTopologyRoot: edge.placementId === inspection?.rootPlacementId,
+      isTopologyDimmed:
+        inspection !== null &&
+        !highlightedPlacementIds.has(edge.placementId) &&
+        edge.placementId !== inspection.rootPlacementId,
+    };
     if (edge.isLoop) {
-      loops.push(createLoop(edge, positions.get(edge.a)));
+      loops.push(
+        createLoop(
+          { ...edge, ...topologyState },
+          positions.get(edge.a),
+        ),
+      );
       continue;
     }
     edges.push({
       ...edge,
+      ...topologyState,
       ...lineBetweenVertices(positions.get(edge.a), positions.get(edge.b)),
     });
   }
@@ -178,6 +257,8 @@ export function createGraphScene(
     height: VIEWBOX.height,
     hasSelection,
     selectedDominoId,
+    inspection,
+    topologySummary: { ...view.topology.specialDoubles },
     canStart: hasSelection && legalTargetIds.has("START"),
     vertices: view.vertices.map((vertex) => ({
       ...vertex,

@@ -2,11 +2,11 @@
 
 ## Estado de esta nota
 
-**Estudio de UX y arquitectura. No autorizado para implementación.**
+**Primera capa funcional implementada; alternativas de ampliación todavía en estudio.**
 
 Esta nota parte de una prueba manual del primer GraphRenderer: la ronda puede jugarse y el grafo permite reconocer fichas y destinos, pero no comunica con suficiente claridad la estructura tradicional de línea principal y ramas. El objetivo no es transformar el Modo Grafo en una mesa de dominó, sino estudiar una segunda capa visual, derivada y opcional, sobre el grafo de valores.
 
-No se propone cambiar reglas, motor, snapshot, schema ni fuente de verdad.
+La primera implementación no cambió reglas, motor, snapshot, schema ni fuente de verdad.
 
 ## Diagnóstico
 
@@ -266,6 +266,20 @@ La combinación más equilibrada es:
 4. **Etiquetas topológicas opcionales:** mantenerlas fuera de la vista normal y evaluarlas dentro de “Ver estructura”; no decidir todavía entre ordinales, offsets firmados o coordenadas compuestas.
 
 Esta solución preserva el heptágono y la interpretación matemática de aristas/lazos. La topología actúa como segunda capa derivada y no determina legalidad.
+
+## Primera materialización aprobada
+
+Se implementaron los dos primeros niveles de la recomendación y un inspector local mínimo:
+
+- proyección pura por `placementId` con región, orden, raíz, puerto, profundidad y clasificación de chanchos;
+- resumen derivado `Especiales: s/effectiveK`;
+- trazo continuo para principal y segmentado para rama;
+- distintivo textual `E` para chanchos especiales;
+- selección de una ficha jugada para resaltar toda su estructura, conservar visible la raíz de rama y atenuar el resto;
+- detalle de rol, conexiones/capacidad y ramas iniciadas;
+- cierre por repetición, botón o `Escape`.
+
+No se implementaron el panel estructural completo, coordenadas permanentes, replay, Modo Tradicional ni acabado premium. La experiencia densa continúa necesitando evaluación humana aunque la suite comprueba que fichas, targets e identidad individual permanecen disponibles.
 
 ## Proyección futura mínima a evaluar
 

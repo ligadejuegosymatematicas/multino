@@ -21,6 +21,13 @@ function createDeterministicMatch() {
   });
 }
 
+function playFirst(state, dominoId) {
+  const action = getLegalPlays(state, state.currentPlayerId).find(
+    (play) => play.dominoId === dominoId,
+  );
+  return applyTurnAction(state, action);
+}
+
 test("seleccionar una ficha filtra sus destinos sin modificar el snapshot", () => {
   const state = createDeterministicMatch();
   const before = structuredClone(state);
@@ -113,6 +120,46 @@ test("varios destinos iguales conservan el puerto individual enviado al motor", 
     portId: chosenTarget.portId,
   });
   assert.equal(controller.getPresentation().view.edges.length, 2);
+});
+
+test("la inspección de una ficha jugada es efímera, alternable e inmutable", () => {
+  const initial = playFirst(createDeterministicMatch(), "6-6");
+  const before = structuredClone(initial);
+  const presentations = [];
+  const controller = new InteractionController({
+    initialState: initial,
+    onChange: (presentation) => presentations.push(presentation),
+  });
+
+  assert.equal(controller.getPresentation().inspectedPlacementId, null);
+  assert.equal(controller.inspectPlacement("placement-1"), "placement-1");
+  assert.equal(
+    presentations.at(-1).inspectedPlacementId,
+    "placement-1",
+  );
+  assert.equal(controller.inspectPlacement("placement-1"), null);
+  assert.equal(presentations.at(-1).inspectedPlacementId, null);
+  assert.throws(
+    () => controller.inspectPlacement("placement-999"),
+    /no existe en el grafo/,
+  );
+  assert.deepEqual(initial, before);
+});
+
+test("una acción aceptada limpia la inspección sin crear estado reglamentario", () => {
+  const controller = new InteractionController({
+    initialState: createDeterministicMatch(),
+  });
+  controller.selectDomino("6-6");
+  controller.submitTarget({ kind: "START" });
+  controller.inspectPlacement("placement-1");
+  controller.selectDomino("4-6");
+  controller.submitTarget(
+    controller.getPresentation().selectedLegalTargets[0],
+  );
+
+  assert.equal(controller.getPresentation().inspectedPlacementId, null);
+  assert.equal("inspectedPlacementId" in controller.getState(), false);
 });
 
 test("PASS se habilita y ejecuta exclusivamente desde getAvailableActions", () => {
