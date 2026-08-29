@@ -22,17 +22,21 @@ function getTopologyClasses(edge) {
 function describeTopology(topology) {
   return topology.region === "main"
     ? `línea principal, posición ${topology.order}`
-    : `rama desde ${topology.originPlacementId} por ${topology.originPortId}, profundidad ${topology.depth}`;
+    : `rama, posición ${topology.depth}`;
 }
 
 function renderSpecialMarker(edge) {
   if (!edge.topology.isSpecialDouble) {
     return "";
   }
+  const markerX = edge.labelX + 31;
+  const markerY = edge.labelY;
   return `
-      <g class="graph-special-marker" aria-hidden="true">
-        <circle cx="${edge.labelX + 31}" cy="${edge.labelY}" r="10"></circle>
-        <text x="${edge.labelX + 31}" y="${edge.labelY}">E</text>
+      <g class="graph-special-marker" transform="translate(${markerX} ${markerY})" aria-hidden="true">
+        <circle class="graph-special-marker__outer" r="11"></circle>
+        <circle class="graph-special-marker__inner" r="7"></circle>
+        <path class="graph-special-marker__arms" d="M 0 -7 V 7 M -7 0 H 7"></path>
+        <circle class="graph-special-marker__hub" r="2.2"></circle>
       </g>`;
 }
 
@@ -63,8 +67,16 @@ function renderOpenTarget(target, hasSelection) {
     : hasSelection
       ? "is-incompatible"
       : "is-neutral";
+  const classes = [
+    stateClass,
+    target.topology.region === "main"
+      ? "is-main-target"
+      : "is-branch-target",
+    target.isTopologyHighlighted ? "is-topology-highlighted" : "",
+    target.isTopologyDimmed ? "is-topology-dimmed" : "",
+  ].filter(Boolean).join(" ");
   return `
-    <g class="open-target ${stateClass}" data-target-id="${escapeAttribute(target.id)}" role="button" tabindex="${target.isLegal ? "0" : "-1"}" aria-disabled="${target.isLegal ? "false" : "true"}" aria-label="${target.accessibleLabel}">
+    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" role="button" tabindex="${target.isLegal ? "0" : "-1"}" aria-disabled="${target.isLegal ? "false" : "true"}" aria-label="${escapeAttribute(target.accessibleLabel)}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
       <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="8"></circle>
@@ -98,7 +110,7 @@ export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. El trazo continuo identifica la línea principal, el trazo segmentado identifica ramas y las curvas cortas son destinos disponibles.</desc>
+      <desc id="graph-description">Siete valores fijos. El trazo continuo identifica la línea principal y sus destinos; el trazo segmentado identifica ramas y sus destinos. El símbolo de cuatro brazos identifica un chancho especial.</desc>
       <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
@@ -115,11 +127,11 @@ export function renderGraphSvgMarkup(scene) {
 function describeDoubleRole(doubleRole) {
   switch (doubleRole) {
     case "SPECIAL_MAIN":
-      return "Especial de línea principal";
+      return "Chancho especial en la línea principal";
     case "ORDINARY_MAIN_K_EXHAUSTED":
-      return "Ordinario de línea principal";
+      return "Chancho ordinario en la línea principal";
     case "ORDINARY_BRANCH":
-      return "Ordinario en rama";
+      return "Chancho ordinario en una rama";
     default:
       return null;
   }
@@ -131,8 +143,8 @@ export function renderTopologyInspectionMarkup(inspection) {
   }
   const topology = inspection.topology;
   const region = topology.region === "main"
-    ? `Línea principal · posición ${topology.order}`
-    : `Rama desde ${inspection.rootDominoId?.replace("-", "|") ?? topology.originPlacementId} · ${topology.originPortId} · profundidad ${topology.depth}`;
+    ? `Esta ficha está en la línea principal · posición ${topology.order}.`
+    : `Esta rama nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. Esta ficha ocupa la posición ${topology.depth} de la rama.`;
   const doubleRole = describeDoubleRole(topology.doubleRole);
   const doubleDetails = doubleRole
     ? `<p class="topology-inspector__double"><strong>${doubleRole}</strong><span>Conexiones: ${topology.connectionCount}/${topology.connectionCapacity}</span>${topology.isSpecialDouble ? `<span>Ramas iniciadas: ${topology.startedBranchCount}/2</span>` : ""}</p>`
@@ -141,7 +153,7 @@ export function renderTopologyInspectionMarkup(inspection) {
   return `
     <aside class="topology-inspector" data-topology-inspection aria-label="Inspección topológica de ${escapeAttribute(inspection.dominoId)}">
       <div>
-        <p class="topology-inspector__kicker">Estructura lógica</p>
+        <p class="topology-inspector__kicker">Lectura de la partida</p>
         <h3>Ficha ${escapeAttribute(inspection.dominoId.replace("-", "|"))}</h3>
         <p class="topology-inspector__region">${escapeAttribute(region)}</p>
         ${doubleDetails}

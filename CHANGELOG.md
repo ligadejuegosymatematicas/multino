@@ -64,6 +64,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Diferenciación permanente mediante trazo continuo/segmentado, distintivo textual `E` y resumen `Especiales: s/effectiveK` sin depender solo del color.
 - Inspección efímera de fichas jugadas con estructura completa resaltada, raíz lateral destacada, resto atenuado y cierre por botón o `Escape`.
 - Detalle de chanchos con rol topológico, conexiones/capacidad y ramas iniciadas; cobertura automática de K agotado, profundidad y grafo denso.
+- Segunda iteración de legibilidad topológica: cada destino abierto hereda por `placementId + portId` su pertenencia a principal o rama, incluso cuando varios comparten valor.
+- Identidad principal reforzada por peso, color y trazo continuo; ramas conservan identidad secundaria segmentada sin depender exclusivamente del color.
+- Distintivo textual `E` reemplazado por un símbolo gráfico de cuatro brazos y doble contorno, independiente de la región y del patrón de trazo.
+- Inspección de ramas ampliada a sus destinos abiertos y expresada en lenguaje de partida, sin mostrar identificadores técnicos; cobertura visual y automática con K=1/K=2.
 
 ### Decidido
 

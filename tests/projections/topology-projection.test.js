@@ -144,6 +144,45 @@ test("clasifica un chancho ordinario dentro de una rama sin consumir K", () => {
   assert.equal(placementAt(projection, "placement-1").startedBranchCount, 1);
 });
 
+test("clasifica destinos abiertos por identidad exacta aunque compartan valor", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(
+    state,
+    "3-4",
+    targetAt("placement-1", "main:2"),
+  );
+  state = playDomino(
+    state,
+    "2-4",
+    targetAt("placement-1", "branch:1"),
+  );
+  state = playDomino(
+    state,
+    "2-3",
+    targetAt("placement-3", "side:a"),
+  );
+  const projection = getBoardTopologyProjection(state);
+  const targetsById = new Map(
+    projection.openTargets.map((target) => [target.targetId, target]),
+  );
+
+  assert.equal(targetsById.get("placement-2:side:a").region, "main");
+  assert.equal(
+    targetsById.get("placement-2:side:a").structureId,
+    "main",
+  );
+  assert.equal(targetsById.get("placement-4:side:b").region, "branch");
+  assert.equal(
+    targetsById.get("placement-4:side:b").structureId,
+    "placement-1:branch:1",
+  );
+  assert.notEqual(
+    targetsById.get("placement-2:side:a").targetId,
+    targetsById.get("placement-4:side:b").targetId,
+  );
+});
+
 test("la proyección topológica no muta ni comparte colecciones con el snapshot", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
@@ -152,6 +191,7 @@ test("la proyección topológica no muta ni comparte colecciones con el snapshot
 
   projection.mainLine.placementIds.push("falso");
   projection.placements[0].region = "branch";
+  projection.openTargets[0].region = "branch";
   projection.specialDoubles.enabledCount = 99;
 
   assert.deepEqual(state, before);

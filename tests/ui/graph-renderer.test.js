@@ -57,7 +57,7 @@ function createTopologyScenario() {
   );
   return playDomino(
     state,
-    "2-5",
+    "2-3",
     targetAt("placement-3", "side:a"),
   );
 }
@@ -147,6 +147,8 @@ test("un chancho usa un lazo sólido distinto de sus cuatro curvas", () => {
   assert.equal(markup.match(/class="open-target /g)?.length, 4);
   assert.match(markup, /class="graph-loop is-main is-special-double"[^>]+role="button" tabindex="0"/);
   assert.match(markup, /class="graph-special-marker"/);
+  assert.match(markup, /class="graph-special-marker__arms"/);
+  assert.doesNotMatch(markup, />E<\/text>/);
   assert.match(markup, /Especiales: 1\/7/);
   assert.match(markup, /class="open-target__curve"/);
 });
@@ -171,6 +173,43 @@ test("q targets del mismo valor conservan q indicadores seleccionables", () => {
   assert.equal(valueSix.legalTargetIds.length, 4);
   assert.equal(scene.multiplicities.find((item) => item.value === 6).count, 4);
   assert.deepEqual(view, before);
+});
+
+test("targets abiertos del mismo valor distinguen principal y rama", () => {
+  const scene = createGraphScene(projectGraphView(createTopologyScenario()));
+  const markup = renderGraphSvgMarkup(scene);
+  const valueThreeTargets = scene.openTargets.filter(
+    (target) => target.value === 3,
+  );
+
+  assert.equal(valueThreeTargets.length, 2);
+  assert.deepEqual(
+    valueThreeTargets.map((target) => ({
+      id: target.id,
+      region: target.topology.region,
+      structureId: target.topology.structureId,
+    })),
+    [
+      {
+        id: "placement-2:side:a",
+        region: "main",
+        structureId: "main",
+      },
+      {
+        id: "placement-4:side:b",
+        region: "branch",
+        structureId: "placement-1:branch:1",
+      },
+    ],
+  );
+  assert.match(
+    markup,
+    /open-target is-neutral is-main-target[^>]+data-target-id="placement-2:side:a"/,
+  );
+  assert.match(
+    markup,
+    /open-target is-neutral is-branch-target[^>]+data-target-id="placement-4:side:b"/,
+  );
 });
 
 test("START existe como acción separada y nunca como curva ficticia", () => {
@@ -213,9 +252,21 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
   assert.equal(byPlacementId.get("placement-1").isTopologyRoot, true);
   assert.equal(byPlacementId.get("placement-1").isTopologyDimmed, false);
   assert.equal(byPlacementId.get("placement-2").isTopologyDimmed, true);
+  assert.equal(
+    scene.openTargets.find((target) => target.id === "placement-4:side:b")
+      .isTopologyHighlighted,
+    true,
+  );
+  assert.equal(
+    scene.openTargets.find((target) => target.id === "placement-2:side:a")
+      .isTopologyDimmed,
+    true,
+  );
   assert.match(markup, /graph-edge is-branch is-inspected is-topology-highlighted/);
   assert.match(markup, /graph-loop is-main is-special-double is-topology-root/);
-  assert.match(inspector, /Rama desde 4\|4 · branch:1 · profundidad 2/);
+  assert.match(inspector, /Esta rama nace del chancho 4\|4/);
+  assert.match(inspector, /posición 2 de la rama/);
+  assert.doesNotMatch(inspector, /branch:1|placement-/);
   assert.match(inspector, /data-clear-topology-inspection/);
 });
 
@@ -270,12 +321,12 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
     }).inspection,
   );
 
-  assert.match(specialMarkup, /Especial de línea principal/);
+  assert.match(specialMarkup, /Chancho especial en la línea principal/);
   assert.match(specialMarkup, /Conexiones: 2\/4/);
   assert.match(specialMarkup, /Ramas iniciadas: 1\/2/);
-  assert.match(ordinaryMainMarkup, /Ordinario de línea principal/);
+  assert.match(ordinaryMainMarkup, /Chancho ordinario en la línea principal/);
   assert.match(ordinaryMainMarkup, /Conexiones: 1\/2/);
-  assert.match(branchDoubleMarkup, /Ordinario en rama/);
+  assert.match(branchDoubleMarkup, /Chancho ordinario en una rama/);
   assert.match(branchDoubleMarkup, /Conexiones: 1\/2/);
 });
 
@@ -329,9 +380,21 @@ test("la diferenciación topológica no depende exclusivamente del color", async
     boardCss,
     /\.graph-edge\.is-branch[\s\S]+?stroke-dasharray:\s*14 6/,
   );
-  assert.match(boardCss, /\.graph-special-marker text/);
+  assert.match(
+    boardCss,
+    /\.graph-edge\.is-main[\s\S]+?stroke-width:\s*6/,
+  );
+  assert.match(
+    boardCss,
+    /\.open-target\.is-main-target[\s\S]+?stroke-dasharray:\s*none/,
+  );
+  assert.match(
+    boardCss,
+    /\.open-target\.is-branch-target[\s\S]+?stroke-dasharray:\s*6 6/,
+  );
+  assert.match(boardCss, /\.graph-special-marker__arms/);
   assert.match(componentsCss, /\.legend-branch[\s\S]+?border-top-style:\s*dashed/);
-  assert.match(componentsCss, /\.legend-special/);
+  assert.match(componentsCss, /\.legend-special::before/);
 });
 
 test("GraphRenderer y GraphScene consumen proyecciones sin leer board", async () => {

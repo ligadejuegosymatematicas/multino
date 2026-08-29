@@ -89,7 +89,15 @@ function getTargetAngles(vertex, count, hasLoop) {
   );
 }
 
-function createOpenTarget(target, index, count, vertex, angle, isLegal) {
+function createOpenTarget(
+  target,
+  index,
+  count,
+  vertex,
+  angle,
+  isLegal,
+  topologyState,
+) {
   const start = pointAt(vertex, angle, VERTEX_RADIUS - 1);
   const end = pointAt(vertex, angle, 91);
   const bendDirection = index % 2 === 0 ? 1 : -1;
@@ -99,6 +107,9 @@ function createOpenTarget(target, index, count, vertex, angle, isLegal) {
     angle + bendDirection * Math.PI / 2,
     Math.min(12, 4 + count),
   );
+  const regionLabel = target.topology.region === "main"
+    ? "en la línea principal"
+    : "en una rama";
   return {
     ...target,
     index: index + 1,
@@ -107,7 +118,8 @@ function createOpenTarget(target, index, count, vertex, angle, isLegal) {
     endX: end.x,
     endY: end.y,
     isLegal,
-    accessibleLabel: `Destino ${index + 1} de ${count} para el valor ${target.value}`,
+    ...topologyState,
+    accessibleLabel: `Destino ${index + 1} de ${count} para el valor ${target.value}, ${regionLabel}`,
   };
 }
 
@@ -204,6 +216,9 @@ export function createGraphScene(
     );
     group.targets.forEach((target, index) => {
       const isLegal = hasSelection && legalTargetIds.has(target.id);
+      const isTopologyHighlighted =
+        inspection !== null &&
+        target.topology.structureId === inspection.topology.structureId;
       const projectedTarget = createOpenTarget(
         target,
         index,
@@ -211,6 +226,11 @@ export function createGraphScene(
         vertex,
         angles[index],
         isLegal,
+        {
+          isTopologyHighlighted,
+          isTopologyDimmed:
+            inspection !== null && !isTopologyHighlighted,
+        },
       );
       openTargets.push(projectedTarget);
       if (isLegal) {

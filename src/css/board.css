@@ -46,6 +46,17 @@
   stroke-linecap: round;
 }
 
+.graph-edge.is-main .graph-edge__line {
+  stroke: #244f59;
+  stroke-width: 6;
+}
+
+.graph-edge.is-main .graph-edge__badge {
+  fill: #f4faf9;
+  stroke: #244f59;
+  stroke-width: 2;
+}
+
 .graph-edge,
 .graph-loop {
   cursor: pointer;
@@ -90,6 +101,12 @@
   stroke-width: 5;
 }
 
+.graph-loop.is-main .graph-loop__shape {
+  stroke: #594b78;
+  stroke-width: 5.5;
+  stroke-dasharray: none;
+}
+
 .graph-loop.is-special-double .graph-loop__shape {
   stroke-width: 7;
   filter: drop-shadow(0 0 5px rgb(107 92 145 / 0.32));
@@ -99,18 +116,27 @@
   fill: var(--violet);
 }
 
-.graph-special-marker circle {
+.graph-special-marker__outer {
   fill: #fff8eb;
   stroke: #8b5010;
   stroke-width: 2;
 }
 
-.graph-special-marker text {
+.graph-special-marker__inner {
+  fill: none;
+  stroke: #b66b18;
+  stroke-width: 1.4;
+}
+
+.graph-special-marker__arms {
+  fill: none;
+  stroke: #74400b;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.graph-special-marker__hub {
   fill: #74400b;
-  font-size: 10px;
-  font-weight: 900;
-  text-anchor: middle;
-  dominant-baseline: middle;
 }
 
 .graph-edge.is-topology-dimmed,
@@ -127,6 +153,7 @@
 .graph-loop.is-topology-root .graph-loop__shape {
   stroke: var(--amber);
   stroke-width: 9;
+  filter: drop-shadow(0 0 5px rgb(182 107 24 / 0.32));
 }
 
 .graph-edge.is-inspected .graph-edge__badge {
@@ -149,9 +176,26 @@
   fill: none;
   stroke: currentColor;
   stroke-width: 4;
-  stroke-dasharray: 6 6;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
+}
+
+.open-target.is-main-target {
+  color: #38545d;
+}
+
+.open-target.is-main-target .open-target__curve {
+  stroke-width: 5;
+  stroke-dasharray: none;
+}
+
+.open-target.is-branch-target {
+  color: #6f657d;
+}
+
+.open-target.is-branch-target .open-target__curve {
+  stroke-width: 4;
+  stroke-dasharray: 6 6;
 }
 
 .open-target__end {
@@ -182,6 +226,14 @@
 
 .open-target.is-incompatible {
   opacity: 0.28;
+}
+
+.open-target.is-topology-highlighted .open-target__curve {
+  stroke-width: 7;
+}
+
+.open-target.is-topology-dimmed {
+  opacity: 0.14;
 }
 
 .open-target:focus-visible .open-target__curve,

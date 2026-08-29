@@ -6,6 +6,7 @@ import {
   getConnectionsForPlacement,
   getFreePortIds,
 } from "../engine/BoardTopology.js";
+import { getOpenEndTargets } from "../engine/BoardQueries.js";
 import { validateBoardState } from "../engine/BoardValidator.js";
 import { parseSequentialId } from "../engine/SequentialIds.js";
 
@@ -26,6 +27,31 @@ function getDoubleRole({ double, region, special }) {
   return region === "main"
     ? "ORDINARY_MAIN_K_EXHAUSTED"
     : "ORDINARY_BRANCH";
+}
+
+function projectOpenTargetTopology(target) {
+  if (target.kind === "main") {
+    return {
+      targetId: target.id,
+      placementId: target.placementId,
+      portId: target.portId,
+      region: "main",
+      structureId: "main",
+      originPlacementId: null,
+      originPortId: null,
+    };
+  }
+
+  const origin = target.branchOrigin;
+  return {
+    targetId: target.id,
+    placementId: target.placementId,
+    portId: target.portId,
+    region: "branch",
+    structureId: `${origin.placementId}:${origin.portId}`,
+    originPlacementId: origin.placementId,
+    originPortId: origin.portId,
+  };
 }
 
 /**
@@ -118,6 +144,7 @@ export function getBoardTopologyProjection(state) {
       originPortId: branch.origin.portId,
       placementIds: [...branch.placementIds],
     })),
+    openTargets: getOpenEndTargets(state).map(projectOpenTargetTopology),
     placements,
     specialDoubles: {
       configuredK,
