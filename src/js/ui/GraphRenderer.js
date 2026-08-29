@@ -22,7 +22,27 @@ function getTopologyClasses(edge) {
 function describeTopology(topology) {
   return topology.region === "main"
     ? `línea principal, posición ${topology.order}`
-    : `rama, posición ${topology.depth}`;
+    : `${topology.structureLabel}, posición ${topology.depth}`;
+}
+
+function describeRootedBranches(topology) {
+  if (topology.branchStructures.length === 0) {
+    return "";
+  }
+  return `; origina ${topology.branchStructures
+    .map((branch) => branch.label)
+    .join(" y ")}`;
+}
+
+function renderBranchStructureMarker(edge) {
+  if (edge.topology.region !== "branch") {
+    return "";
+  }
+  return `
+      <g class="graph-structure-marker" transform="translate(${edge.labelX + 31} ${edge.labelY})" data-structure-code="${escapeAttribute(edge.topology.structureCode)}" aria-hidden="true">
+        <circle r="9"></circle>
+        <text>${escapeAttribute(edge.topology.structureCode)}</text>
+      </g>`;
 }
 
 function renderSpecialMarker(edge) {
@@ -31,32 +51,45 @@ function renderSpecialMarker(edge) {
   }
   const markerX = edge.labelX + 31;
   const markerY = edge.labelY;
+  const rootedBranchMarkers = edge.topology.branchStructures
+    .map((branch, index, branches) => {
+      const offset = (index - (branches.length - 1) / 2) * 18;
+      return `
+          <g class="graph-branch-root-marker" transform="translate(${offset} 21)" data-structure-code="${escapeAttribute(branch.code)}">
+            <circle r="7.5"></circle>
+            <text>${escapeAttribute(branch.code)}</text>
+          </g>`;
+    })
+    .join("");
   return `
       <g class="graph-special-marker" transform="translate(${markerX} ${markerY})" aria-hidden="true">
         <circle class="graph-special-marker__outer" r="11"></circle>
         <circle class="graph-special-marker__inner" r="7"></circle>
         <path class="graph-special-marker__arms" d="M 0 -7 V 7 M -7 0 H 7"></path>
         <circle class="graph-special-marker__hub" r="2.2"></circle>
+        <g class="graph-branch-root-markers">${rootedBranchMarkers}</g>
       </g>`;
 }
 
 function renderEdge(edge) {
-  const label = `Ficha ${edge.a}-${edge.b}, ${describeTopology(edge.topology)}, jugada por ${edge.playerId} en la acción ${edge.turnNumber}`;
+  const label = `Ficha ${edge.a}-${edge.b}, ${describeTopology(edge.topology)}${describeRootedBranches(edge.topology)}, jugada por ${edge.playerId} en la acción ${edge.turnNumber}`;
   return `
     <g class="graph-edge ${getTopologyClasses(edge)}" data-placement-id="${escapeAttribute(edge.placementId)}" data-region="${edge.topology.region}" data-special-double="${edge.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${edge.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-edge__line" d="${edge.path}"></path>
       <rect class="graph-edge__badge" x="${edge.labelX - 21}" y="${edge.labelY - 12}" width="42" height="24" rx="12"></rect>
       <text class="graph-edge__label" x="${edge.labelX}" y="${edge.labelY}">${edge.a}·${edge.b}</text>
+      ${renderBranchStructureMarker(edge)}
       ${renderSpecialMarker(edge)}
     </g>`;
 }
 
 function renderLoop(loop) {
-  const label = `Chancho ${loop.a}-${loop.b}, ${describeTopology(loop.topology)}, ${loop.topology.isSpecialDouble ? "especial" : "ordinario"}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`;
+  const label = `Chancho ${loop.a}-${loop.b}, ${describeTopology(loop.topology)}, ${loop.topology.isSpecialDouble ? "especial" : "ordinario"}${describeRootedBranches(loop.topology)}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`;
   return `
     <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-loop__shape" d="${loop.path}"></path>
       <text class="graph-loop__label" x="${loop.labelX}" y="${loop.labelY}">${loop.a}|${loop.b}</text>
+      ${renderBranchStructureMarker(loop)}
       ${renderSpecialMarker(loop)}
     </g>`;
 }
@@ -76,11 +109,12 @@ function renderOpenTarget(target, hasSelection) {
     target.isTopologyDimmed ? "is-topology-dimmed" : "",
   ].filter(Boolean).join(" ");
   return `
-    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" role="button" tabindex="${target.isLegal ? "0" : "-1"}" aria-disabled="${target.isLegal ? "false" : "true"}" aria-label="${escapeAttribute(target.accessibleLabel)}">
+    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="${target.isLegal ? "0" : "-1"}" aria-disabled="${target.isLegal ? "false" : "true"}" aria-label="${escapeAttribute(target.accessibleLabel)}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
-      <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="8"></circle>
-      <text class="open-target__index" x="${target.endX}" y="${target.endY}">${target.index}</text>
+      <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="10"></circle>
+      <text class="open-target__structure-code" x="${target.endX}" y="${target.endY}">${escapeAttribute(target.topology.structureCode)}</text>
+      <text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.index}</text>
     </g>`;
 }
 
@@ -110,7 +144,7 @@ export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. El trazo continuo identifica la línea principal y sus destinos; el trazo segmentado identifica ramas y sus destinos. El símbolo de cuatro brazos identifica un chancho especial.</desc>
+      <desc id="graph-description">Siete valores fijos. P identifica la línea principal; A, B, C y las letras siguientes identifican ramas concretas. Cada código se repite en su raíz, sus fichas y su extremo abierto. El símbolo de cuatro brazos identifica un chancho especial.</desc>
       <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
@@ -144,7 +178,7 @@ export function renderTopologyInspectionMarkup(inspection) {
   const topology = inspection.topology;
   const region = topology.region === "main"
     ? `Esta ficha está en la línea principal · posición ${topology.order}.`
-    : `Esta rama nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. Esta ficha ocupa la posición ${topology.depth} de la rama.`;
+    : `Esta ficha está en la ${topology.structureLabel}. La rama nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. Esta ficha ocupa la posición ${topology.depth} de la rama.`;
   const doubleRole = describeDoubleRole(topology.doubleRole);
   const doubleDetails = doubleRole
     ? `<p class="topology-inspector__double"><strong>${doubleRole}</strong><span>Conexiones: ${topology.connectionCount}/${topology.connectionCapacity}</span>${topology.isSpecialDouble ? `<span>Ramas iniciadas: ${topology.startedBranchCount}/2</span>` : ""}</p>`

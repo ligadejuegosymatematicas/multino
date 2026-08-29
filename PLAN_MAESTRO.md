@@ -113,11 +113,13 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 3 — Primera legibilidad topológica: COMPLETADO.** Añade proyección pura de línea/ramas/chanchos/K, diferenciación permanente sobria, resumen de especiales e inspección contextual que resalta una estructura y su raíz. No cambia motor, schema ni reglas.
 
+**Bloque 4 — Identidad y visibilidad de extremos topológicos: COMPLETADO.** Añade códigos derivados `P`, `A`, `B`… compartidos por raíz, fichas y terminal; refuerza la visibilidad neutral de todos los extremos y la jerarquía compatible/incompatible al seleccionar una ficha. No cambia legalidad, motor ni schema.
+
 **Siguiente bloque: NO INICIADO.** Permanecen fuera refinamiento visual premium, panel estructural completo, coordenadas visibles, layout adaptativo avanzado, Modo Tradicional, selector de vista, replay y animaciones complejas.
 
 **Estudio futuro registrado — reversibilidad Grafo/Tradicional: PARCIALMENTE MATERIALIZADO.** La primera proyección topológica confirma que la secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. Coordenadas, vecinos visibles y panel estructural completo continúan en estudio. Véase `docs/reversibilidad-grafo-tradicional.md`.
 
-**Estudio de UX posterior a prueba manual: PRIMERA CAPA COMPLETADA.** Se adoptó la combinación mínima de estilo topológico permanente e inspección contextual. Panel estructural, etiquetas/coordenadas y acabado premium permanecen pendientes. Véase `docs/ux-topologia-modo-grafo.md`.
+**Estudio de UX posterior a prueba manual: TRES ITERACIONES FUNCIONALES COMPLETADAS.** Se adoptaron estilo topológico permanente, inspección contextual, clasificación de targets e identidad alfabética de estructura. Panel estructural, coordenadas y acabado premium permanecen pendientes. Véase `docs/ux-topologia-modo-grafo.md`.
 
 ### Alcance
 

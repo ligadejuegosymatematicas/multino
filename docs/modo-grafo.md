@@ -226,9 +226,9 @@ Cada `PLAY_DOMINO` aceptado agrega una única arista o lazo; `PASS` no agrega ni
 
 El prototipo usa SVG sin dependencias. Frente a Canvas, SVG permite que vértices, aristas, lazos y targets conserven elementos individuales, nombres accesibles, foco y eventos de mouse, tacto o teclado. `GraphScene.js` produce geometría descartable; `GraphRenderer.js` la serializa y conecta intenciones. Ninguno recibe permiso para decidir legalidad o modificar snapshots.
 
-Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha principal usa un trazo continuo; una ficha de rama usa un trazo segmentado, también identificado en la leyenda. Un chancho conserva su lazo cerrado y los especiales añaden el distintivo textual `E`. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que una rama ya jugada no se confunde con un destino.
+Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha principal usa un trazo continuo; una ficha de rama usa un trazo segmentado, también identificado en la leyenda. Un chancho conserva su lazo cerrado y los especiales añaden un símbolo gráfico de cuatro brazos y doble contorno. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que una rama ya jugada no se confunde con un destino.
 
-Cada entrada de `openEndTargets` produce exactamente una curva numerada con su propio hit area y `data-target-id`. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, el vértice dirige al usuario hacia las curvas individualizadas y no elige por valor.
+Cada entrada de `openEndTargets` produce exactamente una curva con su propio hit area y `data-target-id`. La terminal muestra siempre la identidad topológica derivada: `P` para principal y `A`, `B`, `C`… para ramas concretas. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan y aparece además el índice individual de opción. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, el vértice dirige al usuario hacia las curvas individualizadas y no elige por valor.
 
 `START` se presenta mediante un botón independiente bajo el grafo vacío, sin curva ficticia. `PASS` se habilita únicamente cuando aparece en `getAvailableActions`. Cada aceptación reemplaza la referencia al snapshot por el resultado de `applyTurnAction`, vuelve a ejecutar las proyecciones y renderiza desde cero; no existe un estado paralelo de aristas, mano, score o turno.
 
@@ -244,11 +244,15 @@ La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y
 
 La vista muestra `Especiales: s/effectiveK`. Al activar una ficha jugada se resalta toda su línea o rama; en una rama también se destaca el chancho raíz. El inspector explica posición o profundidad y, para un chancho, uno de los roles `Especial de línea principal`, `Ordinario de línea principal` u `Ordinario en rama`, además de conexiones/capacidad y ramas iniciadas cuando corresponde. La selección se cierra repitiendo la ficha, con el botón o mediante `Escape`; nunca entra al snapshot.
 
+La proyección reserva dos estructuras laterales por chancho especial siguiendo `specialDoublePlacementIds` y el orden `branch:1`, `branch:2`. Las etiqueta con una secuencia alfabética estable: el primer chancho origina `A/B`, el segundo `C/D`, hasta un máximo doble-seis de `M/N`. La línea principal usa `P`. Esos códigos se derivan de puertos existentes y se repiten en raíz, fichas, extremos y etiquetas accesibles; no tienen significado reglamentario ni se persisten.
+
+Sin ficha seleccionada, todos los extremos conservan opacidad alta, terminal ampliada y código visible. Con selección, los compatibles reciben mayor peso, terminal destacada, pulso discreto e índice de opción; los incompatibles permanecen como contexto muy atenuado. `prefers-reduced-motion` elimina la animación. La letra y los patrones continuo/segmentado hacen que la distinción no dependa solo del color.
+
 ## Decisiones todavía abiertas
 
 - refinamiento del heptágono estable y posible adaptación sin semántica reglamentaria;
 - umbral exacto para pasar de segmentos a expansión híbrida;
-- representación accesible de destinos que producen el mismo valor pero distinta topología;
+- evaluación humana de densidad y tamaño de los códigos cuando coinciden muchos targets en teléfono;
 - reducción de cruces y etiquetas en un grafo casi completo;
 - comportamiento de inspección cuando una arista está ausente por permanecer en una mano oculta.
 

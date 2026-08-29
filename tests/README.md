@@ -76,6 +76,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/interaction-controller.test.js`: inspección efímera alternable, rechazo de placements inexistentes y limpieza tras una acción sin contaminar el snapshot;
 - CSS y leyenda se verifican para asegurar patrones/etiquetas además del color; botón y `Escape` se comprobaron manualmente en navegador local.
 
+### Fase 2, Bloque 4 — identidad y visibilidad de extremos completada
+
+- `tests/projections/topology-projection.test.js`: identidad `P`, reserva estable `A…N`, asociación a puerto/raíz y propagación a placements y targets sin mutar el snapshot;
+- `tests/ui/graph-renderer.test.js`: código compartido por raíz/fichas/terminal, estado neutral visible, jerarquía legal/incompatible, índices bajo selección y etiquetas accesibles;
+- el escenario denso comprueba catorce identidades laterales potenciales y dieciséis targets sin perder IDs individuales;
+- CSS verifica terminales, patrones y letras redundantes, además de desactivar movimiento cuando el usuario lo solicita.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

@@ -2,7 +2,7 @@
 
 ## Estado de esta nota
 
-**Primera capa funcional implementada; alternativas de ampliación todavía en estudio.**
+**Tres iteraciones funcionales implementadas; alternativas de ampliación todavía en estudio.**
 
 Esta nota parte de una prueba manual del primer GraphRenderer: la ronda puede jugarse y el grafo permite reconocer fichas y destinos, pero no comunica con suficiente claridad la estructura tradicional de línea principal y ramas. El objetivo no es transformar el Modo Grafo en una mesa de dominó, sino estudiar una segunda capa visual, derivada y opcional, sobre el grafo de valores.
 
@@ -274,12 +274,23 @@ Se implementaron los dos primeros niveles de la recomendación y un inspector lo
 - proyección pura por `placementId` con región, orden, raíz, puerto, profundidad y clasificación de chanchos;
 - resumen derivado `Especiales: s/effectiveK`;
 - trazo continuo para principal y segmentado para rama;
-- distintivo textual `E` para chanchos especiales;
+- símbolo gráfico redundante para chanchos especiales;
 - selección de una ficha jugada para resaltar toda su estructura, conservar visible la raíz de rama y atenuar el resto;
 - detalle de rol, conexiones/capacidad y ramas iniciadas;
 - cierre por repetición, botón o `Escape`.
 
 No se implementaron el panel estructural completo, coordenadas permanentes, replay, Modo Tradicional ni acabado premium. La experiencia densa continúa necesitando evaluación humana aunque la suite comprueba que fichas, targets e identidad individual permanecen disponibles.
+
+## Segunda y tercera iteración de extremos
+
+La segunda iteración hizo que cada `openEndTarget` heredara su región y estructura exactas, reforzó el trazo principal y lateral, extendió la inspección a la colita terminal y sustituyó la letra `E` por un símbolo independiente de color y patrón.
+
+La tercera resuelve dos observaciones adicionales:
+
+1. **La colita comunica qué estructura continúa.** La principal recibe el código `P`. Cada puerto lateral potencial recibe `A`, `B`, `C`… por orden de adquisición del chancho especial y, dentro de él, `branch:1` antes de `branch:2`. La misma letra aparece en el chancho raíz, en todas las fichas de la rama y en el extremo terminal.
+2. **Los extremos existen visualmente antes de elegir ficha.** El estado neutral conserva colita gruesa, terminal de diez unidades y código. La selección no revela targets previamente ocultos: eleva los compatibles, añade un índice de opción y atenúa los incompatibles.
+
+La identidad alfabética es metadata descartable de UI. No reemplaza `placementId + portId`, no entra en acciones, no altera legalidad y puede recalcularse íntegramente desde el mismo snapshot. Se eligió un estado neutral estático: animar simultáneamente hasta dieciséis extremos agregaría ruido. Solo los legales usan el pulso discreto ya compatible con `prefers-reduced-motion`.
 
 ## Proyección futura mínima a evaluar
 

@@ -68,6 +68,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Identidad principal reforzada por peso, color y trazo continuo; ramas conservan identidad secundaria segmentada sin depender exclusivamente del color.
 - Distintivo textual `E` reemplazado por un símbolo gráfico de cuatro brazos y doble contorno, independiente de la región y del patrón de trazo.
 - Inspección de ramas ampliada a sus destinos abiertos y expresada en lenguaje de partida, sin mostrar identificadores técnicos; cobertura visual y automática con K=1/K=2.
+- Tercera iteración de legibilidad topológica: códigos derivados `P`, `A`, `B`… identifican la estructura que continúa cada extremo abierto.
+- Cada identidad lateral se repite en el chancho raíz, todas las fichas de la rama y su terminal, sin persistir etiquetas ni consultar `board` desde UI.
+- Estado neutral de extremos reforzado con colitas, terminales y códigos siempre visibles; al seleccionar ficha, las opciones legales ganan pulso e índice y las incompatibles se atenúan.
+- Convención alfabética estable por orden de adquisición del chancho especial y puerto lateral, con cobertura hasta el escenario denso de catorce ramas potenciales.
 
 ### Decidido
 

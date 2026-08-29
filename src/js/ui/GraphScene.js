@@ -107,9 +107,9 @@ function createOpenTarget(
     angle + bendDirection * Math.PI / 2,
     Math.min(12, 4 + count),
   );
-  const regionLabel = target.topology.region === "main"
-    ? "en la línea principal"
-    : "en una rama";
+  const structureLabel = target.topology.region === "main"
+    ? "línea principal"
+    : target.topology.structureLabel;
   return {
     ...target,
     index: index + 1,
@@ -119,7 +119,7 @@ function createOpenTarget(
     endY: end.y,
     isLegal,
     ...topologyState,
-    accessibleLabel: `Destino ${index + 1} de ${count} para el valor ${target.value}, ${regionLabel}`,
+    accessibleLabel: `Extremo abierto ${target.topology.structureCode}, ${structureLabel}, valor ${target.value}; opción ${index + 1} de ${count}`,
   };
 }
 
@@ -168,6 +168,8 @@ function createTopologyInspection(
     structurePlacementIds: [...structurePlacementIds],
     rootPlacementId: branch?.originPlacementId ?? null,
     rootDominoId: rootEdge?.dominoId ?? null,
+    structureCode: placement.structureCode,
+    structureLabel: placement.structureLabel,
   };
 }
 

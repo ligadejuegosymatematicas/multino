@@ -10,6 +10,13 @@ import { getOpenEndTargets } from "../engine/BoardQueries.js";
 import { validateBoardState } from "../engine/BoardValidator.js";
 import { parseSequentialId } from "../engine/SequentialIds.js";
 
+const MAIN_STRUCTURE = Object.freeze({
+  id: "main",
+  code: "P",
+  label: "Principal",
+});
+const BRANCH_PORT_IDS = Object.freeze(["branch:1", "branch:2"]);
+
 function comparePlacementIds(first, second) {
   return (
     parseSequentialId(first, "placement") -
@@ -29,26 +36,67 @@ function getDoubleRole({ double, region, special }) {
     : "ORDINARY_BRANCH";
 }
 
-function projectOpenTargetTopology(target) {
+function getAlphabeticCode(index) {
+  let code = "";
+  let remainder = index;
+  do {
+    code = String.fromCharCode(65 + (remainder % 26)) + code;
+    remainder = Math.floor(remainder / 26) - 1;
+  } while (remainder >= 0);
+  return code;
+}
+
+function createBranchStructures(state, occupiedBranches) {
+  const occupiedById = new Map(
+    occupiedBranches.map((branch) => [branch.id, branch]),
+  );
+  let branchIndex = 0;
+
+  return state.board.specialDoublePlacementIds.flatMap(
+    (originPlacementId) => BRANCH_PORT_IDS.map((originPortId) => {
+      const id = `${originPlacementId}:${originPortId}`;
+      const occupied = occupiedById.get(id) ?? null;
+      const code = getAlphabeticCode(branchIndex);
+      branchIndex += 1;
+      return {
+        id,
+        code,
+        label: `Rama ${code}`,
+        originPlacementId,
+        originPortId,
+        isOccupied: occupied !== null,
+        placementIds: occupied ? [...occupied.placementIds] : [],
+      };
+    }),
+  );
+}
+
+function projectOpenTargetTopology(target, branchStructureById) {
   if (target.kind === "main") {
     return {
       targetId: target.id,
       placementId: target.placementId,
       portId: target.portId,
       region: "main",
-      structureId: "main",
+      structureId: MAIN_STRUCTURE.id,
+      structureCode: MAIN_STRUCTURE.code,
+      structureLabel: MAIN_STRUCTURE.label,
       originPlacementId: null,
       originPortId: null,
     };
   }
 
   const origin = target.branchOrigin;
+  const structureId = `${origin.placementId}:${origin.portId}`;
+  const structure = branchStructureById.get(structureId);
   return {
     targetId: target.id,
     placementId: target.placementId,
     portId: target.portId,
     region: "branch",
-    structureId: `${origin.placementId}:${origin.portId}`,
+    structureId,
+    structureCode: structure.code,
+    structureLabel: structure.label,
     originPlacementId: origin.placementId,
     originPortId: origin.portId,
   };
@@ -70,6 +118,18 @@ export function getBoardTopologyProjection(state) {
   );
   const usage = createPortUsageIndex(state);
   const derivedBranches = deriveOccupiedBranches(state, usage);
+  const branchStructures = createBranchStructures(state, derivedBranches);
+  const branchStructureById = new Map(
+    branchStructures.map((branch) => [branch.id, branch]),
+  );
+  const branchStructuresByOrigin = new Map();
+  for (const structure of branchStructures) {
+    const structures = branchStructuresByOrigin.get(
+      structure.originPlacementId,
+    ) ?? [];
+    structures.push(structure);
+    branchStructuresByOrigin.set(structure.originPlacementId, structures);
+  }
   const branchByPlacementId = new Map();
   const startedBranchesByOrigin = new Map();
 
@@ -95,6 +155,9 @@ export function getBoardTopologyProjection(state) {
       const domino = state.dominoes[placement.dominoId];
       const branch = branchByPlacementId.get(placementId) ?? null;
       const region = branch ? "branch" : "main";
+      const structure = branch
+        ? branchStructureById.get(branch.structureId)
+        : MAIN_STRUCTURE;
       const double = isDouble(domino);
       const special = specialPlacementIds.has(placementId);
       const connectionCount = getConnectionsForPlacement(
@@ -106,7 +169,9 @@ export function getBoardTopologyProjection(state) {
         placementId,
         dominoId: placement.dominoId,
         region,
-        structureId: branch?.structureId ?? "main",
+        structureId: structure.id,
+        structureCode: structure.code,
+        structureLabel: structure.label,
         order: branch?.depth ?? mainOrderByPlacementId.get(placementId),
         originPlacementId: branch?.originPlacementId ?? null,
         originPortId: branch?.originPortId ?? null,
@@ -127,6 +192,15 @@ export function getBoardTopologyProjection(state) {
         ).length,
         startedBranchCount:
           startedBranchesByOrigin.get(placementId) ?? 0,
+        branchStructures: (
+          branchStructuresByOrigin.get(placementId) ?? []
+        ).map((candidate) => ({
+          id: candidate.id,
+          code: candidate.code,
+          label: candidate.label,
+          originPortId: candidate.originPortId,
+          isOccupied: candidate.isOccupied,
+        })),
       };
     });
 
@@ -136,15 +210,28 @@ export function getBoardTopologyProjection(state) {
 
   return {
     mainLine: {
+      id: MAIN_STRUCTURE.id,
+      code: MAIN_STRUCTURE.code,
+      label: MAIN_STRUCTURE.label,
       placementIds: mainLinePlacementIds,
     },
-    branches: derivedBranches.map((branch) => ({
-      id: branch.id,
-      originPlacementId: branch.origin.placementId,
-      originPortId: branch.origin.portId,
+    branches: branchStructures
+      .filter((branch) => branch.isOccupied)
+      .map((branch) => ({
+        id: branch.id,
+        code: branch.code,
+        label: branch.label,
+        originPlacementId: branch.originPlacementId,
+        originPortId: branch.originPortId,
+        placementIds: [...branch.placementIds],
+      })),
+    branchStructures: branchStructures.map((branch) => ({
+      ...branch,
       placementIds: [...branch.placementIds],
     })),
-    openTargets: getOpenEndTargets(state).map(projectOpenTargetTopology),
+    openTargets: getOpenEndTargets(state).map((target) =>
+      projectOpenTargetTopology(target, branchStructureById)
+    ),
     placements,
     specialDoubles: {
       configuredK,

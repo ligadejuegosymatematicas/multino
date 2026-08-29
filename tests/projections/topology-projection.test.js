@@ -38,16 +38,20 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
   );
   const projection = getBoardTopologyProjection(state);
 
-  assert.deepEqual(projection.mainLine.placementIds, [
-    "placement-1",
-    "placement-2",
-  ]);
+  assert.deepEqual(projection.mainLine, {
+    id: "main",
+    code: "P",
+    label: "Principal",
+    placementIds: ["placement-1", "placement-2"],
+  });
   assert.equal(placementAt(projection, "placement-1").region, "main");
   assert.equal(placementAt(projection, "placement-1").order, 1);
   assert.equal(placementAt(projection, "placement-2").order, 2);
   assert.deepEqual(projection.branches, [
     {
       id: "placement-1:branch:1",
+      code: "A",
+      label: "Rama A",
       originPlacementId: "placement-1",
       originPortId: "branch:1",
       placementIds: ["placement-3", "placement-4"],
@@ -56,6 +60,10 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
   assert.deepEqual(
     {
       region: placementAt(projection, "placement-3").region,
+      structureCode:
+        placementAt(projection, "placement-3").structureCode,
+      structureLabel:
+        placementAt(projection, "placement-3").structureLabel,
       order: placementAt(projection, "placement-3").order,
       originPlacementId:
         placementAt(projection, "placement-3").originPlacementId,
@@ -64,6 +72,8 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
     },
     {
       region: "branch",
+      structureCode: "A",
+      structureLabel: "Rama A",
       order: 1,
       originPlacementId: "placement-1",
       originPortId: "branch:1",
@@ -168,11 +178,21 @@ test("clasifica destinos abiertos por identidad exacta aunque compartan valor", 
   );
 
   assert.equal(targetsById.get("placement-2:side:a").region, "main");
+  assert.equal(targetsById.get("placement-2:side:a").structureCode, "P");
+  assert.equal(
+    targetsById.get("placement-2:side:a").structureLabel,
+    "Principal",
+  );
   assert.equal(
     targetsById.get("placement-2:side:a").structureId,
     "main",
   );
   assert.equal(targetsById.get("placement-4:side:b").region, "branch");
+  assert.equal(targetsById.get("placement-4:side:b").structureCode, "A");
+  assert.equal(
+    targetsById.get("placement-4:side:b").structureLabel,
+    "Rama A",
+  );
   assert.equal(
     targetsById.get("placement-4:side:b").structureId,
     "placement-1:branch:1",
@@ -180,6 +200,75 @@ test("clasifica destinos abiertos por identidad exacta aunque compartan valor", 
   assert.notEqual(
     targetsById.get("placement-2:side:a").targetId,
     targetsById.get("placement-4:side:b").targetId,
+  );
+});
+
+test("asigna P y letras estables a principal y puertos laterales potenciales", () => {
+  let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(
+    state,
+    "3-4",
+    targetAt("placement-1", "main:2"),
+  );
+  state = playDomino(
+    state,
+    "3-3",
+    targetAt("placement-2", "side:a"),
+  );
+  const projection = getBoardTopologyProjection(state);
+
+  assert.deepEqual(
+    projection.branchStructures.map((branch) => ({
+      id: branch.id,
+      code: branch.code,
+      label: branch.label,
+      isOccupied: branch.isOccupied,
+    })),
+    [
+      {
+        id: "placement-1:branch:1",
+        code: "A",
+        label: "Rama A",
+        isOccupied: false,
+      },
+      {
+        id: "placement-1:branch:2",
+        code: "B",
+        label: "Rama B",
+        isOccupied: false,
+      },
+      {
+        id: "placement-3:branch:1",
+        code: "C",
+        label: "Rama C",
+        isOccupied: false,
+      },
+      {
+        id: "placement-3:branch:2",
+        code: "D",
+        label: "Rama D",
+        isOccupied: false,
+      },
+    ],
+  );
+  assert.deepEqual(
+    placementAt(projection, "placement-1").branchStructures.map(
+      (branch) => branch.code,
+    ),
+    ["A", "B"],
+  );
+  assert.deepEqual(
+    placementAt(projection, "placement-3").branchStructures.map(
+      (branch) => branch.code,
+    ),
+    ["C", "D"],
+  );
+  assert.deepEqual(
+    projection.openTargets
+      .filter((target) => target.region === "branch")
+      .map((target) => target.structureCode),
+    ["A", "B", "C", "D"],
   );
 });
 
@@ -192,6 +281,7 @@ test("la proyección topológica no muta ni comparte colecciones con el snapshot
   projection.mainLine.placementIds.push("falso");
   projection.placements[0].region = "branch";
   projection.openTargets[0].region = "branch";
+  projection.branchStructures[0].code = "Z";
   projection.specialDoubles.enabledCount = 99;
 
   assert.deepEqual(state, before);

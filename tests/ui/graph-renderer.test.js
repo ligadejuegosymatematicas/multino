@@ -18,6 +18,7 @@ import {
 } from "../../src/js/ui/GraphRenderer.js";
 import {
   createBoardScenario,
+  findDominoOwner,
   playDomino,
 } from "../fixtures/board-scenarios.js";
 import { createValidParticipantInput } from "../fixtures/participants.js";
@@ -188,17 +189,20 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
       id: target.id,
       region: target.topology.region,
       structureId: target.topology.structureId,
+      structureCode: target.topology.structureCode,
     })),
     [
       {
         id: "placement-2:side:a",
         region: "main",
         structureId: "main",
+        structureCode: "P",
       },
       {
         id: "placement-4:side:b",
         region: "branch",
         structureId: "placement-1:branch:1",
+        structureCode: "A",
       },
     ],
   );
@@ -209,6 +213,110 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
   assert.match(
     markup,
     /open-target is-neutral is-branch-target[^>]+data-target-id="placement-4:side:b"/,
+  );
+  assert.match(markup, /data-structure-code="P"/);
+  assert.match(markup, /data-structure-code="A"/);
+});
+
+test("la raíz, las fichas y el extremo comparten la identidad de rama", () => {
+  const scene = createGraphScene(projectGraphView(createTopologyScenario()));
+  const markup = renderGraphSvgMarkup(scene);
+  const root = scene.loops.find(
+    (loop) => loop.placementId === "placement-1",
+  );
+  const branchEdges = scene.edges.filter(
+    (edge) => edge.topology.structureCode === "A",
+  );
+  const branchTarget = scene.openTargets.find(
+    (target) => target.topology.structureCode === "A",
+  );
+
+  assert.deepEqual(
+    root.topology.branchStructures.map((branch) => branch.code),
+    ["A", "B"],
+  );
+  assert.equal(branchEdges.length, 2);
+  assert.ok(branchTarget);
+  assert.match(
+    markup,
+    /class="graph-branch-root-marker"[^>]+data-structure-code="A"/,
+  );
+  assert.match(
+    markup,
+    /class="graph-structure-marker"[^>]+data-structure-code="A"/,
+  );
+  assert.match(
+    markup,
+    /class="open-target is-neutral is-branch-target"[^>]+data-structure-code="A"/,
+  );
+  assert.match(markup, /Rama A/);
+});
+
+test("sin ficha seleccionada todos los extremos permanecen visibles y codificados", async () => {
+  const scene = createGraphScene(projectGraphView(createTopologyScenario()));
+  const markup = renderGraphSvgMarkup(scene);
+  const boardCss = await readFile(
+    new URL("../../src/css/board.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(scene.hasSelection, false);
+  assert.equal(
+    scene.openTargets.every((target) => target.isLegal === false),
+    true,
+  );
+  assert.equal(
+    markup.match(/class="open-target is-neutral /g)?.length,
+    scene.openTargets.length,
+  );
+  assert.equal(
+    markup.match(/class="open-target__structure-code"/g)?.length,
+    scene.openTargets.length,
+  );
+  assert.match(markup, /<circle class="open-target__end"[^>]+r="10"/);
+  assert.match(boardCss, /\.open-target \{[\s\S]+?opacity:\s*0\.92/);
+  assert.match(
+    boardCss,
+    /\.open-target\.is-neutral \.open-target__end[\s\S]+?drop-shadow/,
+  );
+});
+
+test("al seleccionar ficha los compatibles dominan y muestran opción individual", async () => {
+  const state = createTopologyScenario();
+  const playerId = findDominoOwner(state, "1-3");
+  const legalTargets = getLegalTargetsForDomino(
+    state,
+    playerId,
+    "1-3",
+  );
+  const scene = createGraphScene(projectGraphView(state, playerId), {
+    selectedDominoId: "1-3",
+    legalTargets,
+  });
+  const markup = renderGraphSvgMarkup(scene);
+  const boardCss = await readFile(
+    new URL("../../src/css/board.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(legalTargets.length, 2);
+  assert.deepEqual(
+    scene.openTargets
+      .filter((target) => target.isLegal)
+      .map((target) => target.topology.structureCode),
+    ["P", "A"],
+  );
+  assert.match(markup, /open-target is-legal is-main-target/);
+  assert.match(markup, /open-target is-legal is-branch-target/);
+  assert.match(markup, /open-target is-incompatible/);
+  assert.match(markup, /class="open-target__option-index"/);
+  assert.match(
+    boardCss,
+    /\.open-target\.is-incompatible \{[\s\S]+?opacity:\s*0\.12/,
+  );
+  assert.match(
+    boardCss,
+    /\.open-target\.is-legal \.open-target__option-index[\s\S]+?opacity:\s*1/,
   );
 });
 
@@ -264,7 +372,8 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
   );
   assert.match(markup, /graph-edge is-branch is-inspected is-topology-highlighted/);
   assert.match(markup, /graph-loop is-main is-special-double is-topology-root/);
-  assert.match(inspector, /Esta rama nace del chancho 4\|4/);
+  assert.match(inspector, /La rama nace del chancho 4\|4/);
+  assert.match(inspector, /Rama A/);
   assert.match(inspector, /posición 2 de la rama/);
   assert.doesNotMatch(inspector, /branch:1|placement-/);
   assert.match(inspector, /data-clear-topology-inspection/);
@@ -364,6 +473,16 @@ test("un grafo denso conserva fichas, targets e inspección individual", () => {
   assert.equal(played.filter((edge) => edge.isTopologyDimmed).length, 16);
   assert.equal(markup.match(/data-placement-id=/g)?.length, 18);
   assert.equal(markup.match(/class="open-target /g)?.length, 16);
+  assert.deepEqual(
+    scene.loops
+      .flatMap((loop) => loop.topology.branchStructures)
+      .map((branch) => branch.code),
+    ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"],
+  );
+  assert.equal(
+    markup.match(/class="graph-branch-root-marker"/g)?.length,
+    14,
+  );
 });
 
 test("la diferenciación topológica no depende exclusivamente del color", async () => {
@@ -393,6 +512,9 @@ test("la diferenciación topológica no depende exclusivamente del color", async
     /\.open-target\.is-branch-target[\s\S]+?stroke-dasharray:\s*6 6/,
   );
   assert.match(boardCss, /\.graph-special-marker__arms/);
+  assert.match(boardCss, /\.graph-structure-marker text/);
+  assert.match(boardCss, /\.graph-branch-root-marker text/);
+  assert.match(boardCss, /\.open-target__structure-code/);
   assert.match(componentsCss, /\.legend-branch[\s\S]+?border-top-style:\s*dashed/);
   assert.match(componentsCss, /\.legend-special::before/);
 });

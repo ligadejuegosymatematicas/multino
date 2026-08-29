@@ -522,10 +522,22 @@ Cada arista proyectada conserva `dominoId`, `placementId` y metadatos temporales
 
 **Decisión:** Exponer `getBoardTopologyProjection(state)` como consulta pura derivada de línea, placements, conexiones, puertos, lista especial y ramas. Componerla en `projectGraphView`; GraphRenderer no lee `board`. Mantener inspección en `InteractionController` como estado efímero que identifica solo un `placementId` y se limpia después de una acción.
 
-La vista diferencia principal/rama con trazo continuo/segmentado, añade `E` a chanchos especiales, muestra `Especiales: s/effectiveK` y, bajo selección, resalta la estructura completa más la raíz lateral. El inspector explica los tres roles de chancho y su capacidad.
+La vista diferencia principal/rama con trazo continuo/segmentado, añade un símbolo gráfico a chanchos especiales, muestra `Especiales: s/effectiveK` y, bajo selección, resalta la estructura completa más la raíz lateral. El inspector explica los tres roles de chancho y su capacidad.
 
 **Motivo:** La prueba manual confirmó que el grafo de valores era jugable pero no hacía visible la topología que ya conserva el snapshot. Una capa derivada resuelve clasificación e inspección sin duplicar estado ni convertir el grafo en una mesa tradicional.
 
 **Alternativas consideradas:** Estilos permanentes únicamente; índices globales; panel estructural completo; lectura directa de `board` desde UI; persistir región/coordenadas; rediseño premium simultáneo.
 
 **Consecuencias:** No cambia schema v6, motor, reglas, legalidad, puntuación ni turnos. Panel completo, coordenadas visibles, replay, Modo Tradicional y refinamiento premium siguen pendientes.
+
+## DEC-038 — Identidad descartable de estructuras en extremos abiertos
+
+**Estado:** Aceptada.
+
+**Decisión:** Derivar `P` para la línea principal y reservar `A`, `B`, `C`… para cada par `originPlacementId + originPortId` lateral. El orden se obtiene de `specialDoublePlacementIds` y, dentro de cada chancho, `branch:1` antes de `branch:2`. Repetir el código lateral en el chancho raíz, todas las fichas de la rama y su target terminal. Mantener todos los extremos visibles en estado neutral; con ficha seleccionada, destacar los legales, mostrar índice individual y atenuar los incompatibles.
+
+**Motivo:** Un target identificado solo por valor y región no explica qué rama concreta continuará, y ocultarlo visualmente hasta seleccionar una ficha elimina una señal que la mesa tradicional entrega de forma permanente.
+
+**Alternativas consideradas:** Colores exclusivos por rama; numerar solo targets legales; asignar etiquetas al iniciar la rama; animar continuamente todos los extremos; persistir la letra; hacer que GraphRenderer recorra puertos del board.
+
+**Consecuencias:** La identificación no depende solo del color y permanece estable aunque la rama todavía esté vacía. `placementId + portId` continúa siendo la identidad reglamentaria enviada al motor; `P/A/B…` es únicamente presentación derivada. No cambian snapshot, schema, motor, reglas, puntuación ni turnos. En grafos densos y teléfonos todavía debe evaluarse el tamaño final de badges antes del refinamiento premium.

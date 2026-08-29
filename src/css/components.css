@@ -134,6 +134,19 @@
   border-top-style: dotted;
 }
 
+.legend-structure-code {
+  display: inline-grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border: 1.5px solid #625672;
+  border-radius: 50%;
+  color: #514567;
+  background: #f7f4fb;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
 .legend-special {
   position: relative;
   display: inline-block;
