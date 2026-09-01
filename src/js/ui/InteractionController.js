@@ -3,6 +3,7 @@ import {
   getAvailableActions,
   getLegalTargetsForDomino,
   projectGraphView,
+  projectTraditionalView,
 } from "../game/index.js";
 
 function targetsMatch(actionTarget, projectedTarget) {
@@ -55,6 +56,10 @@ export class InteractionController {
 
     return {
       view,
+      traditionalView: projectTraditionalView(
+        this.state,
+        this.state.currentPlayerId,
+      ),
       selectedDominoId: this.selectedDominoId,
       inspectedStructureId: this.inspectedStructureId,
       inspectedPlacementId: this.inspectedPlacementId,

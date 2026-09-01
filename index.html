@@ -3,11 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prototipo jugable del Modo Grafo para Dominó múltiplo de 5.">
+    <meta name="description" content="Prototipo jugable en modos Grafo y Tradicional para Dominó múltiplo de 5.">
     <title>Dominó múltiplo de 5</title>
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
     <link rel="stylesheet" href="./src/css/board.css">
+    <link rel="stylesheet" href="./src/css/traditional.css">
     <link rel="stylesheet" href="./src/css/components.css">
   </head>
   <body>
@@ -15,11 +16,11 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">Fase 2 · GraphRenderer funcional</p>
+          <p class="eyebrow">Fase 2 · Dos vistas, una partida</p>
           <h1>Dominó <span>×5</span></h1>
-          <p class="lead">Una ronda local sobre el grafo de valores.</p>
+          <p class="lead">Una ronda local intercambiable entre grafo y mesa.</p>
         </div>
-        <p class="prototype-badge">Prototipo SVG · K=7</p>
+        <p class="prototype-badge">Grafo + Tradicional · K=7</p>
       </header>
 
       <section class="round-overview" aria-label="Estado de la ronda">
@@ -38,21 +39,27 @@
       </section>
 
       <div class="play-layout">
-        <section class="graph-stage" aria-labelledby="graph-heading">
+        <section class="graph-stage" aria-labelledby="board-heading">
           <div class="panel-heading">
             <div>
               <p class="section-kicker">Tablero</p>
-              <h2 id="graph-heading">Grafo de valores</h2>
+              <h2 id="board-heading">Grafo de valores</h2>
             </div>
-            <p class="graph-legend">
-              <span class="legend-main"></span> principal
-              <span class="legend-branch"></span> ramificación
-              <span class="legend-structure-code">P/A</span> extremos
-              <span class="legend-special" aria-hidden="true"></span> especial
-            </p>
+            <div class="board-controls">
+              <div class="view-switch" role="group" aria-label="Representación del tablero">
+                <button type="button" class="view-switch__button is-active" data-view-mode="graph" aria-pressed="true">Grafo</button>
+                <button type="button" class="view-switch__button" data-view-mode="traditional" aria-pressed="false">Tradicional</button>
+              </div>
+              <p id="graph-legend" class="graph-legend">
+                <span class="legend-main"></span> principal
+                <span class="legend-branch"></span> ramificación
+                <span class="legend-structure-code">P/A</span> extremos
+                <span class="legend-special" aria-hidden="true"></span> especial
+              </p>
+            </div>
           </div>
           <p id="selection-hint" class="selection-hint"></p>
-          <div id="graph-root" class="graph-root"></div>
+          <div id="board-root" class="graph-root" data-view-mode="graph"></div>
           <p id="game-message" class="game-message" aria-live="assertive"></p>
         </section>
 
@@ -77,7 +84,7 @@
         <div id="hand-root" class="hand-grid"></div>
       </section>
 
-      <p class="notice">Las curvas son destinos jugables; el panel S es una lectura independiente de puntuación.</p>
+      <p class="notice">Ambas vistas comparten exactamente la misma ronda, legalidad y puntuación.</p>
       <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>
     </main>
 

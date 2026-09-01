@@ -2,7 +2,7 @@
 
 ## Estado de este documento
 
-Este documento define arquitectura de presentación y decisiones de producto futuras. No modifica `REGLAS.md`, no añade modalidades reglamentarias y no implementa renderers.
+Este documento describe la arquitectura de presentación implementada y sus extensiones futuras. No modifica `REGLAS.md` ni añade modalidades reglamentarias.
 
 ## Un estado, dos vistas
 
@@ -60,7 +60,7 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 }
 ```
 
-`projectGraphView(state, playerId)` compone esa forma; `getValueGraphProjection`, `groupOpenEndsByValue`, `getOpenEndVisualProjection`, `getLegalPlayProjection`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. El renderer solo decidirá geometría, estilo, foco y animación.
+`projectRoundView(state, playerId)` compone la información compartida. `projectGraphView` añade valores, aristas y topología; `projectTraditionalView` añade una mesa lógica con línea principal y familias de dos brazos. `getValueGraphProjection`, `getTraditionalBoardProjection`, `groupOpenEndsByValue`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. Cada renderer solo decide geometría, estilo, foco y desplazamiento.
 
 ## Responsabilidades comunes
 
@@ -87,11 +87,11 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 - traducir la elección de un destino visual a una acción con un extremo lógico concreto;
 - entregar al renderer el snapshot aceptado posterior.
 
-## Modo Grafo predeterminado
+## Modos funcionales y conmutador
 
-La página abre actualmente una ronda local con el primer GraphRenderer SVG funcional. Esta elección no convierte el grafo de valores en estado normativo ni elimina el futuro Modo Tradicional. El selector de vista todavía no existe; cuando se autorice, cada renderer deberá reconstruirse sin pérdida de información.
+La página abre una ronda local en GraphRenderer y ofrece un conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
 
-La diferencia entre reconstruir la topología lógica y escoger una geometría tradicional está analizada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). La conclusión provisional es usar una proyección derivada, no metadata persistida.
+La diferencia entre reconstruir la topología lógica y escoger una geometría tradicional está analizada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). `getTraditionalBoardProjection` confirma la conclusión: la topología es unívoca y la geometría es una decisión descartable, sin metadata persistida.
 
 Conviene conservar la última preferencia de vista como ajuste local del usuario. No debe viajar dentro de un snapshot autoritativo ni producir diferencias en replay.
 
@@ -105,4 +105,4 @@ Conviene conservar la última preferencia de vista como ajuste local del usuario
 
 ## No implementado
 
-Permanecen pendientes TraditionalRenderer, selector de vista, acabado premium, layout avanzado, gestión de densidad, replay, animaciones complejas y controles definitivos. El GraphRenderer actual es deliberadamente un prototipo funcional.
+Permanecen pendientes acabado premium, giros físicos de cadenas largas, zoom, gestión avanzada de densidad, replay, animaciones complejas y controles definitivos. Ambos renderers actuales son deliberadamente prototipos funcionales.

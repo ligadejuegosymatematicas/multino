@@ -556,4 +556,18 @@ La inspección de familia puede iniciarse desde su arista, colita o badge raíz.
 
 **Alternativas consideradas:** Conservar una letra por brazo; mantener etiquetas `N·M`; repetir letras en cada ficha; usar color exclusivo por familia; mostrar siempre índices o `×q`; adoptar coordenadas topológicas visibles.
 
-**Consecuencias:** La proyección topológica incorpora familias y brazos derivados sin cambiar snapshot v6. GraphRenderer sigue sin leer `board`; acciones continúan usando `placementId + portId`. La reconstrucción exacta queda disponible para inspección futura y Modo Tradicional. Configuración de `n` con 5 predeterminado, TraditionalRenderer y conmutador de vistas quedan expresamente para bloques posteriores.
+**Consecuencias:** La proyección topológica incorpora familias y brazos derivados sin cambiar snapshot v6. GraphRenderer sigue sin leer `board`; acciones continúan usando `placementId + portId`. La reconstrucción exacta quedó disponible para el bloque tradicional posterior, formalizado en DEC-040. La configuración de `n` con 5 predeterminado continúa pendiente.
+
+## DEC-040 — Proyección tradicional descartable y conmutador no reglamentario
+
+**Estado:** Aceptada.
+
+**Decisión:** Derivar `getTraditionalBoardProjection(state)` exclusivamente del board validado. La línea conserva el orden de `mainLine.placementIds` y orienta cada ficha por la conexión anterior/siguiente; cada brazo conserva su origen `placementId + branch:*`, conexiones y placements ordenados desde la raíz hasta el terminal. `projectRoundView` reúne los datos comunes y las fachadas específicas añaden solo su representación de tablero.
+
+TraditionalRenderer convierte esa proyección en una geometría HTML/CSS descartable: principal horizontal, chanchos principales transversales y brazos superior/inferior. `ViewModeController` solo conserva `graph | traditional`; un único `InteractionController` mantiene la selección y envía los mismos targets exactos a `applyTurnAction`.
+
+**Motivo:** El board v6 ya conserva toda la topología necesaria y el grafo de valores no debe usarse como fuente de la mesa. Separar proyección, geometría y preferencia permite alternar sin recrear partida ni duplicar legalidad.
+
+**Alternativas consideradas:** Reconstruir desde aristas SVG; persistir coordenadas; duplicar un controlador por renderer; limpiar siempre la selección; simular una mesa con giros físicos completos desde la primera versión; introducir una librería de layout.
+
+**Consecuencias:** No cambia motor, reglas, schema v6, historial, score ni persistencia. Los dos modos comparten acciones, puntuación, turno y resultado. La primera mesa prioriza fidelidad topológica y scroll local; quedan pendientes giros adaptativos, zoom y acabado premium.

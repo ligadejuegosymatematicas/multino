@@ -88,6 +88,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/projections/topology-projection.test.js`: ambos extremos principales usan `P`; los puertos `branch:1` y `branch:2` conservan IDs exactos pero comparten una familia por chancho especial; un segundo especial recibe `B`; chanchos ordinarios por K o por rama no originan familias.
 - `tests/ui/graph-renderer.test.js`: elimina etiquetas redundantes de aristas/lazos y letras interiores, reserva números para elecciones múltiples, distingue brazos potenciales/iniciados, inspecciona ambos brazos y raíz, y conserva hit areas táctiles y reglas responsivas.
 - Los escenarios K=1, K=2 y K=7 cubren agotamiento, dos brazos de una familia, segunda familia y grafo denso. La gramática combina trazo, letra, estado de relleno y acento; nunca depende solo del color.
+
+### Fase 2, Bloque 6 — primer Modo Tradicional y conmutador completados
+
+- `tests/projections/traditional-view-projection.test.js`: orden y orientación lógica de `mainLine`, ambos brazos raíz→terminal, dobles ordinarios en rama/principal por K, targets exactos, terminalidad, inmutabilidad y ausencia de geometría/DOM;
+- `tests/ui/traditional-renderer.test.js`: layout horizontal/vertical inicial, fichas de puntos, cruce especial, extremos compatibles, START, target canónico, estado terminado, responsive y accesibilidad;
+- equivalencia directa de mano, jugadas legales, S, turno y resultado entre `projectGraphView` y `projectTraditionalView`;
+- `ViewModeController` se prueba como preferencia efímera y el cambio repetido conserva snapshot y selección local.
 - `tests/ui/interaction-controller.test.js`: la inspección puede comenzar desde una familia visual y sigue siendo estado efímero ajeno al snapshot; cualquier acción aceptada la limpia.
 
 ## Convenciones
@@ -99,4 +106,4 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ## Pendientes fuera del motor básico
 
-Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias rondas o meta acumulada, variantes `n ≠ 5`, Modo Tradicional, refinamiento premium y privacidad/sincronización remota de Fase 6.
+Requerirán especificación propia solo si se incorporan: deshacer acciones, series de varias rondas o meta acumulada, variantes `n ≠ 5`, refinamiento premium y privacidad/sincronización remota de Fase 6.

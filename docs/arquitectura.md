@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. Las Fases 0 y 1 cerraron contratos y motor; la Fase 2 comienza con proyecciones puras antes de cualquier geometría.
+La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. Las Fases 0 y 1 cerraron contratos y motor; la Fase 2 mantiene proyecciones puras separadas de las geometrías de Grafo y Tradicional.
 
 ## Capas y dirección de dependencias
 
@@ -50,9 +50,9 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
           GraphRenderer         TraditionalRenderer
 ```
 
-GraphRenderer es la vista predeterminada prevista. TraditionalRenderer representa el mismo snapshot como fichas y cadenas. Alternar entre ambos solo cambia preferencias y estado efímero de UI; nunca `config`, `board`, `history` ni `score`.
+GraphRenderer es la vista inicial. TraditionalRenderer representa el mismo snapshot como fichas y cadenas. Alternar entre ambos mediante `ViewModeController` solo cambia una preferencia efímera de UI; nunca `config`, `board`, `history`, `score` ni turno.
 
-La proyección de grafo, extremos, jugadas legales y puntuación pertenece a `game/projections/`. La geometría, hit areas, animaciones y trazados pertenecen al renderer. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
+`projectRoundView` concentra mano, legalidad, puntuación, participantes, turno y resultado compartidos. `projectGraphView` añade grafo de valores/topología visual; `projectTraditionalView` añade `getTraditionalBoardProjection`, que ordena la línea y cada brazo con sus puertos. Geometría, hit areas, rotaciones y trazados pertenecen a `GraphScene` o `TraditionalScene`. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
 
 ## Responsabilidades
 
@@ -105,7 +105,7 @@ Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptador
 
 ### `src/js/ui/`
 
-Contiene `GraphScene`, `GraphRenderer`, renderers de paneles y `InteractionController`. `GraphScene` transforma las proyecciones de valores y topología en geometría SVG descartable; `GraphRenderer` materializa elementos accesibles sin leer `board`; el controlador selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras fuera del snapshot. Las coordenadas, ángulos, estilos, selección efímera y foco pertenecen aquí.
+Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `InteractionController` y `ViewModeController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. El controlador de vista solo conserva `graph | traditional`. Coordenadas, ángulos, scroll, estilos, selección efímera y foco pertenecen aquí.
 
 ### `src/js/utils/`
 
@@ -145,7 +145,7 @@ Se favorecerán funciones puras y actualizaciones inmutables. No es requisito co
 
 ## Capacidades no implementadas
 
-Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda, sus proyecciones, el GraphRenderer funcional y su primera capa topológica están completos; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5`, Modo Tradicional, panel estructural completo y refinamiento visual premium.
+Una capacidad todavía no implementada debe fallar de forma explícita o no estar expuesta. Nunca debe responder “válido” o “0 puntos” como valor provisional, porque ese valor podría confundirse con comportamiento real. El motor de una ronda, sus proyecciones y las primeras versiones funcionales de ambos renderers están completos; permanecen fuera múltiples rondas, metas acumuladas, variantes `n ≠ 5`, panel estructural completo, giros físicos avanzados, zoom y refinamiento visual premium.
 
 ## GitHub Pages y ubicación de `index.html`
 

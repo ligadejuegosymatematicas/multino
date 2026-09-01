@@ -77,6 +77,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Extremos `P/A/B…` protagonistas en reposo; opciones `1/2/3…` renderizadas únicamente cuando una ficha seleccionada tiene varios targets compatibles del mismo valor.
 - Inspección de familia desde arista lateral, colita o badge raíz, con ambos brazos, chancho de origen y terminales resaltados; brazos potenciales e iniciados tienen estados gráficos distintos.
 - Acentos sobrios por familia combinados con trazo segmentado, etiquetas y estados de relleno para no depender exclusivamente del color.
+- Primer Modo Tradicional funcional derivado íntegramente del board lógico v6, sin metadata ni coordenadas persistidas.
+- `projectRoundView`, `getTraditionalBoardProjection` y `projectTraditionalView` para compartir mano, legalidad, puntuación, turno y resultado, y reconstruir línea principal y brazos en orden.
+- `TraditionalRenderer` HTML/CSS con fichas de puntos, línea principal horizontal, chanchos especiales transversales, brazos superior/inferior, extremos exactos, START y acciones canónicas.
+- Conmutador accesible Grafo ↔ Tradicional como preferencia efímera; conserva snapshot, selección de mano, turno, historial y marcador.
+- Cobertura automática de orden principal, ambos brazos, dobles ordinarios, K agotado, targets, terminalidad, inmutabilidad, responsive y equivalencia de acciones entre modos.
 
 ### Decidido
 
@@ -99,6 +104,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-034 fija el cierre derivado, la ausencia de evento terminal artificial y el schema v6.
 - DEC-035 fija la capa `game/projections`, su API componible y la prohibición de usar el grafo de valores como autoridad reglamentaria.
 - DEC-036 fija SVG, geometría heptagonal descartable y el controlador como única frontera entre intención visual y transición reglamentaria.
+- DEC-040 materializa la reconstrucción tradicional como proyección descartable y mantiene la selección de renderer fuera del snapshot.
 
 ### Cambiado
 

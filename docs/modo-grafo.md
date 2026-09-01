@@ -250,7 +250,7 @@ Sin ficha seleccionada, todos los extremos conservan opacidad alta, terminal amp
 
 Una familia se inspecciona desde una arista lateral, una colita o el badge de su chancho raíz. La escena resalta simultáneamente ambos brazos existentes, la raíz y los extremos de la familia, y atenúa el resto. El inspector expresa `Ramificación A` y `Nace del chancho N|N` sin exponer IDs técnicos. Activar el lazo mismo continúa permitiendo inspeccionar el rol del chancho y su capacidad.
 
-La vista normal ya no muestra `N·M` sobre aristas y lazos ni letras sobre todas las fichas de una rama. El grafo prioriza valores abiertos, targets y capacidad estratégica; la secuencia tradicional exacta sigue derivable y queda para inspección avanzada o el futuro Modo Tradicional.
+La vista normal ya no muestra `N·M` sobre aristas y lazos ni letras sobre todas las fichas de una rama. El grafo prioriza valores abiertos, targets y capacidad estratégica; la secuencia tradicional exacta sigue derivable y puede consultarse cambiando al primer Modo Tradicional funcional, sin alterar la partida.
 
 ## Decisiones todavía abiertas
 

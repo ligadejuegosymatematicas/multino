@@ -8,7 +8,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
 | 1 — Motor básico | COMPLETADA | Motor puro con tests |
-| 2 — Renderer del tablero | EN CURSO — GRAPHRENDERER FUNCIONAL | Geometría independiente del modelo lógico |
+| 2 — Renderer del tablero | EN CURSO — DOS MODOS FUNCIONALES | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
 | 5 — Persistencia y herramientas | NO INICIADA | Guardado, carga y reproducción |
@@ -117,11 +117,13 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 5 — Simplificación y gramática visual: COMPLETADO.** Agrupa los dos brazos laterales de cada chancho especial en una sola familia visual `A`, `B`… sin fusionar sus targets exactos; elimina etiquetas redundantes de fichas y letras interiores; distingue brazos potenciales/iniciados y permite inspeccionar ambos brazos con su raíz. No cambia legalidad, motor, schema ni persistencia.
 
-**Siguiente bloque: NO INICIADO.** Antes de cerrar Fase 2 permanecen, en este orden de estudio, configuración del divisor `n` con `n=5` predeterminado, Modo Tradicional y conmutador Grafo ↔ Tradicional sobre el mismo snapshot. También continúan fuera refinamiento visual premium, panel estructural completo, coordenadas visibles, layout adaptativo avanzado, replay y animaciones complejas.
+**Bloque 6 — Primer TraditionalRenderer y conmutador: COMPLETADO.** Añade una proyección pura de cadenas tradicionales, mesa interactiva con línea horizontal y dos brazos laterales por chancho especial, fichas con puntos, extremos exactos y selector Grafo ↔ Tradicional. Ambos modos comparten snapshot, acciones y paneles; cambiar vista es estado efímero de UI.
 
-**Estudio futuro registrado — reversibilidad Grafo/Tradicional: PARCIALMENTE MATERIALIZADO.** La primera proyección topológica confirma que la secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. Coordenadas, vecinos visibles y panel estructural completo continúan en estudio. Véase `docs/reversibilidad-grafo-tradicional.md`.
+**Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, refinamiento visual premium, panel estructural completo, layout adaptativo avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar el prototipo tradicional.
 
-**Estudio de UX posterior a prueba manual: CUATRO ITERACIONES FUNCIONALES COMPLETADAS.** Se adoptaron estilo topológico permanente, inspección contextual, clasificación de targets y familias alfabéticas por chancho especial. La vista normal prioriza valores, extremos y posibilidades estratégicas; la reconstrucción tradicional exacta queda bajo demanda y para el futuro Modo Tradicional. Véase `docs/ux-topologia-modo-grafo.md`.
+**Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La primera geometría tradicional es funcional; giros físicos, zoom y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
+
+**Estudio de UX posterior a prueba manual: CUATRO ITERACIONES FUNCIONALES COMPLETADAS.** Se adoptaron estilo topológico permanente, inspección contextual, clasificación de targets y familias alfabéticas por chancho especial. La vista normal prioriza valores, extremos y posibilidades estratégicas; la reconstrucción espacial exacta se ofrece ahora en el primer Modo Tradicional. Véase `docs/ux-topologia-modo-grafo.md`.
 
 ### Alcance
 

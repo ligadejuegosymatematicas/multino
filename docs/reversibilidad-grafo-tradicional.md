@@ -2,7 +2,7 @@
 
 ## Estado de esta nota
 
-**Primera proyección topológica implementada; reconstrucción visual completa todavía en estudio.**
+**Proyección tradicional y primer renderer funcional implementados; geometría avanzada todavía en estudio.**
 
 Esta nota registra una cuestión del renderer. La primera capa ya deriva clasificación, orden y ramas sin modificar reglas, motor, snapshot ni schema. Su objetivo más amplio sigue siendo distinguir qué información se pierde al proyectar el tablero sobre siete valores y evaluar cómo hacer visible la topología tradicional sin convertirla en una segunda fuente de verdad.
 
@@ -190,4 +190,4 @@ La prueba manual del primer GraphRenderer confirmó que también se necesita una
 
 El grafo de valores actual pierde la secuencia tradicional, pero el snapshot reglamentario no la pierde. `mainLine + placements + connections + ports`, junto con ramas derivadas, ya permite reconstruir completamente la topología lógica.
 
-En consecuencia, no se justifica un cambio de schema ni metadata persistida. `getBoardTopologyProjection` materializa ya la primera capa explicativa y GraphRenderer permite inspeccionar una línea o rama. Permanecen pendientes el panel estructural completo, las coordenadas opcionales y la evaluación de cómo ampliar esa información sin sobrecargar el grafo.
+En consecuencia, no se justifica un cambio de schema ni metadata persistida. `getTraditionalBoardProjection` materializa la línea de inicio a fin y cada brazo desde su `originPlacementId + originPortId` hasta el terminal, incluyendo puertos de entrada/salida y conexiones exactas. TraditionalRenderer demuestra que esa información basta para una mesa jugable. Permanecen pendientes los giros físicos de cadenas largas, zoom, un panel estructural completo y coordenadas opcionales de inspección.

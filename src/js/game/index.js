@@ -76,7 +76,12 @@ export {
 export { getScoringProjection } from "./projections/ScoringProjection.js";
 export { getLatestActionProjection } from "./projections/ActionProjection.js";
 export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
+export { projectRoundView } from "./projections/RoundViewProjection.js";
 export { projectGraphView } from "./projections/GraphViewProjection.js";
+export {
+  getTraditionalBoardProjection,
+  projectTraditionalView,
+} from "./projections/TraditionalViewProjection.js";
 
 export function getEngineStatus() {
   return {

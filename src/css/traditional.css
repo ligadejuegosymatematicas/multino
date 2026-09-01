@@ -1,0 +1,299 @@
+.graph-root.is-traditional-view {
+  min-height: 31rem;
+  overflow: hidden;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.24) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.24) 1px, transparent 1px),
+    #386e5c;
+  background-size: 2rem 2rem;
+}
+
+.traditional-table {
+  width: 100%;
+  min-height: 31rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-color: rgb(255 255 255 / 0.5) rgb(13 55 46 / 0.28);
+}
+
+.traditional-table__surface {
+  position: relative;
+  width: var(--table-width);
+  min-width: 100%;
+  height: var(--table-height);
+  min-height: 31rem;
+}
+
+.traditional-table__empty {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(24rem, calc(100% - 2rem));
+  margin: 0;
+  color: rgb(255 255 255 / 0.82);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.traditional-special-summary {
+  position: sticky;
+  z-index: 6;
+  inset: 0.75rem auto auto 0.75rem;
+  width: max-content;
+  margin: 0;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.48);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgb(18 71 59 / 0.82);
+  font-size: 0.72rem;
+  font-weight: 800;
+  backdrop-filter: blur(6px);
+}
+
+.traditional-connection {
+  position: absolute;
+  z-index: 0;
+  left: var(--connection-left);
+  top: var(--connection-top);
+  display: block;
+  width: var(--connection-width);
+  height: var(--connection-height);
+  color: #dce9d9;
+  pointer-events: none;
+}
+
+.traditional-connection::before {
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 4px solid currentColor;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.traditional-connection.is-vertical::before {
+  inset: 0 auto 0 50%;
+  border-top: 0;
+  border-left: 4px solid currentColor;
+  transform: translateX(-50%);
+}
+
+.traditional-connection.is-branch::before {
+  border-color: var(--family-soft, #e2dde9);
+  border-style: dashed;
+}
+
+.traditional-domino {
+  position: absolute;
+  z-index: 2;
+  left: var(--tile-x);
+  top: var(--tile-y);
+  display: flex;
+  width: var(--tile-width);
+  height: var(--tile-height);
+  overflow: visible;
+  border: 2px solid #17201f;
+  border-radius: 0.42rem;
+  color: #16201f;
+  background: #fffdf6;
+  box-shadow: 0 0.18rem 0.42rem rgb(11 35 30 / 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.traditional-domino.is-horizontal {
+  flex-direction: row;
+}
+
+.traditional-domino.is-vertical {
+  flex-direction: column;
+}
+
+.traditional-domino.is-branch {
+  box-shadow:
+    0 0 0 2px var(--family-accent, #6f657d),
+    0 0.18rem 0.42rem rgb(11 35 30 / 0.3);
+}
+
+.traditional-domino.is-special-double {
+  box-shadow:
+    0 0 0 3px #edb55e,
+    0 0 0 6px rgb(90 48 7 / 0.35),
+    0 0.18rem 0.42rem rgb(11 35 30 / 0.34);
+}
+
+.traditional-domino__half {
+  display: grid;
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+}
+
+.traditional-domino__divider {
+  flex: 0 0 2px;
+  background: #4b5351;
+}
+
+.traditional-domino__pips {
+  display: grid;
+  width: 78%;
+  height: 78%;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+}
+
+.traditional-domino__pip {
+  width: clamp(3px, 0.55rem, 6px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+}
+
+.traditional-domino__pip.is-visible {
+  opacity: 1;
+}
+
+.traditional-domino__special {
+  position: absolute;
+  inset: -0.75rem -0.72rem auto auto;
+  display: grid;
+  min-width: 1.45rem;
+  min-height: 1.45rem;
+  place-items: center;
+  border: 2px solid #74400b;
+  border-radius: 50%;
+  color: #74400b;
+  background: #fff6e8;
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+
+.traditional-target {
+  position: absolute;
+  z-index: 4;
+  left: var(--target-x);
+  top: var(--target-y);
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  place-content: center;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  color: #263f3c;
+  background: #f7fbf5;
+  box-shadow: 0 0.16rem 0.4rem rgb(10 38 32 / 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.traditional-target::before {
+  position: absolute;
+  z-index: -1;
+  width: 2.5rem;
+  border-top: 4px solid currentColor;
+  content: "";
+}
+
+.traditional-target.points-left::before {
+  inset: 50% auto auto 100%;
+}
+
+.traditional-target.points-right::before {
+  inset: 50% 100% auto auto;
+}
+
+.traditional-target.points-up::before,
+.traditional-target.points-down::before {
+  width: 0;
+  height: 2.5rem;
+  border-top: 0;
+  border-left: 4px solid currentColor;
+}
+
+.traditional-target.points-up::before {
+  inset: 100% auto auto 50%;
+}
+
+.traditional-target.points-down::before {
+  inset: auto auto 100% 50%;
+}
+
+.traditional-target.is-branch::before {
+  border-style: dashed;
+}
+
+.traditional-target.is-potential {
+  background: transparent;
+  border-style: dashed;
+}
+
+.traditional-target > span {
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.traditional-target > small {
+  font-size: 0.55rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.traditional-target.is-neutral {
+  opacity: 0.9;
+}
+
+.traditional-target.is-incompatible {
+  opacity: 0.2;
+}
+
+.traditional-target.is-legal {
+  color: #7b4207;
+  background: #fff2d8;
+  cursor: pointer;
+  animation: traditional-target-pulse 1.8s ease-in-out infinite;
+}
+
+.traditional-target.is-finished {
+  opacity: 0.58;
+}
+
+.traditional-target:disabled {
+  cursor: default;
+}
+
+.traditional-target:focus-visible {
+  outline: 4px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.traditional-start {
+  position: absolute;
+  z-index: 7;
+  inset: auto auto 1rem 50%;
+  transform: translateX(-50%);
+}
+
+@keyframes traditional-target-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .traditional-target.is-legal {
+    animation: none;
+  }
+}
+
+@media (max-width: 36rem) {
+  .traditional-table,
+  .traditional-table__surface {
+    min-height: 27rem;
+  }
+
+  .traditional-special-summary {
+    font-size: 0.66rem;
+  }
+}
