@@ -63,6 +63,26 @@ function createTopologyScenario() {
   );
 }
 
+function createTwoArmFamilyScenario() {
+  let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(
+    state,
+    "3-4",
+    targetAt("placement-1", "main:2"),
+  );
+  state = playDomino(
+    state,
+    "2-4",
+    targetAt("placement-1", "branch:1"),
+  );
+  return playDomino(
+    state,
+    "1-4",
+    targetAt("placement-1", "branch:2"),
+  );
+}
+
 function createDenseScenario() {
   let state = createBoardScenario({ K: 7, firstDominoId: "6-6" });
   state = playDomino(state, "6-6");
@@ -120,7 +140,7 @@ test("el SVG inicial renderiza exactamente los siete vértices estables", () => 
   assert.equal(scene.openTargets.length, 0);
 });
 
-test("una ficha ordinaria produce una arista SVG identificable", () => {
+test("una ficha ordinaria produce una arista identificable sin etiqueta redundante", () => {
   const state = playFirst(createDeterministicMatch(), "0-3");
   const scene = createGraphScene(projectGraphView(state));
   const markup = renderGraphSvgMarkup(scene);
@@ -133,9 +153,10 @@ test("una ficha ordinaria produce una arista SVG identificable", () => {
     markup,
     /class="graph-edge is-main" data-placement-id="placement-1"[^>]+role="button" tabindex="0"/,
   );
+  assert.doesNotMatch(markup, /graph-edge__label|>0·3<|>0\|3</);
 });
 
-test("un chancho usa un lazo sólido distinto de sus cuatro curvas", () => {
+test("un chancho usa un lazo sólido, una familia A y cuatro curvas exactas", () => {
   const state = playFirst(createDeterministicMatch(), "6-6");
   const scene = createGraphScene(projectGraphView(state));
   const markup = renderGraphSvgMarkup(scene);
@@ -150,6 +171,13 @@ test("un chancho usa un lazo sólido distinto de sus cuatro curvas", () => {
   assert.match(markup, /class="graph-special-marker"/);
   assert.match(markup, /class="graph-special-marker__arms"/);
   assert.doesNotMatch(markup, />E<\/text>/);
+  assert.doesNotMatch(markup, /graph-loop__label|>6·6<|>6\|6</);
+  assert.equal(markup.match(/class="graph-family-root /g)?.length, 1);
+  assert.match(markup, /data-family-code="A"/);
+  assert.deepEqual(
+    scene.openTargets.map((target) => target.topology.structureCode),
+    ["P", "P", "A", "A"],
+  );
   assert.match(markup, /Especiales: 1\/7/);
   assert.match(markup, /class="open-target__curve"/);
 });
@@ -172,7 +200,9 @@ test("q targets del mismo valor conservan q indicadores seleccionables", () => {
   assert.equal(legalTargets.length, 4);
   assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 4);
   assert.equal(valueSix.legalTargetIds.length, 4);
-  assert.equal(scene.multiplicities.find((item) => item.value === 6).count, 4);
+  const markup = renderGraphSvgMarkup(scene);
+  assert.equal(markup.match(/class="open-target__option-index"/g)?.length, 4);
+  assert.doesNotMatch(markup, /graph-multiplicity|>×4</);
   assert.deepEqual(view, before);
 });
 
@@ -218,7 +248,7 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
   assert.match(markup, /data-structure-code="A"/);
 });
 
-test("la raíz, las fichas y el extremo comparten la identidad de rama", () => {
+test("la raíz y ambos brazos comparten familia sin repetir letras en fichas interiores", () => {
   const scene = createGraphScene(projectGraphView(createTopologyScenario()));
   const markup = renderGraphSvgMarkup(scene);
   const root = scene.loops.find(
@@ -231,25 +261,31 @@ test("la raíz, las fichas y el extremo comparten la identidad de rama", () => {
     (target) => target.topology.structureCode === "A",
   );
 
+  assert.equal(root.topology.branchFamily.code, "A");
   assert.deepEqual(
-    root.topology.branchStructures.map((branch) => branch.code),
-    ["A", "B"],
+    root.topology.branchFamily.arms.map((arm) => ({
+      originPortId: arm.originPortId,
+      armIndex: arm.armIndex,
+      isOccupied: arm.isOccupied,
+    })),
+    [
+      { originPortId: "branch:1", armIndex: 1, isOccupied: true },
+      { originPortId: "branch:2", armIndex: 2, isOccupied: false },
+    ],
   );
   assert.equal(branchEdges.length, 2);
   assert.ok(branchTarget);
   assert.match(
     markup,
-    /class="graph-branch-root-marker"[^>]+data-structure-code="A"/,
+    /class="graph-family-root family-tone-0"[^>]+data-family-code="A"/,
   );
   assert.match(
     markup,
-    /class="graph-structure-marker"[^>]+data-structure-code="A"/,
+    /class="open-target is-neutral is-branch-target[^\"]*"[^>]+data-structure-code="A"/,
   );
-  assert.match(
-    markup,
-    /class="open-target is-neutral is-branch-target"[^>]+data-structure-code="A"/,
-  );
-  assert.match(markup, /Rama A/);
+  assert.equal(markup.match(/class="graph-family-root__code"/g)?.length, 1);
+  assert.doesNotMatch(markup, /graph-structure-marker/);
+  assert.match(markup, /Ramificación A/);
 });
 
 test("sin ficha seleccionada todos los extremos permanecen visibles y codificados", async () => {
@@ -273,6 +309,20 @@ test("sin ficha seleccionada todos los extremos permanecen visibles y codificado
     markup.match(/class="open-target__structure-code"/g)?.length,
     scene.openTargets.length,
   );
+  assert.equal(
+    scene.openTargets.filter(
+      (target) => target.topology.branchState === "STARTED",
+    ).length,
+    1,
+  );
+  assert.equal(
+    scene.openTargets.filter(
+      (target) => target.topology.branchState === "POTENTIAL",
+    ).length,
+    1,
+  );
+  assert.match(markup, /is-branch-target family-tone-0 is-started-arm/);
+  assert.match(markup, /is-branch-target family-tone-0 is-potential-arm/);
   assert.match(markup, /<circle class="open-target__end"[^>]+r="10"/);
   assert.match(boardCss, /\.open-target \{[\s\S]+?opacity:\s*0\.92/);
   assert.match(
@@ -314,9 +364,29 @@ test("al seleccionar ficha los compatibles dominan y muestran opción individual
     boardCss,
     /\.open-target\.is-incompatible \{[\s\S]+?opacity:\s*0\.12/,
   );
-  assert.match(
-    boardCss,
-    /\.open-target\.is-legal \.open-target__option-index[\s\S]+?opacity:\s*1/,
+  assert.equal(markup.match(/class="open-target__option-index"/g)?.length, 2);
+});
+
+test("los números de opción solo aparecen al distinguir destinos compatibles del mismo valor", () => {
+  const state = createTopologyScenario();
+  const playerId = findDominoOwner(state, "1-3");
+  const view = projectGraphView(state, playerId);
+  const oneProjectedTarget = view.openEndsByValue[0].targets[0];
+  const restMarkup = renderGraphSvgMarkup(createGraphScene(view));
+  const oneTargetMarkup = renderGraphSvgMarkup(createGraphScene(view, {
+    selectedDominoId: "ficha-de-prueba",
+    legalTargets: [{ id: oneProjectedTarget.id }],
+  }));
+  const severalTargetsMarkup = renderGraphSvgMarkup(createGraphScene(view, {
+    selectedDominoId: "1-3",
+    legalTargets: getLegalTargetsForDomino(state, playerId, "1-3"),
+  }));
+
+  assert.doesNotMatch(restMarkup, /open-target__option-index/);
+  assert.doesNotMatch(oneTargetMarkup, /open-target__option-index/);
+  assert.equal(
+    severalTargetsMarkup.match(/class="open-target__option-index"/g)?.length,
+    2,
   );
 });
 
@@ -338,9 +408,10 @@ test("START existe como acción separada y nunca como curva ficticia", () => {
   assert.equal(scene.openTargets.length, 0);
 });
 
-test("la inspección resalta una rama completa, conserva su raíz y atenúa el resto", () => {
-  const state = createTopologyScenario();
+test("la inspección de familia resalta ambos brazos, su raíz y sus extremos", () => {
+  const state = createTwoArmFamilyScenario();
   const scene = createGraphScene(projectGraphView(state), {
+    inspectedStructureId: "branch-family:placement-1",
     inspectedPlacementId: "placement-4",
   });
   const played = [...scene.edges, ...scene.loops];
@@ -354,6 +425,10 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
     "placement-3",
     "placement-4",
   ]);
+  assert.deepEqual(
+    scene.inspection.arms.map((arm) => arm.isOccupied),
+    [true, true],
+  );
   assert.equal(scene.inspection.rootPlacementId, "placement-1");
   assert.equal(byPlacementId.get("placement-3").isTopologyHighlighted, true);
   assert.equal(byPlacementId.get("placement-4").isTopologyHighlighted, true);
@@ -361,7 +436,12 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
   assert.equal(byPlacementId.get("placement-1").isTopologyDimmed, false);
   assert.equal(byPlacementId.get("placement-2").isTopologyDimmed, true);
   assert.equal(
-    scene.openTargets.find((target) => target.id === "placement-4:side:b")
+    scene.openTargets.find((target) => target.id === "placement-4:side:a")
+      .isTopologyHighlighted,
+    true,
+  );
+  assert.equal(
+    scene.openTargets.find((target) => target.id === "placement-3:side:a")
       .isTopologyHighlighted,
     true,
   );
@@ -370,11 +450,15 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
       .isTopologyDimmed,
     true,
   );
-  assert.match(markup, /graph-edge is-branch is-inspected is-topology-highlighted/);
+  assert.match(
+    markup,
+    /graph-edge is-branch[^\"]*is-inspected is-topology-highlighted/,
+  );
   assert.match(markup, /graph-loop is-main is-special-double is-topology-root/);
-  assert.match(inspector, /La rama nace del chancho 4\|4/);
-  assert.match(inspector, /Rama A/);
-  assert.match(inspector, /posición 2 de la rama/);
+  assert.match(inspector, /Nace del chancho 4\|4/);
+  assert.match(inspector, /Ramificación A/);
+  assert.match(inspector, /2 brazos iniciados/);
+  assert.match(inspector, /brazo 2 · posición 1/);
   assert.doesNotMatch(inspector, /branch:1|placement-/);
   assert.match(inspector, /data-clear-topology-inspection/);
 });
@@ -382,7 +466,10 @@ test("la inspección resalta una rama completa, conserva su raíz y atenúa el r
 test("la inspección de chanchos explica rol, conexiones y ramas", () => {
   const specialScene = createGraphScene(
     projectGraphView(createTopologyScenario()),
-    { inspectedPlacementId: "placement-1" },
+    {
+      inspectedStructureId: "main",
+      inspectedPlacementId: "placement-1",
+    },
   );
   const specialMarkup = renderTopologyInspectionMarkup(
     specialScene.inspection,
@@ -405,6 +492,7 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
   );
   const ordinaryMainMarkup = renderTopologyInspectionMarkup(
     createGraphScene(projectGraphView(ordinaryMainState), {
+      inspectedStructureId: "main",
       inspectedPlacementId: "placement-3",
     }).inspection,
   );
@@ -426,6 +514,7 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
   );
   const branchDoubleMarkup = renderTopologyInspectionMarkup(
     createGraphScene(projectGraphView(branchDoubleState), {
+      inspectedStructureId: "branch-family:placement-1",
       inspectedPlacementId: "placement-3",
     }).inspection,
   );
@@ -457,7 +546,12 @@ test("el resumen usa s/effectiveK y no el K configurado imposible", () => {
 
 test("un grafo denso conserva fichas, targets e inspección individual", () => {
   const state = createDenseScenario();
-  const scene = createGraphScene(projectGraphView(state), {
+  const view = projectGraphView(state);
+  const inspectedTopology = view.topology.placements.find(
+    (placement) => placement.placementId === "placement-15",
+  );
+  const scene = createGraphScene(view, {
+    inspectedStructureId: inspectedTopology.familyId,
     inspectedPlacementId: "placement-15",
   });
   const markup = renderGraphSvgMarkup(scene);
@@ -475,14 +569,15 @@ test("un grafo denso conserva fichas, targets e inspección individual", () => {
   assert.equal(markup.match(/class="open-target /g)?.length, 16);
   assert.deepEqual(
     scene.loops
-      .flatMap((loop) => loop.topology.branchStructures)
-      .map((branch) => branch.code),
-    ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"],
+      .map((loop) => loop.topology.branchFamily?.code)
+      .filter(Boolean),
+    ["A", "B", "C", "D", "E", "F", "G"],
   );
   assert.equal(
-    markup.match(/class="graph-branch-root-marker"/g)?.length,
-    14,
+    markup.match(/class="graph-family-root /g)?.length,
+    7,
   );
+  assert.doesNotMatch(markup, /graph-edge__label|graph-loop__label/);
 });
 
 test("la diferenciación topológica no depende exclusivamente del color", async () => {
@@ -511,12 +606,33 @@ test("la diferenciación topológica no depende exclusivamente del color", async
     boardCss,
     /\.open-target\.is-branch-target[\s\S]+?stroke-dasharray:\s*6 6/,
   );
+  assert.match(
+    boardCss,
+    /\.open-target\.is-potential-arm \.open-target__curve[\s\S]+?stroke-dasharray:\s*2 7/,
+  );
+  assert.match(
+    boardCss,
+    /\.open-target\.is-started-arm \.open-target__end[\s\S]+?fill:/,
+  );
   assert.match(boardCss, /\.graph-special-marker__arms/);
-  assert.match(boardCss, /\.graph-structure-marker text/);
-  assert.match(boardCss, /\.graph-branch-root-marker text/);
+  assert.match(boardCss, /\.graph-family-root__code/);
+  assert.match(boardCss, /\.graph-family-root__arm\.is-potential/);
+  assert.match(boardCss, /\.graph-family-root__arm\.is-started/);
   assert.match(boardCss, /\.open-target__structure-code/);
   assert.match(componentsCss, /\.legend-branch[\s\S]+?border-top-style:\s*dashed/);
   assert.match(componentsCss, /\.legend-special::before/);
+});
+
+test("el CSS conserva una presentación táctil y adaptable a teléfono", async () => {
+  const boardCss = await readFile(
+    new URL("../../src/css/board.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(boardCss, /\.open-target__hit[\s\S]+?stroke-width:\s*44/);
+  assert.match(boardCss, /\.graph-edge__hit,[\s\S]+?stroke-width:\s*28/);
+  assert.match(boardCss, /@media \(max-width: 36rem\)/);
+  assert.match(boardCss, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test("GraphRenderer y GraphScene consumen proyecciones sin leer board", async () => {

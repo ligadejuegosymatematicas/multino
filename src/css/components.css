@@ -117,8 +117,7 @@
 }
 
 .legend-main,
-.legend-branch,
-.legend-target {
+.legend-branch {
   display: inline-block;
   width: 1.5rem;
   border-top: 4px solid #38545d;
@@ -129,14 +128,9 @@
   border-top-style: dashed;
 }
 
-.legend-target {
-  border-top-color: #607874;
-  border-top-style: dotted;
-}
-
 .legend-structure-code {
   display: inline-grid;
-  width: 1.15rem;
+  width: 1.65rem;
   height: 1.15rem;
   place-items: center;
   border: 1.5px solid #625672;

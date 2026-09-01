@@ -46,32 +46,37 @@ function getAlphabeticCode(index) {
   return code;
 }
 
-function createBranchStructures(state, occupiedBranches) {
+function createBranchFamilies(state, occupiedBranches) {
   const occupiedById = new Map(
     occupiedBranches.map((branch) => [branch.id, branch]),
   );
-  let branchIndex = 0;
 
-  return state.board.specialDoublePlacementIds.flatMap(
-    (originPlacementId) => BRANCH_PORT_IDS.map((originPortId) => {
-      const id = `${originPlacementId}:${originPortId}`;
-      const occupied = occupiedById.get(id) ?? null;
-      const code = getAlphabeticCode(branchIndex);
-      branchIndex += 1;
+  return state.board.specialDoublePlacementIds.map(
+    (originPlacementId, familyIndex) => {
+      const code = getAlphabeticCode(familyIndex);
       return {
-        id,
+        id: `branch-family:${originPlacementId}`,
         code,
-        label: `Rama ${code}`,
+        label: `Ramificación ${code}`,
+        familyIndex,
         originPlacementId,
-        originPortId,
-        isOccupied: occupied !== null,
-        placementIds: occupied ? [...occupied.placementIds] : [],
+        arms: BRANCH_PORT_IDS.map((originPortId, armIndex) => {
+          const id = `${originPlacementId}:${originPortId}`;
+          const occupied = occupiedById.get(id) ?? null;
+          return {
+            id,
+            armIndex: armIndex + 1,
+            originPortId,
+            isOccupied: occupied !== null,
+            placementIds: occupied ? [...occupied.placementIds] : [],
+          };
+        }),
       };
-    }),
+    },
   );
 }
 
-function projectOpenTargetTopology(target, branchStructureById) {
+function projectOpenTargetTopology(target, branchArmById) {
   if (target.kind === "main") {
     return {
       targetId: target.id,
@@ -81,6 +86,12 @@ function projectOpenTargetTopology(target, branchStructureById) {
       structureId: MAIN_STRUCTURE.id,
       structureCode: MAIN_STRUCTURE.code,
       structureLabel: MAIN_STRUCTURE.label,
+      familyId: null,
+      familyCode: null,
+      familyLabel: null,
+      familyIndex: null,
+      armIndex: null,
+      branchState: null,
       originPlacementId: null,
       originPortId: null,
     };
@@ -88,15 +99,21 @@ function projectOpenTargetTopology(target, branchStructureById) {
 
   const origin = target.branchOrigin;
   const structureId = `${origin.placementId}:${origin.portId}`;
-  const structure = branchStructureById.get(structureId);
+  const arm = branchArmById.get(structureId);
   return {
     targetId: target.id,
     placementId: target.placementId,
     portId: target.portId,
     region: "branch",
     structureId,
-    structureCode: structure.code,
-    structureLabel: structure.label,
+    structureCode: arm.familyCode,
+    structureLabel: arm.familyLabel,
+    familyId: arm.familyId,
+    familyCode: arm.familyCode,
+    familyLabel: arm.familyLabel,
+    familyIndex: arm.familyIndex,
+    armIndex: arm.armIndex,
+    branchState: target.kind === "branch-origin" ? "POTENTIAL" : "STARTED",
     originPlacementId: origin.placementId,
     originPortId: origin.portId,
   };
@@ -118,17 +135,22 @@ export function getBoardTopologyProjection(state) {
   );
   const usage = createPortUsageIndex(state);
   const derivedBranches = deriveOccupiedBranches(state, usage);
-  const branchStructures = createBranchStructures(state, derivedBranches);
-  const branchStructureById = new Map(
-    branchStructures.map((branch) => [branch.id, branch]),
+  const branchFamilies = createBranchFamilies(state, derivedBranches);
+  const branchFamilyByOrigin = new Map(
+    branchFamilies.map((family) => [family.originPlacementId, family]),
   );
-  const branchStructuresByOrigin = new Map();
-  for (const structure of branchStructures) {
-    const structures = branchStructuresByOrigin.get(
-      structure.originPlacementId,
-    ) ?? [];
-    structures.push(structure);
-    branchStructuresByOrigin.set(structure.originPlacementId, structures);
+  const branchArmById = new Map();
+  for (const family of branchFamilies) {
+    for (const arm of family.arms) {
+      branchArmById.set(arm.id, {
+        ...arm,
+        familyId: family.id,
+        familyCode: family.code,
+        familyLabel: family.label,
+        familyIndex: family.familyIndex,
+        originPlacementId: family.originPlacementId,
+      });
+    }
   }
   const branchByPlacementId = new Map();
   const startedBranchesByOrigin = new Map();
@@ -155,9 +177,8 @@ export function getBoardTopologyProjection(state) {
       const domino = state.dominoes[placement.dominoId];
       const branch = branchByPlacementId.get(placementId) ?? null;
       const region = branch ? "branch" : "main";
-      const structure = branch
-        ? branchStructureById.get(branch.structureId)
-        : MAIN_STRUCTURE;
+      const arm = branch ? branchArmById.get(branch.structureId) : null;
+      const rootedFamily = branchFamilyByOrigin.get(placementId) ?? null;
       const double = isDouble(domino);
       const special = specialPlacementIds.has(placementId);
       const connectionCount = getConnectionsForPlacement(
@@ -169,9 +190,14 @@ export function getBoardTopologyProjection(state) {
         placementId,
         dominoId: placement.dominoId,
         region,
-        structureId: structure.id,
-        structureCode: structure.code,
-        structureLabel: structure.label,
+        structureId: arm?.id ?? MAIN_STRUCTURE.id,
+        structureCode: arm?.familyCode ?? MAIN_STRUCTURE.code,
+        structureLabel: arm?.familyLabel ?? MAIN_STRUCTURE.label,
+        familyId: arm?.familyId ?? null,
+        familyCode: arm?.familyCode ?? null,
+        familyLabel: arm?.familyLabel ?? null,
+        familyIndex: arm?.familyIndex ?? null,
+        armIndex: arm?.armIndex ?? null,
         order: branch?.depth ?? mainOrderByPlacementId.get(placementId),
         originPlacementId: branch?.originPlacementId ?? null,
         originPortId: branch?.originPortId ?? null,
@@ -192,15 +218,20 @@ export function getBoardTopologyProjection(state) {
         ).length,
         startedBranchCount:
           startedBranchesByOrigin.get(placementId) ?? 0,
-        branchStructures: (
-          branchStructuresByOrigin.get(placementId) ?? []
-        ).map((candidate) => ({
-          id: candidate.id,
-          code: candidate.code,
-          label: candidate.label,
-          originPortId: candidate.originPortId,
-          isOccupied: candidate.isOccupied,
-        })),
+        branchFamily: rootedFamily
+          ? {
+              id: rootedFamily.id,
+              code: rootedFamily.code,
+              label: rootedFamily.label,
+              familyIndex: rootedFamily.familyIndex,
+              arms: rootedFamily.arms.map((candidate) => ({
+                id: candidate.id,
+                armIndex: candidate.armIndex,
+                originPortId: candidate.originPortId,
+                isOccupied: candidate.isOccupied,
+              })),
+            }
+          : null,
       };
     });
 
@@ -215,22 +246,30 @@ export function getBoardTopologyProjection(state) {
       label: MAIN_STRUCTURE.label,
       placementIds: mainLinePlacementIds,
     },
-    branches: branchStructures
-      .filter((branch) => branch.isOccupied)
-      .map((branch) => ({
-        id: branch.id,
-        code: branch.code,
-        label: branch.label,
-        originPlacementId: branch.originPlacementId,
-        originPortId: branch.originPortId,
-        placementIds: [...branch.placementIds],
+    branches: branchFamilies.flatMap((family) =>
+      family.arms
+        .filter((arm) => arm.isOccupied)
+        .map((arm) => ({
+          id: arm.id,
+          familyId: family.id,
+          familyCode: family.code,
+          familyLabel: family.label,
+          familyIndex: family.familyIndex,
+          armIndex: arm.armIndex,
+          originPlacementId: family.originPlacementId,
+          originPortId: arm.originPortId,
+          placementIds: [...arm.placementIds],
+        })),
+    ),
+    branchFamilies: branchFamilies.map((family) => ({
+      ...family,
+      arms: family.arms.map((arm) => ({
+        ...arm,
+        placementIds: [...arm.placementIds],
       })),
-    branchStructures: branchStructures.map((branch) => ({
-      ...branch,
-      placementIds: [...branch.placementIds],
     })),
     openTargets: getOpenEndTargets(state).map((target) =>
-      projectOpenTargetTopology(target, branchStructureById)
+      projectOpenTargetTopology(target, branchArmById)
     ),
     placements,
     specialDoubles: {

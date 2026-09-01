@@ -532,7 +532,7 @@ La vista diferencia principal/rama con trazo continuo/segmentado, añade un sím
 
 ## DEC-038 — Identidad descartable de estructuras en extremos abiertos
 
-**Estado:** Aceptada.
+**Estado:** Sustituida en su convención visual por DEC-039; identidad exacta preservada.
 
 **Decisión:** Derivar `P` para la línea principal y reservar `A`, `B`, `C`… para cada par `originPlacementId + originPortId` lateral. El orden se obtiene de `specialDoublePlacementIds` y, dentro de cada chancho, `branch:1` antes de `branch:2`. Repetir el código lateral en el chancho raíz, todas las fichas de la rama y su target terminal. Mantener todos los extremos visibles en estado neutral; con ficha seleccionada, destacar los legales, mostrar índice individual y atenuar los incompatibles.
 
@@ -541,3 +541,19 @@ La vista diferencia principal/rama con trazo continuo/segmentado, añade un sím
 **Alternativas consideradas:** Colores exclusivos por rama; numerar solo targets legales; asignar etiquetas al iniciar la rama; animar continuamente todos los extremos; persistir la letra; hacer que GraphRenderer recorra puertos del board.
 
 **Consecuencias:** La identificación no depende solo del color y permanece estable aunque la rama todavía esté vacía. `placementId + portId` continúa siendo la identidad reglamentaria enviada al motor; `P/A/B…` es únicamente presentación derivada. No cambian snapshot, schema, motor, reglas, puntuación ni turnos. En grafos densos y teléfonos todavía debe evaluarse el tamaño final de badges antes del refinamiento premium.
+
+## DEC-039 — Familia visual por chancho especial y gramática mínima
+
+**Estado:** Aceptada.
+
+**Decisión:** Mantener `P` para los dos extremos de la línea principal y asignar una sola familia visual `A`, `B`… a cada chancho especial, en el orden de `specialDoublePlacementIds`. Sus brazos `branch:1` y `branch:2` comparten letra y acento, pero conservan `structureId`, `armIndex`, `originPortId` y target exacto independientes. Un chancho ordinario, sea lateral o principal por K agotado, no crea familia.
+
+En reposo, mostrar aristas/lazos sin etiquetas numéricas redundantes, no repetir la letra en fichas interiores y mantener todas las colitas identificadas. Usar trazo continuo para principal, segmentado para ramas, contorno hueco/punteado para brazo potencial y relleno suave para brazo iniciado. Los números de opción aparecen solo al elegir entre varios targets compatibles del mismo valor.
+
+La inspección de familia puede iniciarse desde su arista, colita o badge raíz. Resalta la unión de ambos brazos ocupados, su chancho raíz y sus extremos; el estado continúa siendo efímero del controlador y nunca se persiste.
+
+**Motivo:** Las pruebas reales en PC y teléfono mostraron que la convención de una letra por puerto y su repetición sobre cada arista agregaba ruido. Para el Modo Grafo importa más reconocer valores abiertos, capacidad de ramificación y estructura que reconstruir permanentemente la mesa tradicional.
+
+**Alternativas consideradas:** Conservar una letra por brazo; mantener etiquetas `N·M`; repetir letras en cada ficha; usar color exclusivo por familia; mostrar siempre índices o `×q`; adoptar coordenadas topológicas visibles.
+
+**Consecuencias:** La proyección topológica incorpora familias y brazos derivados sin cambiar snapshot v6. GraphRenderer sigue sin leer `board`; acciones continúan usando `placementId + portId`. La reconstrucción exacta queda disponible para inspección futura y Modo Tradicional. Configuración de `n` con 5 predeterminado, TraditionalRenderer y conmutador de vistas quedan expresamente para bloques posteriores.

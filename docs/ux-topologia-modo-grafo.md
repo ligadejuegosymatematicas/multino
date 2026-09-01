@@ -2,7 +2,7 @@
 
 ## Estado de esta nota
 
-**Tres iteraciones funcionales implementadas; alternativas de ampliación todavía en estudio.**
+**Cuatro iteraciones funcionales implementadas; alternativas de ampliación todavía en estudio.**
 
 Esta nota parte de una prueba manual del primer GraphRenderer: la ronda puede jugarse y el grafo permite reconocer fichas y destinos, pero no comunica con suficiente claridad la estructura tradicional de línea principal y ramas. El objetivo no es transformar el Modo Grafo en una mesa de dominó, sino estudiar una segunda capa visual, derivada y opcional, sobre el grafo de valores.
 
@@ -281,29 +281,39 @@ Se implementaron los dos primeros niveles de la recomendación y un inspector lo
 
 No se implementaron el panel estructural completo, coordenadas permanentes, replay, Modo Tradicional ni acabado premium. La experiencia densa continúa necesitando evaluación humana aunque la suite comprueba que fichas, targets e identidad individual permanecen disponibles.
 
-## Segunda y tercera iteración de extremos
+## Segunda a cuarta iteración de extremos
 
 La segunda iteración hizo que cada `openEndTarget` heredara su región y estructura exactas, reforzó el trazo principal y lateral, extendió la inspección a la colita terminal y sustituyó la letra `E` por un símbolo independiente de color y patrón.
 
-La tercera resuelve dos observaciones adicionales:
+La tercera resolvió dos observaciones adicionales:
 
 1. **La colita comunica qué estructura continúa.** La principal recibe el código `P`. Cada puerto lateral potencial recibe `A`, `B`, `C`… por orden de adquisición del chancho especial y, dentro de él, `branch:1` antes de `branch:2`. La misma letra aparece en el chancho raíz, en todas las fichas de la rama y en el extremo terminal.
 2. **Los extremos existen visualmente antes de elegir ficha.** El estado neutral conserva colita gruesa, terminal de diez unidades y código. La selección no revela targets previamente ocultos: eleva los compatibles, añade un índice de opción y atenúa los incompatibles.
 
 La identidad alfabética es metadata descartable de UI. No reemplaza `placementId + portId`, no entra en acciones, no altera legalidad y puede recalcularse íntegramente desde el mismo snapshot. Se eligió un estado neutral estático: animar simultáneamente hasta dieciséis extremos agregaría ruido. Solo los legales usan el pulso discreto ya compatible con `prefers-reduced-motion`.
 
-## Proyección futura mínima a evaluar
+La cuarta iteración simplifica esa convención después de probarla en PC y teléfono:
 
-Sin fijar API ni autorizar código, una proyección podría proporcionar por placement:
+1. **Una familia por chancho especial.** El primer chancho especial origina la familia `A`, el segundo `B`, etc. Sus puertos exactos `branch:1` y `branch:2` son brazos independientes del motor, pero ambos se presentan como `A` porque comparten raíz y función visual.
+2. **Vista normal sin redundancia.** Una arista entre 2 y 5 ya expresa `2|5`; un lazo en 4 ya expresa `4|4`. Sus rótulos permanentes desaparecen. Las letras tampoco se repiten en cada ficha interior: permanecen en la raíz y en los extremos abiertos.
+3. **Extremos como controles protagonistas.** `P`, `A`, `B`… se ven en reposo. Los índices `1`, `2`, `3` solo aparecen si la ficha seleccionada tiene más de un target compatible del mismo valor; identifican la opción concreta, nunca la estructura.
+4. **Brazos potenciales frente a iniciados.** Una colita lateral vacía usa curva corta punteada y terminal hueco. El terminal de una cadena lateral ya iniciada usa el patrón común segmentado y relleno suave. Ambos conservan el mismo código de familia.
+5. **Inspección por familia.** Activar una arista lateral, una colita o el badge del chancho resalta los dos brazos existentes, la raíz y sus extremos, y atenúa las demás estructuras. El resumen usa “Ramificación A” y “Nace del chancho 5|5”, sin IDs técnicos.
+
+El acento cromático rota en una paleta sobria, pero se combina siempre con línea continua/segmentada, letra y relleno potencial/iniciado. El color nunca es la única codificación. No se muestra `×q` en la vista normal porque las curvas individuales y sus códigos ya comunican la multiplicidad sin otro rótulo.
+
+## Proyección topológica materializada
+
+La proyección pura proporciona por placement:
 
 - `region: "main" | "branch"`;
-- posición ordinal y vecinos en `main`;
-- `branchOriginPlacementId`, `branchOriginPortId` y `branchDepth` en ramas;
+- posición ordinal en `main`;
+- `originPlacementId`, `originPortId` y `depth` en ramas;
 - `isSpecialDouble`;
 - cantidad de conexiones y puertos libres;
 - datos cronológicos ya derivados por separado.
 
-También podría producir un resumen:
+También produce un resumen:
 
 - `configuredK`;
 - `effectiveK`;
@@ -311,6 +321,8 @@ También podría producir un resumen:
 - ramas ocupadas agrupadas por raíz y puerto.
 
 Todos estos valores se derivan del snapshot actual. La identidad estable continúa siendo `placementId` y `portId`; ninguna coordenada visual o etiqueta topológica debe persistirse.
+
+La agrupación familiar agrega únicamente metadata descartable: `familyId`, código, índice, raíz y dos brazos con su puerto exacto y estado ocupado. Un chancho ordinario en rama o en principal por K agotado conserva su clasificación, pero no origina familia.
 
 ## Criterios para una evaluación futura
 

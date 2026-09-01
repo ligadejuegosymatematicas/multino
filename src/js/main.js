@@ -46,6 +46,26 @@ function runIntent(intent, successMessage) {
   }
 }
 
+function describeStructure(presentation, structureId) {
+  if (structureId === "main") {
+    return "la línea principal";
+  }
+  return presentation.view.topology.branchFamilies.find(
+    (family) => family.id === structureId,
+  )?.label ?? "la ramificación";
+}
+
+function inspectStructure(structureId) {
+  const presentation = controller.getPresentation();
+  const wasInspected = presentation.inspectedStructureId === structureId;
+  runIntent(
+    () => controller.inspectStructure(structureId),
+    wasInspected
+      ? "Inspección topológica cerrada."
+      : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
+  );
+}
+
 function render(presentation) {
   graphRenderer.render(presentation, {
     onTarget: (target) =>
@@ -53,15 +73,17 @@ function render(presentation) {
     onStart: (target) =>
       runIntent(() => controller.submitTarget(target), "Primera jugada aplicada."),
     onInspectEdge: (edge) => {
-      const wasInspected =
-        controller.getPresentation().inspectedPlacementId === edge.placementId;
+      const presentation = controller.getPresentation();
+      const structureId = edge.topology.familyId ?? "main";
+      const wasInspected = presentation.inspectedStructureId === structureId;
       runIntent(
         () => controller.inspectPlacement(edge.placementId),
         wasInspected
           ? "Inspección topológica cerrada."
-          : `Inspeccionando ${edge.dominoId}: su estructura está resaltada.`,
+          : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
       );
     },
+    onInspectStructure: inspectStructure,
     onClearInspection: () =>
       runIntent(
         () => controller.clearInspection(),
@@ -99,7 +121,9 @@ function render(presentation) {
       ? "Selecciona una ficha jugable para descubrir sus destinos."
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
         ? "La ficha puede iniciar el tablero con la acción inferior."
-        : `${selectedCount} destino${selectedCount === 1 ? "" : "s"} compatible${selectedCount === 1 ? "" : "s"}; elige una curva numerada.`;
+        : selectedCount === 1
+          ? "Un destino compatible; activa su extremo."
+          : `${selectedCount} destinos compatibles; los números aparecen solo donde distinguen opciones del mismo valor.`;
 }
 
 controller = new InteractionController({

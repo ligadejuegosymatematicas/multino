@@ -72,6 +72,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Cada identidad lateral se repite en el chancho raíz, todas las fichas de la rama y su terminal, sin persistir etiquetas ni consultar `board` desde UI.
 - Estado neutral de extremos reforzado con colitas, terminales y códigos siempre visibles; al seleccionar ficha, las opciones legales ganan pulso e índice y las incompatibles se atenúan.
 - Convención alfabética estable por orden de adquisición del chancho especial y puerto lateral, con cobertura hasta el escenario denso de catorce ramas potenciales.
+- Cuarta iteración de gramática visual: una familia `A`, `B`… por chancho especial de línea principal, compartida por sus dos brazos laterales sin perder `branch:1`/`branch:2` ni el target exacto.
+- Vista normal simplificada sin rótulos `N·M` sobre aristas/lazos, letras repetidas en fichas interiores ni contadores de multiplicidad redundantes.
+- Extremos `P/A/B…` protagonistas en reposo; opciones `1/2/3…` renderizadas únicamente cuando una ficha seleccionada tiene varios targets compatibles del mismo valor.
+- Inspección de familia desde arista lateral, colita o badge raíz, con ambos brazos, chancho de origen y terminales resaltados; brazos potenciales e iniciados tienen estados gráficos distintos.
+- Acentos sobrios por familia combinados con trazo segmentado, etiquetas y estados de relleno para no depender exclusivamente del color.
 
 ### Decidido
 

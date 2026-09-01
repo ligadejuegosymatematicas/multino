@@ -50,8 +50,11 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
   assert.deepEqual(projection.branches, [
     {
       id: "placement-1:branch:1",
-      code: "A",
-      label: "Rama A",
+      familyId: "branch-family:placement-1",
+      familyCode: "A",
+      familyLabel: "Ramificación A",
+      familyIndex: 0,
+      armIndex: 1,
       originPlacementId: "placement-1",
       originPortId: "branch:1",
       placementIds: ["placement-3", "placement-4"],
@@ -73,7 +76,7 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
     {
       region: "branch",
       structureCode: "A",
-      structureLabel: "Rama A",
+      structureLabel: "Ramificación A",
       order: 1,
       originPlacementId: "placement-1",
       originPortId: "branch:1",
@@ -125,6 +128,8 @@ test("clasifica un chancho principal ordinario cuando K está agotado", () => {
   assert.equal(ordinaryMain.isOrdinaryDoubleInBranch, false);
   assert.equal(ordinaryMain.doubleRole, "ORDINARY_MAIN_K_EXHAUSTED");
   assert.equal(ordinaryMain.connectionCapacity, 2);
+  assert.equal(ordinaryMain.branchFamily, null);
+  assert.equal(projection.branchFamilies.length, 1);
 });
 
 test("clasifica un chancho ordinario dentro de una rama sin consumir K", () => {
@@ -150,6 +155,7 @@ test("clasifica un chancho ordinario dentro de una rama sin consumir K", () => {
   assert.equal(branchDouble.isOrdinaryDoubleByKExhaustion, false);
   assert.equal(branchDouble.isOrdinaryDoubleInBranch, true);
   assert.equal(branchDouble.doubleRole, "ORDINARY_BRANCH");
+  assert.equal(branchDouble.branchFamily, null);
   assert.equal(projection.specialDoubles.enabledCount, 1);
   assert.equal(placementAt(projection, "placement-1").startedBranchCount, 1);
 });
@@ -191,11 +197,23 @@ test("clasifica destinos abiertos por identidad exacta aunque compartan valor", 
   assert.equal(targetsById.get("placement-4:side:b").structureCode, "A");
   assert.equal(
     targetsById.get("placement-4:side:b").structureLabel,
-    "Rama A",
+    "Ramificación A",
   );
   assert.equal(
     targetsById.get("placement-4:side:b").structureId,
     "placement-1:branch:1",
+  );
+  assert.equal(
+    targetsById.get("placement-4:side:b").familyId,
+    "branch-family:placement-1",
+  );
+  assert.equal(
+    targetsById.get("placement-4:side:b").armIndex,
+    1,
+  );
+  assert.equal(
+    targetsById.get("placement-4:side:b").branchState,
+    "STARTED",
   );
   assert.notEqual(
     targetsById.get("placement-2:side:a").targetId,
@@ -203,7 +221,7 @@ test("clasifica destinos abiertos por identidad exacta aunque compartan valor", 
   );
 });
 
-test("asigna P y letras estables a principal y puertos laterales potenciales", () => {
+test("asigna P a la principal y una familia compartida a los dos brazos de cada especial", () => {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(
@@ -219,56 +237,91 @@ test("asigna P y letras estables a principal y puertos laterales potenciales", (
   const projection = getBoardTopologyProjection(state);
 
   assert.deepEqual(
-    projection.branchStructures.map((branch) => ({
-      id: branch.id,
-      code: branch.code,
-      label: branch.label,
-      isOccupied: branch.isOccupied,
+    projection.branchFamilies.map((family) => ({
+      id: family.id,
+      code: family.code,
+      label: family.label,
+      arms: family.arms.map((arm) => ({
+        id: arm.id,
+        armIndex: arm.armIndex,
+        originPortId: arm.originPortId,
+        isOccupied: arm.isOccupied,
+      })),
     })),
     [
       {
-        id: "placement-1:branch:1",
+        id: "branch-family:placement-1",
         code: "A",
-        label: "Rama A",
-        isOccupied: false,
+        label: "Ramificación A",
+        arms: [
+          {
+            id: "placement-1:branch:1",
+            armIndex: 1,
+            originPortId: "branch:1",
+            isOccupied: false,
+          },
+          {
+            id: "placement-1:branch:2",
+            armIndex: 2,
+            originPortId: "branch:2",
+            isOccupied: false,
+          },
+        ],
       },
       {
-        id: "placement-1:branch:2",
+        id: "branch-family:placement-3",
         code: "B",
-        label: "Rama B",
-        isOccupied: false,
-      },
-      {
-        id: "placement-3:branch:1",
-        code: "C",
-        label: "Rama C",
-        isOccupied: false,
-      },
-      {
-        id: "placement-3:branch:2",
-        code: "D",
-        label: "Rama D",
-        isOccupied: false,
+        label: "Ramificación B",
+        arms: [
+          {
+            id: "placement-3:branch:1",
+            armIndex: 1,
+            originPortId: "branch:1",
+            isOccupied: false,
+          },
+          {
+            id: "placement-3:branch:2",
+            armIndex: 2,
+            originPortId: "branch:2",
+            isOccupied: false,
+          },
+        ],
       },
     ],
   );
-  assert.deepEqual(
-    placementAt(projection, "placement-1").branchStructures.map(
-      (branch) => branch.code,
-    ),
-    ["A", "B"],
-  );
-  assert.deepEqual(
-    placementAt(projection, "placement-3").branchStructures.map(
-      (branch) => branch.code,
-    ),
-    ["C", "D"],
-  );
+  assert.equal(placementAt(projection, "placement-1").branchFamily.code, "A");
+  assert.equal(placementAt(projection, "placement-3").branchFamily.code, "B");
   assert.deepEqual(
     projection.openTargets
       .filter((target) => target.region === "branch")
       .map((target) => target.structureCode),
-    ["A", "B", "C", "D"],
+    ["A", "A", "B", "B"],
+  );
+  assert.deepEqual(
+    projection.openTargets
+      .filter((target) => target.region === "branch")
+      .map((target) => target.armIndex),
+    [1, 2, 1, 2],
+  );
+  assert.equal(
+    new Set(
+      projection.openTargets
+        .filter((target) => target.region === "branch")
+        .map((target) => target.targetId),
+    ).size,
+    4,
+  );
+  assert.deepEqual(
+    projection.openTargets
+      .filter((target) => target.region === "main")
+      .map((target) => target.structureCode),
+    ["P", "P"],
+  );
+  assert.equal(
+    projection.openTargets
+      .filter((target) => target.region === "branch")
+      .every((target) => target.branchState === "POTENTIAL"),
+    true,
   );
 });
 
@@ -281,7 +334,8 @@ test("la proyección topológica no muta ni comparte colecciones con el snapshot
   projection.mainLine.placementIds.push("falso");
   projection.placements[0].region = "branch";
   projection.openTargets[0].region = "branch";
-  projection.branchStructures[0].code = "Z";
+  projection.branchFamilies[0].code = "Z";
+  projection.branchFamilies[0].arms[0].placementIds.push("falso");
   projection.specialDoubles.enabledCount = 99;
 
   assert.deepEqual(state, before);

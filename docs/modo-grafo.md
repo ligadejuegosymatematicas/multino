@@ -165,7 +165,7 @@ Combina segmentos individuales en densidad baja con un contador redundante y una
 Adoptar la opción D con las curvas de A como lenguaje principal:
 
 1. mostrar un segmento corto por extremo mientras haya espacio legible;
-2. añadir `×q` cuando `q > 1` como información redundante, no como sustituto;
+2. omitir `×q` mientras las curvas individuales sigan siendo legibles; reservar un contador futuro solo para densidades donde aporte más que ruido;
 3. al seleccionar una ficha, resaltar solo los IDs que forman jugadas legales con ella;
 4. si los objetivos se solapan o el dispositivo es táctil, desplegarlos temporalmente en abanico o lista radial;
 5. ofrecer navegación de teclado entre objetivos y una descripción accesible con valor, índice y origen;
@@ -228,7 +228,7 @@ El prototipo usa SVG sin dependencias. Frente a Canvas, SVG permite que vértice
 
 Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha principal usa un trazo continuo; una ficha de rama usa un trazo segmentado, también identificado en la leyenda. Un chancho conserva su lazo cerrado y los especiales añaden un símbolo gráfico de cuatro brazos y doble contorno. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que una rama ya jugada no se confunde con un destino.
 
-Cada entrada de `openEndTargets` produce exactamente una curva con su propio hit area y `data-target-id`. La terminal muestra siempre la identidad topológica derivada: `P` para principal y `A`, `B`, `C`… para ramas concretas. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan y aparece además el índice individual de opción. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, el vértice dirige al usuario hacia las curvas individualizadas y no elige por valor.
+Cada entrada de `openEndTargets` produce exactamente una curva con su propio hit area y `data-target-id`. La terminal muestra siempre la identidad topológica derivada: `P` para principal y `A`, `B`, `C`… para familias laterales. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan. El índice individual aparece únicamente cuando dos o más targets compatibles comparten valor; nunca reemplaza la letra estructural. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, dirige al usuario hacia las curvas individualizadas y no elige por valor.
 
 `START` se presenta mediante un botón independiente bajo el grafo vacío, sin curva ficticia. `PASS` se habilita únicamente cuando aparece en `getAvailableActions`. Cada aceptación reemplaza la referencia al snapshot por el resultado de `applyTurnAction`, vuelve a ejecutar las proyecciones y renderiza desde cero; no existe un estado paralelo de aristas, mano, score o turno.
 
@@ -244,9 +244,13 @@ La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y
 
 La vista muestra `Especiales: s/effectiveK`. Al activar una ficha jugada se resalta toda su línea o rama; en una rama también se destaca el chancho raíz. El inspector explica posición o profundidad y, para un chancho, uno de los roles `Especial de línea principal`, `Ordinario de línea principal` u `Ordinario en rama`, además de conexiones/capacidad y ramas iniciadas cuando corresponde. La selección se cierra repitiendo la ficha, con el botón o mediante `Escape`; nunca entra al snapshot.
 
-La proyección reserva dos estructuras laterales por chancho especial siguiendo `specialDoublePlacementIds` y el orden `branch:1`, `branch:2`. Las etiqueta con una secuencia alfabética estable: el primer chancho origina `A/B`, el segundo `C/D`, hasta un máximo doble-seis de `M/N`. La línea principal usa `P`. Esos códigos se derivan de puertos existentes y se repiten en raíz, fichas, extremos y etiquetas accesibles; no tienen significado reglamentario ni se persisten.
+La proyección conserva dos brazos laterales exactos por chancho especial siguiendo `branch:1`, `branch:2`, pero les asigna una familia visual común según `specialDoublePlacementIds`: el primer chancho origina `A`, el segundo `B`, hasta un máximo doble-seis de `G`. La línea principal usa `P`. La letra se muestra fundamentalmente en el badge de la raíz y en los extremos; las fichas interiores conservan `familyId` para inspección, pero no repiten rótulos. Nada de ello tiene significado reglamentario ni se persiste.
 
-Sin ficha seleccionada, todos los extremos conservan opacidad alta, terminal ampliada y código visible. Con selección, los compatibles reciben mayor peso, terminal destacada, pulso discreto e índice de opción; los incompatibles permanecen como contexto muy atenuado. `prefers-reduced-motion` elimina la animación. La letra y los patrones continuo/segmentado hacen que la distinción no dependa solo del color.
+Sin ficha seleccionada, todos los extremos conservan opacidad alta, terminal ampliada y código visible. Los brazos laterales potenciales usan contorno hueco y curva punteada corta; los ya iniciados, relleno suave y segmento común. Con selección, los compatibles reciben mayor peso, terminal destacada y pulso discreto; el índice solo aparece cuando hace falta distinguir opciones del mismo valor. Los incompatibles permanecen como contexto muy atenuado y `prefers-reduced-motion` elimina la animación.
+
+Una familia se inspecciona desde una arista lateral, una colita o el badge de su chancho raíz. La escena resalta simultáneamente ambos brazos existentes, la raíz y los extremos de la familia, y atenúa el resto. El inspector expresa `Ramificación A` y `Nace del chancho N|N` sin exponer IDs técnicos. Activar el lazo mismo continúa permitiendo inspeccionar el rol del chancho y su capacidad.
+
+La vista normal ya no muestra `N·M` sobre aristas y lazos ni letras sobre todas las fichas de una rama. El grafo prioriza valores abiertos, targets y capacidad estratégica; la secuencia tradicional exacta sigue derivable y queda para inspección avanzada o el futuro Modo Tradicional.
 
 ## Decisiones todavía abiertas
 

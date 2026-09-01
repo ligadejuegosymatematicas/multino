@@ -11,6 +11,7 @@ function escapeAttribute(value) {
 function getTopologyClasses(edge) {
   return [
     edge.topology.region === "main" ? "is-main" : "is-branch",
+    edge.familyTone === null ? "" : `family-tone-${edge.familyTone}`,
     edge.topology.isSpecialDouble ? "is-special-double" : "",
     edge.isInspected ? "is-inspected" : "",
     edge.isTopologyHighlighted ? "is-topology-highlighted" : "",
@@ -26,59 +27,51 @@ function describeTopology(topology) {
 }
 
 function describeRootedBranches(topology) {
-  if (topology.branchStructures.length === 0) {
+  if (topology.branchFamily === null) {
     return "";
   }
-  return `; origina ${topology.branchStructures
-    .map((branch) => branch.label)
-    .join(" y ")}`;
-}
-
-function renderBranchStructureMarker(edge) {
-  if (edge.topology.region !== "branch") {
-    return "";
-  }
-  return `
-      <g class="graph-structure-marker" transform="translate(${edge.labelX + 31} ${edge.labelY})" data-structure-code="${escapeAttribute(edge.topology.structureCode)}" aria-hidden="true">
-        <circle r="9"></circle>
-        <text>${escapeAttribute(edge.topology.structureCode)}</text>
-      </g>`;
+  return `; origina ${topology.branchFamily.label}`;
 }
 
 function renderSpecialMarker(edge) {
   if (!edge.topology.isSpecialDouble) {
     return "";
   }
-  const markerX = edge.labelX + 31;
+  const markerX = edge.labelX - 15;
   const markerY = edge.labelY;
-  const rootedBranchMarkers = edge.topology.branchStructures
-    .map((branch, index, branches) => {
-      const offset = (index - (branches.length - 1) / 2) * 18;
-      return `
-          <g class="graph-branch-root-marker" transform="translate(${offset} 21)" data-structure-code="${escapeAttribute(branch.code)}">
-            <circle r="7.5"></circle>
-            <text>${escapeAttribute(branch.code)}</text>
-          </g>`;
-    })
-    .join("");
   return `
       <g class="graph-special-marker" transform="translate(${markerX} ${markerY})" aria-hidden="true">
         <circle class="graph-special-marker__outer" r="11"></circle>
         <circle class="graph-special-marker__inner" r="7"></circle>
         <path class="graph-special-marker__arms" d="M 0 -7 V 7 M -7 0 H 7"></path>
         <circle class="graph-special-marker__hub" r="2.2"></circle>
-        <g class="graph-branch-root-markers">${rootedBranchMarkers}</g>
       </g>`;
+}
+
+function renderFamilyRootMarker(edge) {
+  const family = edge.topology.branchFamily;
+  if (!family) {
+    return "";
+  }
+  const familyTone = family.familyIndex % 4;
+  const armMarkers = family.arms.map((arm, index) => `
+        <circle class="graph-family-root__arm ${arm.isOccupied ? "is-started" : "is-potential"}" cx="${index === 0 ? -5 : 5}" cy="15" r="2.8"></circle>`).join("");
+  const label = `Inspeccionar ${family.label}; nace del chancho ${edge.a}-${edge.b}; ${family.arms.filter((arm) => arm.isOccupied).length} de 2 brazos iniciados`;
+  return `
+    <g class="graph-family-root family-tone-${familyTone}${edge.isTopologyRoot ? " is-inspected" : ""}${edge.isTopologyDimmed ? " is-dimmed" : ""}" transform="translate(${edge.labelX + 16} ${edge.labelY})" data-family-id="${escapeAttribute(family.id)}" data-family-code="${escapeAttribute(family.code)}" role="button" tabindex="0" aria-pressed="${edge.isTopologyRoot}" aria-label="${escapeAttribute(label)}">
+      <circle class="graph-family-root__hit" r="22"></circle>
+      <circle class="graph-family-root__badge" r="11"></circle>
+      <text class="graph-family-root__code">${escapeAttribute(family.code)}</text>
+      ${armMarkers}
+    </g>`;
 }
 
 function renderEdge(edge) {
   const label = `Ficha ${edge.a}-${edge.b}, ${describeTopology(edge.topology)}${describeRootedBranches(edge.topology)}, jugada por ${edge.playerId} en la acción ${edge.turnNumber}`;
   return `
-    <g class="graph-edge ${getTopologyClasses(edge)}" data-placement-id="${escapeAttribute(edge.placementId)}" data-region="${edge.topology.region}" data-special-double="${edge.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${edge.isInspected}" aria-label="${escapeAttribute(label)}">
+    <g class="graph-edge ${getTopologyClasses(edge)}" data-placement-id="${escapeAttribute(edge.placementId)}" data-region="${edge.topology.region}" data-family-id="${escapeAttribute(edge.topology.familyId ?? "")}" data-special-double="${edge.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${edge.isInspected}" aria-label="${escapeAttribute(label)}">
+      <path class="graph-edge__hit" d="${edge.path}"></path>
       <path class="graph-edge__line" d="${edge.path}"></path>
-      <rect class="graph-edge__badge" x="${edge.labelX - 21}" y="${edge.labelY - 12}" width="42" height="24" rx="12"></rect>
-      <text class="graph-edge__label" x="${edge.labelX}" y="${edge.labelY}">${edge.a}·${edge.b}</text>
-      ${renderBranchStructureMarker(edge)}
       ${renderSpecialMarker(edge)}
     </g>`;
 }
@@ -86,10 +79,9 @@ function renderEdge(edge) {
 function renderLoop(loop) {
   const label = `Chancho ${loop.a}-${loop.b}, ${describeTopology(loop.topology)}, ${loop.topology.isSpecialDouble ? "especial" : "ordinario"}${describeRootedBranches(loop.topology)}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`;
   return `
-    <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
+    <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-family-id="${escapeAttribute(loop.topology.familyId ?? "")}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
+      <path class="graph-loop__hit" d="${loop.path}"></path>
       <path class="graph-loop__shape" d="${loop.path}"></path>
-      <text class="graph-loop__label" x="${loop.labelX}" y="${loop.labelY}">${loop.a}|${loop.b}</text>
-      ${renderBranchStructureMarker(loop)}
       ${renderSpecialMarker(loop)}
     </g>`;
 }
@@ -105,16 +97,22 @@ function renderOpenTarget(target, hasSelection) {
     target.topology.region === "main"
       ? "is-main-target"
       : "is-branch-target",
+    target.familyTone === null ? "" : `family-tone-${target.familyTone}`,
+    target.topology.branchState === "POTENTIAL" ? "is-potential-arm" : "",
+    target.topology.branchState === "STARTED" ? "is-started-arm" : "",
     target.isTopologyHighlighted ? "is-topology-highlighted" : "",
     target.isTopologyDimmed ? "is-topology-dimmed" : "",
   ].filter(Boolean).join(" ");
+  const optionMarkup = target.optionIndex === null
+    ? ""
+    : `<text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.optionIndex}</text>`;
   return `
-    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="${target.isLegal ? "0" : "-1"}" aria-disabled="${target.isLegal ? "false" : "true"}" aria-label="${escapeAttribute(target.accessibleLabel)}">
+    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-family-id="${escapeAttribute(target.topology.familyId ?? "")}" data-arm-index="${escapeAttribute(target.topology.armIndex ?? "")}" data-branch-state="${escapeAttribute(target.topology.branchState ?? "")}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="0" aria-disabled="false" aria-label="${escapeAttribute(target.accessibleLabel)}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
       <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="10"></circle>
       <text class="open-target__structure-code" x="${target.endX}" y="${target.endY}">${escapeAttribute(target.topology.structureCode)}</text>
-      <text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.index}</text>
+      ${optionMarkup}
     </g>`;
 }
 
@@ -144,12 +142,12 @@ export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. P identifica la línea principal; A, B, C y las letras siguientes identifican ramas concretas. Cada código se repite en su raíz, sus fichas y su extremo abierto. El símbolo de cuatro brazos identifica un chancho especial.</desc>
+      <desc id="graph-description">Siete valores fijos. P identifica los dos extremos de la línea principal. Cada chancho especial origina una familia A, B, C o siguiente; sus dos brazos conservan targets internos distintos. Las líneas continuas son principales, las segmentadas son ramificaciones y el símbolo de cuatro brazos identifica un chancho especial.</desc>
       <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
+      <g class="graph-family-roots">${scene.loops.map(renderFamilyRootMarker).join("")}</g>
       <g class="graph-open-targets">${scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
-      <g class="graph-multiplicities">${scene.multiplicities.map((item) => `<text class="graph-multiplicity" x="${item.x}" y="${item.y}" aria-hidden="true">×${item.count}</text>`).join("")}</g>
       <g class="graph-vertices">${scene.vertices.map((vertex) => renderVertex(vertex, scene.hasSelection)).join("")}</g>
       <g class="graph-special-summary" role="note" aria-label="${escapeAttribute(specialSummary)}">
         <rect x="16" y="16" width="142" height="34" rx="17"></rect>
@@ -176,20 +174,33 @@ export function renderTopologyInspectionMarkup(inspection) {
     return "";
   }
   const topology = inspection.topology;
-  const region = topology.region === "main"
-    ? `Esta ficha está en la línea principal · posición ${topology.order}.`
-    : `Esta ficha está en la ${topology.structureLabel}. La rama nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. Esta ficha ocupa la posición ${topology.depth} de la rama.`;
-  const doubleRole = describeDoubleRole(topology.doubleRole);
+  const isFamily = inspection.kind === "family";
+  const startedArms = inspection.arms.filter((arm) => arm.isOccupied).length;
+  const title = isFamily
+    ? inspection.structureLabel
+    : "Línea principal";
+  const region = isFamily
+    ? `Nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. ${startedArms} brazo${startedArms === 1 ? " iniciado" : "s iniciados"} · ${2 - startedArms} potencial${2 - startedArms === 1 ? "" : "es"}.`
+    : topology
+      ? `Ficha ${inspection.dominoId.replace("-", "|")} · posición ${topology.order}.`
+      : "Recorrido principal completo.";
+  const inspectedDomino = isFamily && topology
+    ? `<p class="topology-inspector__selection">Ficha inspeccionada: ${escapeAttribute(inspection.dominoId.replace("-", "|"))} · brazo ${topology.armIndex} · posición ${topology.depth}.</p>`
+    : "";
+  const doubleRole = topology
+    ? describeDoubleRole(topology.doubleRole)
+    : null;
   const doubleDetails = doubleRole
     ? `<p class="topology-inspector__double"><strong>${doubleRole}</strong><span>Conexiones: ${topology.connectionCount}/${topology.connectionCapacity}</span>${topology.isSpecialDouble ? `<span>Ramas iniciadas: ${topology.startedBranchCount}/2</span>` : ""}</p>`
     : "";
 
   return `
-    <aside class="topology-inspector" data-topology-inspection aria-label="Inspección topológica de ${escapeAttribute(inspection.dominoId)}">
+    <aside class="topology-inspector" data-topology-inspection data-inspection-kind="${inspection.kind}" aria-label="Inspección de ${escapeAttribute(title)}">
       <div>
         <p class="topology-inspector__kicker">Lectura de la partida</p>
-        <h3>Ficha ${escapeAttribute(inspection.dominoId.replace("-", "|"))}</h3>
+        <h3>${escapeAttribute(title)}</h3>
         <p class="topology-inspector__region">${escapeAttribute(region)}</p>
+        ${inspectedDomino}
         ${doubleDetails}
       </div>
       <button type="button" class="topology-inspector__close" data-clear-topology-inspection aria-label="Cerrar inspección topológica">Cerrar</button>
@@ -219,6 +230,7 @@ export class GraphRenderer {
       onTarget,
       onStart,
       onInspectEdge,
+      onInspectStructure,
       onClearInspection,
       onMessage,
     } = {},
@@ -226,6 +238,7 @@ export class GraphRenderer {
     const scene = createGraphScene(presentation.view, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
+      inspectedStructureId: presentation.inspectedStructureId,
       inspectedPlacementId: presentation.inspectedPlacementId,
     });
     const startMarkup = scene.canStart
@@ -247,10 +260,19 @@ export class GraphRenderer {
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
+    for (const element of this.container.querySelectorAll(".open-target")) {
+      const target = targetById.get(element.dataset.targetId);
+      const activate = () => target.isLegal
+        ? onTarget?.(target)
+        : onInspectStructure?.(target.topology.familyId ?? "main");
+      element.addEventListener("click", activate);
+      activateOnKeyboard(element, activate);
+    }
+
     for (const element of this.container.querySelectorAll(
-      ".open-target.is-legal",
+      ".graph-family-root",
     )) {
-      const activate = () => onTarget?.(targetById.get(element.dataset.targetId));
+      const activate = () => onInspectStructure?.(element.dataset.familyId);
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }

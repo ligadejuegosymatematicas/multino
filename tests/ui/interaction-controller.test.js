@@ -122,7 +122,7 @@ test("varios destinos iguales conservan el puerto individual enviado al motor", 
   assert.equal(controller.getPresentation().view.edges.length, 2);
 });
 
-test("la inspección de una ficha jugada es efímera, alternable e inmutable", () => {
+test("la inspección de una ficha jugada selecciona su estructura sin persistirla", () => {
   const initial = playFirst(createDeterministicMatch(), "6-6");
   const before = structuredClone(initial);
   const presentations = [];
@@ -132,18 +132,43 @@ test("la inspección de una ficha jugada es efímera, alternable e inmutable", (
   });
 
   assert.equal(controller.getPresentation().inspectedPlacementId, null);
-  assert.equal(controller.inspectPlacement("placement-1"), "placement-1");
+  assert.equal(controller.getPresentation().inspectedStructureId, null);
+  assert.equal(controller.inspectPlacement("placement-1"), "main");
   assert.equal(
     presentations.at(-1).inspectedPlacementId,
     "placement-1",
   );
+  assert.equal(presentations.at(-1).inspectedStructureId, "main");
   assert.equal(controller.inspectPlacement("placement-1"), null);
   assert.equal(presentations.at(-1).inspectedPlacementId, null);
+  assert.equal(presentations.at(-1).inspectedStructureId, null);
   assert.throws(
     () => controller.inspectPlacement("placement-999"),
     /no existe en el grafo/,
   );
   assert.deepEqual(initial, before);
+});
+
+test("una familia puede inspeccionarse desde su identidad visual sin elegir un brazo", () => {
+  const state = playFirst(createDeterministicMatch(), "6-6");
+  const before = structuredClone(state);
+  const controller = new InteractionController({ initialState: state });
+
+  assert.equal(
+    controller.inspectStructure("branch-family:placement-1"),
+    "branch-family:placement-1",
+  );
+  assert.equal(
+    controller.getPresentation().inspectedStructureId,
+    "branch-family:placement-1",
+  );
+  assert.equal(controller.getPresentation().inspectedPlacementId, null);
+  assert.equal(controller.inspectStructure("branch-family:placement-1"), null);
+  assert.throws(
+    () => controller.inspectStructure("branch-family:placement-99"),
+    /estructura no existe/,
+  );
+  assert.deepEqual(state, before);
 });
 
 test("una acción aceptada limpia la inspección sin crear estado reglamentario", () => {
@@ -159,7 +184,9 @@ test("una acción aceptada limpia la inspección sin crear estado reglamentario"
   );
 
   assert.equal(controller.getPresentation().inspectedPlacementId, null);
+  assert.equal(controller.getPresentation().inspectedStructureId, null);
   assert.equal("inspectedPlacementId" in controller.getState(), false);
+  assert.equal("inspectedStructureId" in controller.getState(), false);
 });
 
 test("PASS se habilita y ejecuta exclusivamente desde getAvailableActions", () => {

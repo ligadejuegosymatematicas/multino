@@ -32,6 +32,7 @@ export class InteractionController {
 
     this.state = initialState;
     this.selectedDominoId = null;
+    this.inspectedStructureId = null;
     this.inspectedPlacementId = null;
     this.requestAction = requestAction;
     this.onChange = onChange;
@@ -55,6 +56,7 @@ export class InteractionController {
     return {
       view,
       selectedDominoId: this.selectedDominoId,
+      inspectedStructureId: this.inspectedStructureId,
       inspectedPlacementId: this.inspectedPlacementId,
       selectedLegalTargets,
       canPass: availableActions.some((action) => action.type === "PASS"),
@@ -81,19 +83,40 @@ export class InteractionController {
 
   inspectPlacement(placementId) {
     const view = projectGraphView(this.state, this.state.currentPlayerId);
-    if (!view.edges.some((edge) => edge.placementId === placementId)) {
+    const placement = view.topology.placements.find(
+      (candidate) => candidate.placementId === placementId,
+    );
+    if (!placement) {
       throw new Error("La ficha jugada no existe en el grafo actual.");
     }
-    this.inspectedPlacementId =
-      this.inspectedPlacementId === placementId ? null : placementId;
+    const structureId = placement.familyId ?? "main";
+    const isActive = this.inspectedStructureId === structureId;
+    this.inspectedStructureId = isActive ? null : structureId;
+    this.inspectedPlacementId = isActive ? null : placementId;
     this.#emitChange();
-    return this.inspectedPlacementId;
+    return this.inspectedStructureId;
+  }
+
+  inspectStructure(structureId) {
+    const view = projectGraphView(this.state, this.state.currentPlayerId);
+    const exists = structureId === "main" || view.topology.branchFamilies.some(
+      (family) => family.id === structureId,
+    );
+    if (!exists) {
+      throw new Error("La estructura no existe en el grafo actual.");
+    }
+    const isActive = this.inspectedStructureId === structureId;
+    this.inspectedStructureId = isActive ? null : structureId;
+    this.inspectedPlacementId = null;
+    this.#emitChange();
+    return this.inspectedStructureId;
   }
 
   clearInspection() {
-    if (this.inspectedPlacementId === null) {
+    if (this.inspectedStructureId === null) {
       return;
     }
+    this.inspectedStructureId = null;
     this.inspectedPlacementId = null;
     this.#emitChange();
   }
@@ -128,6 +151,7 @@ export class InteractionController {
     const nextState = this.requestAction(this.state, action);
     this.state = nextState;
     this.selectedDominoId = null;
+    this.inspectedStructureId = null;
     this.inspectedPlacementId = null;
     this.#emitChange();
     return nextState;

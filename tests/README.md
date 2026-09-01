@@ -83,6 +83,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - el escenario denso comprueba catorce identidades laterales potenciales y dieciséis targets sin perder IDs individuales;
 - CSS verifica terminales, patrones y letras redundantes, además de desactivar movimiento cuando el usuario lo solicita.
 
+### Fase 2, Bloque 5 — simplificación y familias visuales completada
+
+- `tests/projections/topology-projection.test.js`: ambos extremos principales usan `P`; los puertos `branch:1` y `branch:2` conservan IDs exactos pero comparten una familia por chancho especial; un segundo especial recibe `B`; chanchos ordinarios por K o por rama no originan familias.
+- `tests/ui/graph-renderer.test.js`: elimina etiquetas redundantes de aristas/lazos y letras interiores, reserva números para elecciones múltiples, distingue brazos potenciales/iniciados, inspecciona ambos brazos y raíz, y conserva hit areas táctiles y reglas responsivas.
+- Los escenarios K=1, K=2 y K=7 cubren agotamiento, dos brazos de una familia, segunda familia y grafo denso. La gramática combina trazo, letra, estado de relleno y acento; nunca depende solo del color.
+- `tests/ui/interaction-controller.test.js`: la inspección puede comenzar desde una familia visual y sigue siendo estado efímero ajeno al snapshot; cualquier acción aceptada la limpia.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

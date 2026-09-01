@@ -46,15 +46,17 @@
   stroke-linecap: round;
 }
 
+.graph-edge__hit,
+.graph-loop__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 28;
+  vector-effect: non-scaling-stroke;
+}
+
 .graph-edge.is-main .graph-edge__line {
   stroke: #244f59;
   stroke-width: 6;
-}
-
-.graph-edge.is-main .graph-edge__badge {
-  fill: #f4faf9;
-  stroke: #244f59;
-  stroke-width: 2;
 }
 
 .graph-edge,
@@ -65,34 +67,35 @@
 
 .graph-edge.is-branch .graph-edge__line,
 .graph-loop.is-branch .graph-loop__shape {
-  stroke: #6f657d;
+  stroke: var(--family-accent, #6f657d);
   stroke-dasharray: 14 6;
   stroke-width: 4;
 }
 
-.graph-edge.is-branch .graph-edge__badge {
-  stroke: #6f657d;
+.family-tone-0 {
+  --family-accent: #6f657d;
+  --family-soft: #f3f0f7;
+}
+
+.family-tone-1 {
+  --family-accent: #446f75;
+  --family-soft: #edf6f5;
+}
+
+.family-tone-2 {
+  --family-accent: #8a6547;
+  --family-soft: #faf2e9;
+}
+
+.family-tone-3 {
+  --family-accent: #687245;
+  --family-soft: #f3f6e9;
 }
 
 .graph-edge:focus-visible .graph-edge__line,
 .graph-loop:focus-visible .graph-loop__shape {
   stroke: var(--focus);
   stroke-width: 8;
-}
-
-.graph-edge__badge {
-  fill: #f8fbfa;
-  stroke: #38545d;
-  stroke-width: 1.5;
-}
-
-.graph-edge__label,
-.graph-loop__label {
-  fill: var(--ink);
-  font-size: 13px;
-  font-weight: 750;
-  text-anchor: middle;
-  dominant-baseline: middle;
 }
 
 .graph-loop__shape {
@@ -110,10 +113,6 @@
 .graph-loop.is-special-double .graph-loop__shape {
   stroke-width: 7;
   filter: drop-shadow(0 0 5px rgb(107 92 145 / 0.32));
-}
-
-.graph-loop__label {
-  fill: var(--violet);
 }
 
 .graph-special-marker__outer {
@@ -139,31 +138,54 @@
   fill: #74400b;
 }
 
-.graph-structure-marker circle,
-.graph-branch-root-marker circle {
-  fill: #f7f4fb;
-  stroke: #625672;
-  stroke-width: 1.5;
+.graph-family-root {
+  --family-accent: #6f657d;
+  --family-soft: #f3f0f7;
+  cursor: pointer;
+  transition: opacity 160ms ease;
 }
 
-.graph-structure-marker text,
-.graph-branch-root-marker text {
-  fill: #514567;
-  font-size: 9px;
+.graph-family-root__hit {
+  fill: transparent;
+}
+
+.graph-family-root__badge {
+  fill: var(--family-soft);
+  stroke: var(--family-accent);
+  stroke-width: 2;
+}
+
+.graph-family-root__code {
+  fill: var(--family-accent);
+  font-size: 10px;
   font-weight: 900;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
 }
 
-.graph-branch-root-marker circle {
-  fill: #fff8eb;
-  stroke: #8b5010;
+.graph-family-root__arm {
+  stroke: var(--family-accent);
+  stroke-width: 1.3;
 }
 
-.graph-branch-root-marker text {
-  fill: #74400b;
-  font-size: 8px;
+.graph-family-root__arm.is-started {
+  fill: var(--family-accent);
+}
+
+.graph-family-root__arm.is-potential {
+  fill: #ffffff;
+  stroke-dasharray: 1.5 1.5;
+}
+
+.graph-family-root.is-inspected .graph-family-root__badge,
+.graph-family-root:focus-visible .graph-family-root__badge {
+  stroke: var(--focus);
+  stroke-width: 4;
+}
+
+.graph-family-root.is-dimmed {
+  opacity: 0.14;
 }
 
 .graph-edge.is-topology-dimmed,
@@ -183,9 +205,9 @@
   filter: drop-shadow(0 0 5px rgb(182 107 24 / 0.32));
 }
 
-.graph-edge.is-inspected .graph-edge__badge {
-  stroke: var(--focus);
-  stroke-width: 3;
+.graph-edge.is-inspected .graph-edge__line,
+.graph-loop.is-inspected .graph-loop__shape {
+  filter: drop-shadow(0 0 4px rgb(18 91 107 / 0.42));
 }
 
 .open-target {
@@ -219,12 +241,27 @@
 }
 
 .open-target.is-branch-target {
-  color: #6f657d;
+  color: var(--family-accent, #6f657d);
 }
 
 .open-target.is-branch-target .open-target__curve {
   stroke-width: 5;
   stroke-dasharray: 6 6;
+}
+
+.open-target.is-potential-arm .open-target__curve {
+  stroke-width: 4;
+  stroke-dasharray: 2 7;
+  opacity: 0.78;
+}
+
+.open-target.is-potential-arm .open-target__end {
+  fill: #ffffff;
+  stroke-dasharray: 2 3;
+}
+
+.open-target.is-started-arm .open-target__end {
+  fill: var(--family-soft, #f3f0f7);
 }
 
 .open-target__end {
@@ -245,7 +282,6 @@
 }
 
 .open-target__option-index {
-  opacity: 0;
   font-size: 10px;
   paint-order: stroke;
   stroke: #ffffff;
@@ -271,10 +307,6 @@
 .open-target.is-legal .open-target__end {
   fill: #fff8eb;
   stroke-width: 4.5;
-}
-
-.open-target.is-legal .open-target__option-index {
-  opacity: 1;
 }
 
 .open-target.is-incompatible {
@@ -339,13 +371,6 @@
 .graph-vertex:focus-visible .graph-vertex__circle {
   stroke: var(--focus);
   stroke-width: 8;
-}
-
-.graph-multiplicity {
-  fill: #4d5e62;
-  font-size: 14px;
-  font-weight: 800;
-  text-anchor: middle;
 }
 
 .graph-special-summary rect {
@@ -418,6 +443,7 @@
 }
 
 .topology-inspector__region,
+.topology-inspector__selection,
 .topology-inspector__double span {
   color: var(--muted);
   font-size: 0.76rem;
@@ -472,7 +498,8 @@
   }
 
   .graph-edge,
-  .graph-loop {
+  .graph-loop,
+  .graph-family-root {
     transition: none;
   }
 }

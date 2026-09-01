@@ -96,6 +96,9 @@ function createOpenTarget(
   vertex,
   angle,
   isLegal,
+  optionIndex,
+  compatibleCount,
+  hasSelection,
   topologyState,
 ) {
   const start = pointAt(vertex, angle, VERTEX_RADIUS - 1);
@@ -110,6 +113,13 @@ function createOpenTarget(
   const structureLabel = target.topology.region === "main"
     ? "línea principal"
     : target.topology.structureLabel;
+  const selectionLabel = !hasSelection
+    ? "; activar para inspeccionar la estructura"
+    : isLegal
+      ? optionIndex === null
+        ? "; destino compatible"
+        : `; opción ${optionIndex} de ${compatibleCount}`
+      : "; destino no compatible; activar para inspeccionar la estructura";
   return {
     ...target,
     index: index + 1,
@@ -118,8 +128,12 @@ function createOpenTarget(
     endX: end.x,
     endY: end.y,
     isLegal,
+    optionIndex,
+    familyTone: target.topology.familyIndex === null
+      ? null
+      : target.topology.familyIndex % 4,
     ...topologyState,
-    accessibleLabel: `Extremo abierto ${target.topology.structureCode}, ${structureLabel}, valor ${target.value}; opción ${index + 1} de ${count}`,
+    accessibleLabel: `Extremo abierto ${target.topology.structureCode}, ${structureLabel}, valor ${target.value}${selectionLabel}`,
   };
 }
 
@@ -129,47 +143,71 @@ function targetIdentity(target) {
 
 function createTopologyInspection(
   view,
+  inspectedStructureId,
   inspectedPlacementId,
   topologyByPlacementId,
 ) {
-  if (inspectedPlacementId === null) {
+  if (inspectedStructureId === null) {
     return null;
   }
 
-  const placement = topologyByPlacementId.get(inspectedPlacementId);
-  const edge = view.edges.find(
-    (candidate) => candidate.placementId === inspectedPlacementId,
-  );
-  if (!placement || !edge) {
-    return null;
-  }
-
-  const branch = placement.region === "branch"
-    ? view.topology.branches.find(
-        (candidate) => candidate.id === placement.structureId,
-      )
-    : null;
-  const structurePlacementIds = placement.region === "main"
-    ? view.topology.mainLine.placementIds
-    : branch.placementIds;
-  const rootEdge = branch
+  const placement = inspectedPlacementId === null
+    ? null
+    : topologyByPlacementId.get(inspectedPlacementId) ?? null;
+  const edge = placement
     ? view.edges.find(
-        (candidate) =>
-          candidate.placementId === branch.originPlacementId,
-      )
+        (candidate) => candidate.placementId === inspectedPlacementId,
+      ) ?? null
     : null;
+
+  if (inspectedStructureId === "main") {
+    return {
+      kind: "main",
+      structureId: "main",
+      structureCode: "P",
+      structureLabel: "Línea principal",
+      placementId: placement?.placementId ?? null,
+      dominoId: edge?.dominoId ?? null,
+      topology: placement,
+      structurePlacementIds: [...view.topology.mainLine.placementIds],
+      rootPlacementId: null,
+      rootDominoId: null,
+      rootTopology: null,
+      arms: [],
+    };
+  }
+
+  const family = view.topology.branchFamilies.find(
+    (candidate) => candidate.id === inspectedStructureId,
+  );
+  if (!family) {
+    return null;
+  }
+  const rootEdge = view.edges.find(
+    (candidate) => candidate.placementId === family.originPlacementId,
+  );
+  const rootTopology = topologyByPlacementId.get(family.originPlacementId);
 
   return {
-    placementId: inspectedPlacementId,
-    dominoId: edge.dominoId,
-    a: edge.a,
-    b: edge.b,
+    kind: "family",
+    structureId: family.id,
+    structureCode: family.code,
+    structureLabel: family.label,
+    familyIndex: family.familyIndex,
+    placementId: placement?.placementId ?? null,
+    dominoId: edge?.dominoId ?? null,
     topology: placement,
-    structurePlacementIds: [...structurePlacementIds],
-    rootPlacementId: branch?.originPlacementId ?? null,
+    structurePlacementIds: family.arms.flatMap(
+      (arm) => arm.placementIds,
+    ),
+    rootPlacementId: family.originPlacementId,
     rootDominoId: rootEdge?.dominoId ?? null,
-    structureCode: placement.structureCode,
-    structureLabel: placement.structureLabel,
+    rootTopology,
+    arms: family.arms.map((arm) => ({
+      armIndex: arm.armIndex,
+      isOccupied: arm.isOccupied,
+      placementIds: [...arm.placementIds],
+    })),
   };
 }
 
@@ -181,6 +219,7 @@ export function createGraphScene(
   {
     selectedDominoId = null,
     legalTargets = [],
+    inspectedStructureId = null,
     inspectedPlacementId = null,
   } = {},
 ) {
@@ -197,11 +236,9 @@ export function createGraphScene(
   );
   const inspection = createTopologyInspection(
     view,
+    inspectedStructureId,
     inspectedPlacementId,
     topologyByPlacementId,
-  );
-  const highlightedPlacementIds = new Set(
-    inspection?.structurePlacementIds ?? [],
   );
   const loopValues = new Set(
     view.edges.filter((edge) => edge.isLoop).map((edge) => edge.a),
@@ -216,11 +253,19 @@ export function createGraphScene(
       group.targets.length,
       loopValues.has(group.value),
     );
+    const compatibleCount = group.targets.filter(
+      (target) => hasSelection && legalTargetIds.has(target.id),
+    ).length;
+    let compatibleIndex = 0;
     group.targets.forEach((target, index) => {
       const isLegal = hasSelection && legalTargetIds.has(target.id);
+      if (isLegal) {
+        compatibleIndex += 1;
+      }
+      const targetStructureId = target.topology.familyId ?? "main";
       const isTopologyHighlighted =
         inspection !== null &&
-        target.topology.structureId === inspection.topology.structureId;
+        targetStructureId === inspection.structureId;
       const projectedTarget = createOpenTarget(
         target,
         index,
@@ -228,6 +273,9 @@ export function createGraphScene(
         vertex,
         angles[index],
         isLegal,
+        isLegal && compatibleCount > 1 ? compatibleIndex : null,
+        compatibleCount,
+        hasSelection,
         {
           isTopologyHighlighted,
           isTopologyDimmed:
@@ -247,14 +295,19 @@ export function createGraphScene(
   const loops = [];
   for (const edge of view.edges) {
     const topology = topologyByPlacementId.get(edge.placementId);
+    const edgeStructureId = topology.familyId ?? "main";
     const topologyState = {
       topology,
+      familyTone: topology.familyIndex === null
+        ? null
+        : topology.familyIndex % 4,
       isInspected: edge.placementId === inspection?.placementId,
-      isTopologyHighlighted: highlightedPlacementIds.has(edge.placementId),
+      isTopologyHighlighted:
+        inspection !== null && edgeStructureId === inspection.structureId,
       isTopologyRoot: edge.placementId === inspection?.rootPlacementId,
       isTopologyDimmed:
         inspection !== null &&
-        !highlightedPlacementIds.has(edge.placementId) &&
+        edgeStructureId !== inspection.structureId &&
         edge.placementId !== inspection.rootPlacementId,
     };
     if (edge.isLoop) {
@@ -291,17 +344,5 @@ export function createGraphScene(
     edges,
     loops,
     openTargets,
-    multiplicities: view.openEndsByValue
-      .filter((group) => group.count > 1)
-      .map((group) => {
-        const vertex = positions.get(group.value);
-        const label = pointAt(vertex, vertex.outwardAngle + Math.PI / 2, 47);
-        return {
-          value: group.value,
-          count: group.count,
-          x: label.x,
-          y: label.y,
-        };
-      }),
   };
 }
