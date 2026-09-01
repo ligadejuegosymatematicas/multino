@@ -1,0 +1,210 @@
+import { createMatch } from "../game/index.js";
+import { InteractionController } from "./InteractionController.js";
+import {
+  BOARD_VIEW_MODES,
+  ViewModeController,
+} from "./ViewModeController.js";
+
+export const LOCAL_GAME_SCREENS = Object.freeze({
+  CONFIGURATION: "configuration",
+  ROUND: "round",
+});
+
+const VALID_INITIAL_MODES = new Set(Object.values(BOARD_VIEW_MODES));
+const MIN_UI_K = 0;
+const MAX_UI_K = 7;
+
+function validateUiK(K) {
+  if (!Number.isInteger(K) || K < MIN_UI_K || K > MAX_UI_K) {
+    throw new TypeError("K debe ser un entero entre 0 y 7 en esta interfaz.");
+  }
+  return K;
+}
+
+function validateViewMode(mode) {
+  if (!VALID_INITIAL_MODES.has(mode)) {
+    throw new TypeError(`Modo visual desconocido: ${String(mode)}.`);
+  }
+  return mode;
+}
+
+/**
+ * Coordina la pantalla inicial y una sola ronda independiente.
+ * No acumula partidas ni agrega estado al snapshot reglamentario.
+ */
+export class LocalGameSessionController {
+  constructor({
+    participants,
+    createRound = createMatch,
+    randomSourceFactory = () => Math.random,
+    requestAction,
+    onChange = () => {},
+    initialK = 7,
+    initialViewMode = BOARD_VIEW_MODES.GRAPH,
+  } = {}) {
+    if (!participants || typeof participants !== "object") {
+      throw new TypeError("participants debe describir la mesa local.");
+    }
+    if (
+      typeof createRound !== "function" ||
+      typeof randomSourceFactory !== "function" ||
+      typeof onChange !== "function"
+    ) {
+      throw new TypeError(
+        "createRound, randomSourceFactory y onChange deben ser funciones.",
+      );
+    }
+    if (requestAction !== undefined && typeof requestAction !== "function") {
+      throw new TypeError("requestAction debe ser una función cuando se provee.");
+    }
+
+    this.participants = participants;
+    this.createRound = createRound;
+    this.randomSourceFactory = randomSourceFactory;
+    this.requestAction = requestAction;
+    this.onChange = onChange;
+    this.screen = LOCAL_GAME_SCREENS.CONFIGURATION;
+    this.config = {
+      K: validateUiK(initialK),
+      initialViewMode: validateViewMode(initialViewMode),
+    };
+    this.roundController = null;
+    this.roundSerial = 0;
+    this.viewModeController = new ViewModeController({
+      initialMode: this.config.initialViewMode,
+      onChange: () => this.#emitChange(),
+    });
+  }
+
+  start() {
+    this.#emitChange();
+  }
+
+  getPresentation() {
+    return {
+      screen: this.screen,
+      config: { ...this.config },
+      viewMode: this.viewModeController.getMode(),
+      round: this.roundController?.getPresentation() ?? null,
+    };
+  }
+
+  getRoundState() {
+    return this.roundController?.getState() ?? null;
+  }
+
+  setK(K) {
+    this.#requireConfiguration();
+    this.config.K = validateUiK(K);
+    this.#emitChange();
+    return this.config.K;
+  }
+
+  setInitialViewMode(mode) {
+    this.#requireConfiguration();
+    this.config.initialViewMode = validateViewMode(mode);
+    this.#emitChange();
+    return this.config.initialViewMode;
+  }
+
+  startNewGame() {
+    this.#requireConfiguration();
+    this.viewModeController.setMode(this.config.initialViewMode);
+    return this.#createIndependentRound();
+  }
+
+  playAgain() {
+    this.#requireFinishedRound();
+    return this.#createIndependentRound();
+  }
+
+  changeConfiguration() {
+    this.#requireFinishedRound();
+    this.config.initialViewMode = this.viewModeController.getMode();
+    this.roundController = null;
+    this.screen = LOCAL_GAME_SCREENS.CONFIGURATION;
+    this.#emitChange();
+  }
+
+  setViewMode(mode) {
+    this.#requireRound();
+    return this.viewModeController.setMode(mode);
+  }
+
+  selectDomino(dominoId) {
+    return this.#requireRound().selectDomino(dominoId);
+  }
+
+  inspectPlacement(placementId) {
+    return this.#requireRound().inspectPlacement(placementId);
+  }
+
+  inspectStructure(structureId) {
+    return this.#requireRound().inspectStructure(structureId);
+  }
+
+  clearInspection() {
+    return this.#requireRound().clearInspection();
+  }
+
+  submitTarget(target) {
+    return this.#requireRound().submitTarget(target);
+  }
+
+  pass() {
+    return this.#requireRound().pass();
+  }
+
+  #createIndependentRound() {
+    const randomSource = this.randomSourceFactory();
+    if (typeof randomSource !== "function") {
+      throw new TypeError("randomSourceFactory debe devolver una función.");
+    }
+    this.roundSerial += 1;
+    const initialState = this.createRound({
+      ...this.participants,
+      matchId: `local-game-${this.roundSerial}`,
+      K: this.config.K,
+      randomSource,
+    });
+    const controllerOptions = {
+      initialState,
+      onChange: () => this.#emitChange(),
+    };
+    if (this.requestAction !== undefined) {
+      controllerOptions.requestAction = this.requestAction;
+    }
+    this.roundController = new InteractionController(controllerOptions);
+    this.screen = LOCAL_GAME_SCREENS.ROUND;
+    this.roundController.start();
+    return initialState;
+  }
+
+  #requireConfiguration() {
+    if (this.screen !== LOCAL_GAME_SCREENS.CONFIGURATION) {
+      throw new Error("La configuración solo puede cambiarse en la pantalla inicial.");
+    }
+  }
+
+  #requireRound() {
+    if (
+      this.screen !== LOCAL_GAME_SCREENS.ROUND ||
+      this.roundController === null
+    ) {
+      throw new Error("No hay una partida activa.");
+    }
+    return this.roundController;
+  }
+
+  #requireFinishedRound() {
+    const round = this.#requireRound();
+    if (round.getState().phase !== "finished") {
+      throw new Error("La partida todavía no ha terminado.");
+    }
+    return round;
+  }
+
+  #emitChange() {
+    this.onChange(this.getPresentation());
+  }
+}

@@ -1,10 +1,12 @@
-import { createMatch } from "./game/index.js";
 import {
   GraphRenderer,
   TraditionalRenderer,
 } from "./ui/BoardRenderer.js";
 import { renderHand } from "./ui/HandRenderer.js";
-import { InteractionController } from "./ui/InteractionController.js";
+import {
+  LOCAL_GAME_SCREENS,
+  LocalGameSessionController,
+} from "./ui/LocalGameSessionController.js";
 import {
   renderRoundResult,
   renderScorePanel,
@@ -16,7 +18,6 @@ import {
 } from "./ui/TurnIndicator.js";
 import {
   BOARD_VIEW_MODES,
-  ViewModeController,
 } from "./ui/ViewModeController.js";
 
 const participantConfig = {
@@ -43,15 +44,18 @@ const message = document.querySelector("#game-message");
 const boardHeading = document.querySelector("#board-heading");
 const graphLegend = document.querySelector("#graph-legend");
 const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
-let controller;
-
-const viewModeController = new ViewModeController({
-  onChange: () => {
-    if (controller) {
-      render(controller.getPresentation());
-    }
-  },
-});
+const setupScreen = document.querySelector("#setup-screen");
+const gameScreen = document.querySelector("#game-screen");
+const setupForm = document.querySelector("#setup-form");
+const setupK = document.querySelector("#setup-k");
+const initialModeInputs = [
+  ...document.querySelectorAll("[name='initial-view-mode']"),
+];
+const roundActions = document.querySelector("#round-actions");
+const playAgainButton = document.querySelector("#play-again-action");
+const changeConfigButton = document.querySelector("#change-config-action");
+const prototypeBadge = document.querySelector("#prototype-badge");
+let sessionController;
 
 function setMessage(text) {
   message.textContent = text;
@@ -76,18 +80,17 @@ function describeStructure(presentation, structureId) {
 }
 
 function inspectStructure(structureId) {
-  const presentation = controller.getPresentation();
+  const presentation = sessionController.getPresentation().round;
   const wasInspected = presentation.inspectedStructureId === structureId;
   runIntent(
-    () => controller.inspectStructure(structureId),
+    () => sessionController.inspectStructure(structureId),
     wasInspected
       ? "Inspección topológica cerrada."
       : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
   );
 }
 
-function render(presentation) {
-  const mode = viewModeController.getMode();
+function renderRound(presentation, mode) {
   const renderer = mode === BOARD_VIEW_MODES.GRAPH
     ? graphRenderer
     : traditionalRenderer;
@@ -108,15 +111,18 @@ function render(presentation) {
 
   renderer.render(presentation, {
     onTarget: (target) =>
-      runIntent(() => controller.submitTarget(target), "Jugada aplicada."),
+      runIntent(() => sessionController.submitTarget(target), "Jugada aplicada."),
     onStart: (target) =>
-      runIntent(() => controller.submitTarget(target), "Primera jugada aplicada."),
+      runIntent(
+        () => sessionController.submitTarget(target),
+        "Primera jugada aplicada.",
+      ),
     onInspectEdge: (edge) => {
-      const presentation = controller.getPresentation();
+      const presentation = sessionController.getPresentation().round;
       const structureId = edge.topology.familyId ?? "main";
       const wasInspected = presentation.inspectedStructureId === structureId;
       runIntent(
-        () => controller.inspectPlacement(edge.placementId),
+        () => sessionController.inspectPlacement(edge.placementId),
         wasInspected
           ? "Inspección topológica cerrada."
           : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
@@ -125,7 +131,7 @@ function render(presentation) {
     onInspectStructure: inspectStructure,
     onClearInspection: () =>
       runIntent(
-        () => controller.clearInspection(),
+        () => sessionController.clearInspection(),
         "Inspección topológica cerrada.",
       ),
     onMessage: setMessage,
@@ -133,7 +139,7 @@ function render(presentation) {
   renderHand(document.querySelector("#hand-root"), presentation, {
     onSelect: (dominoId) =>
       runIntent(
-        () => controller.selectDomino(dominoId),
+        () => sessionController.selectDomino(dominoId),
         `Ficha ${dominoId} seleccionada.`,
       ),
   });
@@ -153,6 +159,7 @@ function render(presentation) {
   );
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
+  roundActions.hidden = !presentation.isFinished;
   const selectedCount = presentation.selectedLegalTargets.length;
   document.querySelector("#selection-hint").textContent = presentation.isFinished
     ? `La ronda terminó. ${mode === BOARD_VIEW_MODES.GRAPH ? "El grafo" : "La mesa"} permanece visible.`
@@ -165,22 +172,34 @@ function render(presentation) {
           : `${selectedCount} destinos compatibles; elige el extremo lógico concreto.`;
 }
 
-controller = new InteractionController({
-  initialState: createMatch({
-    ...participantConfig,
-    matchId: "graph-prototype-local",
-    K: 7,
-  }),
-  onChange: render,
+function renderSession(session) {
+  const isConfiguring = session.screen === LOCAL_GAME_SCREENS.CONFIGURATION;
+  setupScreen.hidden = !isConfiguring;
+  gameScreen.hidden = isConfiguring;
+  setupK.value = String(session.config.K);
+  for (const input of initialModeInputs) {
+    input.checked = input.value === session.config.initialViewMode;
+  }
+  prototypeBadge.textContent = isConfiguring
+    ? "Una partida · múltiplos de 5"
+    : `K=${session.config.K} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : "Tradicional"}`;
+  if (!isConfiguring) {
+    renderRound(session.round, session.viewMode);
+  }
+}
+
+sessionController = new LocalGameSessionController({
+  participants: participantConfig,
+  onChange: renderSession,
 });
 
 passButton.addEventListener("click", () =>
-  runIntent(() => controller.pass(), "Pase registrado."),
+  runIntent(() => sessionController.pass(), "Pase registrado."),
 );
 
 for (const button of modeButtons) {
   button.addEventListener("click", () => {
-    viewModeController.setMode(button.dataset.viewMode);
+    sessionController.setViewMode(button.dataset.viewMode);
     setMessage(
       button.dataset.viewMode === BOARD_VIEW_MODES.GRAPH
         ? "Vista de grafo activa."
@@ -189,5 +208,40 @@ for (const button of modeButtons) {
   });
 }
 
-controller.start();
-setMessage("Ronda local preparada.");
+setupK.addEventListener("change", () => {
+  sessionController.setK(Number(setupK.value));
+});
+
+for (const input of initialModeInputs) {
+  input.addEventListener("change", () => {
+    if (input.checked) {
+      sessionController.setInitialViewMode(input.value);
+    }
+  });
+}
+
+setupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runIntent(
+    () => sessionController.startNewGame(),
+    "Partida local preparada.",
+  );
+});
+
+playAgainButton.addEventListener("click", () =>
+  runIntent(
+    () => sessionController.playAgain(),
+    "Nueva partida independiente preparada.",
+  ),
+);
+
+changeConfigButton.addEventListener("click", () => {
+  try {
+    sessionController.changeConfiguration();
+    setupK.focus();
+  } catch (error) {
+    setMessage(error.message);
+  }
+});
+
+sessionController.start();

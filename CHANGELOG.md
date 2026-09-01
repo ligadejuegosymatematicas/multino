@@ -88,6 +88,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Cámara tradicional básica con ajuste automático limitado por tamaño legible, recentrado, viewport interno, arrastre de escritorio y desplazamiento táctil sin overflow horizontal de página.
 - GraphRenderer aligerado mediante un único badge de familia por chancho especial, eliminando el símbolo especial y los indicadores de brazos redundantes alrededor del lazo.
 - Layout móvil reorganizado como tablero → mano → información secundaria, con cabecera reglamentaria compacta y texto de privacidad corregido.
+- Pantalla inicial previa al reparto con selección accesible de `K=0…7`, elección de vista Grafo/Tradicional y múltiplos de 5 declarados como política fija no configurable.
+- Coordinador efímero `LocalGameSessionController` para crear partidas independientes con `createMatch`, conservar solo K/vista y reemplazar completamente snapshot e interacción al volver a jugar.
+- Acciones terminales «Jugar otra» y «Cambiar configuración», sin acumulación de score, rondas, bonus ni historial entre partidas.
+- Cobertura automática del ciclo configuración → ronda → cierre → nueva partida, incluida nueva fuente de shuffle, limpieza de selección/inspección/resultado y reinicio 0–0.
 
 ### Decidido
 
@@ -111,6 +115,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-035 fija la capa `game/projections`, su API componible y la prohibición de usar el grafo de valores como autoridad reglamentaria.
 - DEC-036 fija SVG, geometría heptagonal descartable y el controlador como única frontera entre intención visual y transición reglamentaria.
 - DEC-040 materializa la reconstrucción tradicional como proyección descartable y mantiene la selección de renderer fuera del snapshot.
+- DEC-042 mantiene la repetición de partidas como coordinación local efímera y aplaza la separación formal RoundState/MatchState.
 
 ### Cambiado
 

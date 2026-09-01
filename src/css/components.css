@@ -24,6 +24,115 @@
   font-weight: 750;
 }
 
+.setup-screen {
+  display: grid;
+  min-height: min(36rem, 68vh);
+  place-items: center;
+}
+
+.setup-card {
+  display: grid;
+  width: min(100%, 32rem);
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid #c8d4d1;
+  border-radius: 1.25rem;
+  background: var(--surface);
+  box-shadow: 0 1rem 3rem rgb(31 64 57 / 0.08);
+}
+
+.setup-card h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.setup-intro,
+.setup-scoring {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+}
+
+.setup-field {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.setup-field > span,
+.setup-field legend {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.setup-field small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.setup-field select {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #aebfbb;
+  border-radius: 0.7rem;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+  font-weight: 750;
+}
+
+.setup-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.setup-choice label {
+  position: relative;
+}
+
+.setup-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.setup-choice span {
+  display: grid;
+  min-height: 3rem;
+  place-items: center;
+  border: 1px solid #aebfbb;
+  border-radius: 0.7rem;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.setup-choice input:checked + span {
+  border-color: var(--teal-dark);
+  color: #ffffff;
+  background: var(--teal-dark);
+}
+
+.setup-choice input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.setup-scoring {
+  padding-block-start: 0.9rem;
+  border-block-start: 1px solid var(--line);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
 .overview-card,
 .side-card,
 .round-result,
@@ -291,7 +400,8 @@
 }
 
 .pass-action,
-.primary-action {
+.primary-action,
+.secondary-action {
   min-height: 2.75rem;
   padding: 0.55rem 1rem;
   border: 1px solid var(--teal-dark);
@@ -300,6 +410,27 @@
   background: var(--teal-dark);
   font-weight: 800;
   cursor: pointer;
+}
+
+.secondary-action {
+  border-color: #aebfbb;
+  color: var(--teal-dark);
+  background: #ffffff;
+}
+
+.round-actions {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid #c8d4d1;
+  border-radius: 0.9rem;
+  background: var(--surface);
+}
+
+.round-actions[hidden],
+.setup-screen[hidden],
+.game-screen[hidden] {
+  display: none;
 }
 
 .pass-action:disabled {
@@ -318,6 +449,15 @@
   .prototype-badge {
     padding: 0.35rem 0.6rem;
     font-size: 0.68rem;
+  }
+
+  .setup-screen {
+    min-height: auto;
+  }
+
+  .setup-card {
+    gap: 1rem;
+    padding: 1rem;
   }
 
   .overview-card {

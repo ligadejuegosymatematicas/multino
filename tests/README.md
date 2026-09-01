@@ -105,6 +105,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - la cámara pura cubre ajuste de escritorio y límite mínimo legible en teléfono/estado denso; CSS y renderer cubren viewport interno, tacto, arrastre, recentrado y movimiento reducido;
 - `tests/ui/graph-renderer.test.js` conserva trazo principal/segmentado, targets y familias, pero verifica la ausencia del símbolo especial y de indicadores de brazos redundantes.
 
+### Fase 2, Bloque 8 — configuración y nueva partida independiente completadas
+
+- `tests/ui/local-game-session-controller.test.js`: pantalla previa sin reparto, K=0/1/7, vista inicial Grafo/Tradicional y cambio de vista sin mutar K ni snapshot;
+- ciclo real hasta `finished` seguido de «Jugar otra», con nueva fuente de shuffle, manos de siete, tablero/historial vacíos, score 0–0 y ausencia de resultado, selección e inspección anteriores;
+- «Cambiar configuración» descarta la ronda terminal y permite elegir otro K/vista sin introducir RoundState, MatchState, divisor editable ni contratos nuevos de motor;
+- el HTML expone únicamente la configuración autorizada y las dos acciones terminales, sin dependencias ni DOM artificial en la suite.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

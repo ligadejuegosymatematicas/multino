@@ -8,7 +8,7 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | --- | --- | --- |
 | 0 — Especificación y arquitectura | COMPLETADA | Reglamento, topología, snapshot e invariantes cerrados |
 | 1 — Motor básico | COMPLETADA | Motor puro con tests |
-| 2 — Renderer del tablero | EN CURSO — DOS MODOS FUNCIONALES | Geometría independiente del modelo lógico |
+| 2 — Renderer del tablero | EN CURSO — DOS MODOS Y CICLO LOCAL FUNCIONALES | Geometría independiente del modelo lógico |
 | 3 — Juego local 2 vs 2 | NO INICIADA | Flujo local completo |
 | 4 — UX | NO INICIADA | Interacción accesible y adaptable |
 | 5 — Persistencia y herramientas | NO INICIADA | Guardado, carga y reproducción |
@@ -121,7 +121,9 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 7 — Orientación física, simplificación y cámara tradicional: COMPLETADO.** Corrige cada ficha desde los puertos reales para enfrentar valores iguales, elimina metadata visual redundante en reposo, aligera los símbolos del grafo y añade ajuste/recentrado con viewport desplazable y tamaño mínimo legible. No cambia motor, reglas, schema ni persistencia.
 
-**Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
+**Bloque 8 — Configuración inicial y nueva partida independiente: COMPLETADO.** Añade una pantalla previa al reparto para elegir `K=0…7` y vista inicial, más acciones terminales para volver a jugar o cambiar configuración. Cada inicio llama de nuevo a `createMatch`, descarta por completo el snapshot/controlador anterior y conserva solo preferencias explícitas de UI; no introduce MatchState ni acumulados.
+
+**Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
 

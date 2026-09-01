@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: GraphRenderer SVG y TraditionalRenderer con orientación física derivada de puertos reales, extremos tipo socket y una cámara básica ajustable/desplazable. Ambas geometrías siguen siendo prototipos; múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: GraphRenderer SVG y TraditionalRenderer con orientación física derivada de puertos reales, extremos tipo socket y una cámara básica ajustable/desplazable. Una pantalla inicial permite elegir `K=0…7` y la vista de arranque; tras el cierre puede iniciarse otra partida independiente sin conservar score ni historial. Ambas geometrías siguen siendo prototipos; múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
 
 ## Documentos de autoridad
 
@@ -50,6 +50,8 @@ Abrir `http://localhost:4173`. No conviene abrir `index.html` directamente con `
 
 También puede usarse cualquier servidor HTTP estático equivalente.
 
+Al abrir la aplicación todavía no se ha repartido. Elija cuántos chanchos especiales admite la partida (`K`, de 0 a 7), seleccione la vista inicial y pulse **Jugar**. El conmutador permite cambiar de vista durante la misma partida. Al terminar, **Jugar otra** mezcla y reparte desde cero conservando K y la vista actual; **Cambiar configuración** vuelve a la pantalla inicial. Estas partidas son independientes, no rondas acumuladas de un match.
+
 ## Tests
 
 ```bash
@@ -76,7 +78,7 @@ La fachada `src/js/game/index.js` expone:
 - `applyPlay(state, action)` para una transición topológica inmutable de bajo nivel;
 - `getDerivedBranches(state)` y `validateBoardState(state)` para consulta y validación del tablero ocupado.
 
-La UI usa `getAvailableActions` y `applyTurnAction` a través de un único `InteractionController`. El conmutador solo elige qué renderer consume las proyecciones y no recibe el snapshot. `applyPlay` permanece pública para tests del tablero y consumidores técnicos compatibles, pero no impone el turno, no acredita puntos ni representa una acción reglamentaria completa.
+La UI usa `getAvailableActions` y `applyTurnAction` a través de un único `InteractionController` por partida. `LocalGameSessionController` crea o reemplaza ese controlador mediante `createMatch`; no acumula resultados ni agrega campos al snapshot. El conmutador solo elige qué renderer consume las proyecciones y no recibe el snapshot. `applyPlay` permanece pública para tests del tablero y consumidores técnicos compatibles, pero no impone el turno, no acredita puntos ni representa una acción reglamentaria completa.
 
 ## Estructura general
 

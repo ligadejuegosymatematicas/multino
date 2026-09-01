@@ -587,3 +587,15 @@ GraphRenderer conserva su gramática estratégica, pero unifica el distintivo de
 **Alternativas consideradas:** Persistir flips o coordenadas; inferir orientación por los números del dominó; mantener códigos estructurales en la mesa; escalar siempre hasta encajar aunque las fichas quedaran diminutas; incorporar una librería de pan/zoom.
 
 **Consecuencias:** No cambia snapshot v6, motor, reglas, historial ni persistencia. El ajuste automático puede conservar scroll interno cuando una mesa densa alcanza el mínimo legible; zoom gestual, giros para cadenas largas y refinamiento premium siguen pendientes.
+
+## DEC-042 — Repetición local como partidas independientes
+
+**Estado:** Aceptada.
+
+**Decisión:** Incorporar un `LocalGameSessionController` efímero por encima de `InteractionController`. En configuración conserva `K=0…7` y la vista inicial; al pulsar Jugar llama a la fábrica pública `createMatch` con una nueva fuente de aleatoriedad y crea un controlador de interacción nuevo. Tras un estado `finished`, «Jugar otra» repite la operación conservando K y la vista actualmente preferida, mientras «Cambiar configuración» descarta el snapshot y vuelve al formulario.
+
+**Motivo:** El prototipo necesitaba un ciclo completo de uso sin confundir la repetición con un sistema de rondas acumuladas. Reemplazar el snapshot asegura que tablero, manos, turno, pases, score, resultado, selección, inspección y mensajes no se filtren entre partidas.
+
+**Alternativas consideradas:** Recargar la página; mutar el snapshot terminal hasta hacerlo inicial; agregar una acción reglamentaria `NEW_ROUND`; introducir ahora RoundState/MatchState; persistir preferencias dentro del estado del motor.
+
+**Consecuencias:** No cambia schema v6, motor, reglas, puntuación ni renderers. `createMatch` conserva por ahora su nombre técnico aunque cada invocación represente la única ronda de una partida independiente. Multirronda, acumulados, metas y la separación formal RoundState/MatchState continúan pendientes de especificación.

@@ -105,7 +105,7 @@ Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptador
 
 ### `src/js/ui/`
 
-Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `InteractionController` y `ViewModeController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. El controlador de vista solo conserva `graph | traditional`. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera y foco pertenecen aquí.
+Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `InteractionController`, `ViewModeController` y `LocalGameSessionController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. El controlador de vista solo conserva `graph | traditional`. El coordinador local muestra configuración, llama a `createMatch` y reemplaza íntegramente el controlador/snapshot al iniciar otra partida independiente; no es un MatchState. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera y foco pertenecen aquí.
 
 ### `src/js/utils/`
 
@@ -117,7 +117,7 @@ Persistencia y red se añadirán en directorios propios cuando exista alcance de
 
 ### Coordinación Round / Match futura
 
-El snapshot v6 representa el ciclo único desde reparto hasta resultado final. Si se aprueban series o metas acumuladas, un coordinador de match envolverá ese motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
+El snapshot v6 representa el ciclo único desde reparto hasta resultado final. «Jugar otra» descarta ese snapshot y crea otro independiente: no lo convierte en una ronda numerada ni conserva acumulados. Si se aprueban series o metas acumuladas, un coordinador de match distinto envolverá el motor de ronda y conservará acumulados sin introducirlos en Board o Rules. La propuesta está en [`modelo-round-match.md`](modelo-round-match.md); no requiere un refactor actual.
 
 ## Flujo de una acción reglamentaria
 

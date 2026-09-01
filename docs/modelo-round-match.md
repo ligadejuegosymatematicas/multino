@@ -4,6 +4,8 @@
 
 El snapshot v6 representa actualmente una ronda completa desde el reparto hasta su resultado final. No existe todavía un coordinador multirronda.
 
+La UI local permite repetir una partida terminada, pero cada repetición reemplaza el snapshot completo mediante otra llamada a `createMatch`: vuelve a tablero, manos, score e historial iniciales y no conserva un acumulado. Esa comodidad de uso no constituye MatchState ni una segunda ronda dentro del mismo match.
+
 La separación aquí descrita solo será necesaria si se aprueban múltiples rondas o condiciones de victoria acumuladas.
 
 ## Conceptos
@@ -152,6 +154,8 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 3. Definir reglas de una variante multirronda antes de diseñar una versión de MatchState.
 4. Introducir un coordinador de match alrededor del motor de ronda, no dentro del tablero.
 5. Diseñar migración explícita solo cuando exista un contrato aprobado.
+
+Hasta entonces, la pantalla inicial conserva fuera del snapshot únicamente las preferencias para la próxima partida (`K` seleccionado y vista inicial/actual). `K` vuelve a entrar en cada snapshot nuevo por el campo reglamentario ya existente; la vista jamás entra en él.
 
 ## Decisiones pendientes
 

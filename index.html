@@ -12,78 +12,126 @@
     <link rel="stylesheet" href="./src/css/components.css">
   </head>
   <body>
-    <a class="skip-link" href="#hand-root">Ir a la mano</a>
-    <main class="app-shell">
+    <a class="skip-link" href="#main-content">Ir al contenido</a>
+    <main id="main-content" class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">Fase 2 · Dos vistas, una partida</p>
+          <p class="eyebrow">Dos vistas, una partida</p>
           <h1>Dominó <span>×5</span></h1>
-          <p class="lead">Una ronda local intercambiable entre grafo y mesa.</p>
+          <p class="lead">Configura una ronda local y juega en grafo o mesa.</p>
         </div>
-        <p class="prototype-badge">Grafo + Tradicional · K=7</p>
+        <p id="prototype-badge" class="prototype-badge">Una partida · múltiplos de 5</p>
       </header>
 
-      <section class="round-overview" aria-label="Estado de la ronda">
-        <article class="overview-card">
-          <h2>Turno</h2>
-          <div id="turn-panel" class="turn-panel" aria-live="polite"></div>
-        </article>
-        <article class="overview-card">
-          <h2>Marcador</h2>
-          <div id="score-panel" class="score-panel"></div>
-        </article>
-        <article class="overview-card">
-          <h2>Suma abierta</h2>
-          <div id="scoring-panel" class="scoring-panel" aria-live="polite"></div>
-        </article>
+      <section id="setup-screen" class="setup-screen" aria-labelledby="setup-heading">
+        <form id="setup-form" class="setup-card">
+          <div>
+            <p class="section-kicker">Nueva partida independiente</p>
+            <h2 id="setup-heading">Preparar la mesa</h2>
+            <p class="setup-intro">Cada partida comienza con mezcla, reparto y marcador nuevos.</p>
+          </div>
+
+          <label class="setup-field" for="setup-k">
+            <span>Chanchos especiales</span>
+            <select id="setup-k" name="K">
+              <option value="0">K = 0</option>
+              <option value="1">K = 1</option>
+              <option value="2">K = 2</option>
+              <option value="3">K = 3</option>
+              <option value="4">K = 4</option>
+              <option value="5">K = 5</option>
+              <option value="6">K = 6</option>
+              <option value="7" selected>K = 7</option>
+            </select>
+            <small>Los primeros K chanchos colocados en la línea principal pueden recibir hasta cuatro conexiones.</small>
+          </label>
+
+          <fieldset class="setup-field">
+            <legend>Vista inicial</legend>
+            <div class="setup-choice" role="group" aria-label="Vista inicial del tablero">
+              <label>
+                <input type="radio" name="initial-view-mode" value="graph" checked>
+                <span>Grafo</span>
+              </label>
+              <label>
+                <input type="radio" name="initial-view-mode" value="traditional">
+                <span>Tradicional</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <p class="setup-scoring">Puntuación: múltiplos de 5</p>
+          <button id="start-game-action" type="submit" class="primary-action">Jugar</button>
+        </form>
       </section>
 
-      <div class="play-layout">
-        <section class="graph-stage" aria-labelledby="board-heading">
-          <div class="panel-heading">
-            <div>
-              <p class="section-kicker">Tablero</p>
-              <h2 id="board-heading">Grafo de valores</h2>
-            </div>
-            <div class="board-controls">
-              <div class="view-switch" role="group" aria-label="Representación del tablero">
-                <button type="button" class="view-switch__button is-active" data-view-mode="graph" aria-pressed="true">Grafo</button>
-                <button type="button" class="view-switch__button" data-view-mode="traditional" aria-pressed="false">Tradicional</button>
+      <div id="game-screen" class="game-screen" hidden>
+        <section class="round-overview" aria-label="Estado de la ronda">
+          <article class="overview-card">
+            <h2>Turno</h2>
+            <div id="turn-panel" class="turn-panel" aria-live="polite"></div>
+          </article>
+          <article class="overview-card">
+            <h2>Marcador</h2>
+            <div id="score-panel" class="score-panel"></div>
+          </article>
+          <article class="overview-card">
+            <h2>Suma abierta</h2>
+            <div id="scoring-panel" class="scoring-panel" aria-live="polite"></div>
+          </article>
+        </section>
+
+        <div class="play-layout">
+          <section class="graph-stage" aria-labelledby="board-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Tablero</p>
+                <h2 id="board-heading">Grafo de valores</h2>
               </div>
-              <p id="graph-legend" class="graph-legend">
-                <span class="legend-main"></span> principal
-                <span class="legend-branch"></span> ramificación
-                <span class="legend-structure-code">P/A</span> extremos
-              </p>
+              <div class="board-controls">
+                <div class="view-switch" role="group" aria-label="Representación del tablero">
+                  <button type="button" class="view-switch__button is-active" data-view-mode="graph" aria-pressed="true">Grafo</button>
+                  <button type="button" class="view-switch__button" data-view-mode="traditional" aria-pressed="false">Tradicional</button>
+                </div>
+                <p id="graph-legend" class="graph-legend">
+                  <span class="legend-main"></span> principal
+                  <span class="legend-branch"></span> ramificación
+                  <span class="legend-structure-code">P/A</span> extremos
+                </p>
+              </div>
             </div>
-          </div>
-          <p id="selection-hint" class="selection-hint"></p>
-          <div id="board-root" class="graph-root" data-view-mode="graph"></div>
-          <p id="game-message" class="game-message" aria-live="assertive"></p>
-        </section>
-
-        <section class="hand-panel" aria-labelledby="hand-heading">
-          <div class="panel-heading hand-heading-row">
-            <div>
-              <p class="section-kicker">Jugador actual</p>
-              <h2 id="hand-heading">Tu mano</h2>
-            </div>
-            <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
-          </div>
-          <div id="hand-root" class="hand-grid"></div>
-        </section>
-
-        <aside class="round-sidebar" aria-label="Información local">
-          <section class="side-card">
-            <h2>Fichas restantes</h2>
-            <ul id="player-counts" class="player-counts"></ul>
-            <p class="privacy-note">Se muestran cantidades; las fichas rivales permanecen ocultas.</p>
+            <p id="selection-hint" class="selection-hint"></p>
+            <div id="board-root" class="graph-root" data-view-mode="graph"></div>
+            <p id="game-message" class="game-message" aria-live="assertive"></p>
           </section>
-          <section id="round-result" class="round-result" aria-live="polite" hidden></section>
-        </aside>
-      </div>
 
-      <p class="notice">Ambas vistas comparten exactamente la misma ronda, legalidad y puntuación.</p>
+          <section class="hand-panel" aria-labelledby="hand-heading">
+            <div class="panel-heading hand-heading-row">
+              <div>
+                <p class="section-kicker">Jugador actual</p>
+                <h2 id="hand-heading">Tu mano</h2>
+              </div>
+              <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+            </div>
+            <div id="hand-root" class="hand-grid"></div>
+          </section>
+
+          <aside class="round-sidebar" aria-label="Información local">
+            <section class="side-card">
+              <h2>Fichas restantes</h2>
+              <ul id="player-counts" class="player-counts"></ul>
+              <p class="privacy-note">Se muestran cantidades; las fichas rivales permanecen ocultas.</p>
+            </section>
+            <section id="round-result" class="round-result" aria-live="polite" hidden></section>
+            <section id="round-actions" class="round-actions" aria-label="Siguiente partida" hidden>
+              <button id="play-again-action" type="button" class="primary-action">Jugar otra</button>
+              <button id="change-config-action" type="button" class="secondary-action">Cambiar configuración</button>
+            </section>
+          </aside>
+        </div>
+
+        <p class="notice">Ambas vistas comparten exactamente la misma ronda, legalidad y puntuación.</p>
+      </div>
       <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>
     </main>
 
