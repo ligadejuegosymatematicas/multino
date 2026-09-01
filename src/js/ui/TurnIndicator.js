@@ -1,4 +1,4 @@
-export function renderTurnPanel(container, view) {
+export function renderTurnPanel(container, view, { emphasize = false } = {}) {
   if (!container) {
     return;
   }
@@ -9,6 +9,7 @@ export function renderTurnPanel(container, view) {
     (candidate) => candidate.teamId === current.teamId,
   );
   container.replaceChildren();
+  container.classList.toggle("is-turn-feedback", emphasize);
   const heading = document.createElement("strong");
   heading.textContent = view.roundStatus.phase === "finished"
     ? "Ronda cerrada"
@@ -28,7 +29,9 @@ export function renderPlayerCounts(container, view) {
   for (const player of view.participants.players) {
     const item = document.createElement("li");
     item.className = player.isCurrentPlayer ? "is-current" : "";
-    item.textContent = `${player.displayName}: ${player.remainingDominoCount} fichas`;
+    item.textContent = player.isCurrentPlayer
+      ? `Tu mano · ${player.remainingDominoCount}`
+      : `${player.displayName} · ${player.remainingDominoCount}`;
     container.append(item);
   }
 }

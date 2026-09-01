@@ -43,7 +43,7 @@ function renderFamilyRootMarker(edge) {
   return `
     <g class="graph-family-root family-tone-${familyTone}${edge.isTopologyRoot ? " is-inspected" : ""}${edge.isTopologyDimmed ? " is-dimmed" : ""}" transform="translate(${edge.labelX + 16} ${edge.labelY})" data-family-id="${escapeAttribute(family.id)}" data-family-code="${escapeAttribute(family.code)}" role="button" tabindex="0" aria-pressed="${edge.isTopologyRoot}" aria-label="${escapeAttribute(label)}">
       <circle class="graph-family-root__hit" r="22"></circle>
-      <circle class="graph-family-root__badge" r="11"></circle>
+      <circle class="graph-family-root__badge" r="9"></circle>
       <text class="graph-family-root__code">${escapeAttribute(family.code)}</text>
     </g>`;
 }
@@ -118,7 +118,6 @@ function renderVertex(vertex, hasSelection) {
 
 /** Serialización SVG comprobable sin instalar un DOM de tests. */
 export function renderGraphSvgMarkup(scene) {
-  const specialSummary = `Especiales: ${scene.topologySummary.enabledCount}/${scene.topologySummary.effectiveK}`;
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
@@ -129,10 +128,6 @@ export function renderGraphSvgMarkup(scene) {
       <g class="graph-family-roots">${scene.loops.map(renderFamilyRootMarker).join("")}</g>
       <g class="graph-open-targets">${scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
       <g class="graph-vertices">${scene.vertices.map((vertex) => renderVertex(vertex, scene.hasSelection)).join("")}</g>
-      <g class="graph-special-summary" role="note" aria-label="${escapeAttribute(specialSummary)}">
-        <rect x="16" y="16" width="142" height="34" rx="17"></rect>
-        <text x="87" y="33">${specialSummary}</text>
-      </g>
     </svg>`;
 }
 

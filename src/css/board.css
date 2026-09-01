@@ -10,13 +10,14 @@
 }
 
 .graph-stage {
+  position: relative;
   min-width: 0;
-  padding: clamp(0.75rem, 2vw, 1.25rem);
+  padding: clamp(0.6rem, 1.5vw, 0.9rem);
 }
 
 .graph-root {
   position: relative;
-  min-height: 31rem;
+  height: clamp(20rem, 44vh, 26rem);
   overflow: hidden;
   border: 1px solid #dbe3e1;
   border-radius: 0.85rem;
@@ -28,14 +29,13 @@
 .value-graph {
   display: block;
   width: 100%;
-  min-height: 31rem;
-  max-height: 43rem;
+  height: 100%;
 }
 
 .graph-orbit {
   fill: none;
-  stroke: #dce5e3;
-  stroke-width: 1.5;
+  stroke: #e7edeb;
+  stroke-width: 1;
   stroke-dasharray: 2 10;
 }
 
@@ -129,12 +129,12 @@
 .graph-family-root__badge {
   fill: var(--family-soft);
   stroke: var(--family-accent);
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 
 .graph-family-root__code {
   fill: var(--family-accent);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   text-anchor: middle;
   dominant-baseline: middle;
@@ -336,20 +336,6 @@
   stroke-width: 8;
 }
 
-.graph-special-summary rect {
-  fill: rgb(255 255 255 / 0.94);
-  stroke: #9a89b5;
-  stroke-width: 1.5;
-}
-
-.graph-special-summary text {
-  fill: #514567;
-  font-size: 12px;
-  font-weight: 800;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
 .start-action {
   position: absolute;
   inset: auto 50% 1rem auto;
@@ -468,9 +454,8 @@
 }
 
 @media (max-width: 36rem) {
-  .graph-root,
-  .value-graph {
-    min-height: 27rem;
+  .graph-root {
+    height: clamp(19rem, 38vh, 21rem);
   }
 
   .start-action p {

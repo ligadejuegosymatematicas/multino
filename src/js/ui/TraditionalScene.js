@@ -2,10 +2,10 @@ const MAIN_SLOT = 84;
 const BRANCH_SLOT = 82;
 const TILE_LONG = 72;
 const TILE_SHORT = 38;
-const MIN_WIDTH = 720;
-const MIN_HEIGHT = 430;
-const TABLE_PADDING = 72;
-export const TRADITIONAL_MIN_READABLE_SCALE = 0.58;
+const MIN_WIDTH = 440;
+const MIN_HEIGHT = 300;
+const TABLE_PADDING = 52;
+export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
@@ -336,7 +336,7 @@ export function calculateTraditionalFitScale({
   viewportHeight,
   minScale = TRADITIONAL_MIN_READABLE_SCALE,
   maxScale = 1,
-  padding = 24,
+  padding = 18,
 }) {
   const usableWidth = Math.max(viewportWidth - padding * 2, 1);
   const usableHeight = Math.max(viewportHeight - padding * 2, 1);

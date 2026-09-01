@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prototipo jugable en modos Grafo y Tradicional para Dominó múltiplo de 5.">
+    <meta name="description" content="Dominó múltiplo de 5 jugable en modos Grafo y Tradicional.">
     <title>Dominó múltiplo de 5</title>
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
@@ -15,20 +15,15 @@
     <a class="skip-link" href="#main-content">Ir al contenido</a>
     <main id="main-content" class="app-shell">
       <header class="app-header">
-        <div>
-          <p class="eyebrow">Dos vistas, una partida</p>
-          <h1>Dominó <span>×5</span></h1>
-          <p class="lead">Configura una ronda local y juega en grafo o mesa.</p>
-        </div>
-        <p id="prototype-badge" class="prototype-badge">Una partida · múltiplos de 5</p>
+        <h1>Dominó <span>×5</span></h1>
+        <p id="session-badge" class="session-badge">Múltiplos de 5</p>
       </header>
 
       <section id="setup-screen" class="setup-screen" aria-labelledby="setup-heading">
         <form id="setup-form" class="setup-card">
           <div>
-            <p class="section-kicker">Nueva partida independiente</p>
-            <h2 id="setup-heading">Preparar la mesa</h2>
-            <p class="setup-intro">Cada partida comienza con mezcla, reparto y marcador nuevos.</p>
+            <h2 id="setup-heading">Nueva partida</h2>
+            <p class="setup-intro">Elige los chanchos especiales y cómo quieres ver el tablero.</p>
           </div>
 
           <label class="setup-field" for="setup-k">
@@ -101,6 +96,7 @@
               </div>
             </div>
             <p id="selection-hint" class="selection-hint"></p>
+            <p id="play-feedback" class="play-feedback" aria-live="polite" hidden></p>
             <div id="board-root" class="graph-root" data-view-mode="graph"></div>
             <p id="game-message" class="game-message" aria-live="assertive"></p>
           </section>
@@ -120,7 +116,7 @@
             <section class="side-card">
               <h2>Fichas restantes</h2>
               <ul id="player-counts" class="player-counts"></ul>
-              <p class="privacy-note">Se muestran cantidades; las fichas rivales permanecen ocultas.</p>
+              <p class="privacy-note">De las demás manos solo se muestra la cantidad.</p>
             </section>
             <section id="round-result" class="round-result" aria-live="polite" hidden></section>
             <section id="round-actions" class="round-actions" aria-label="Siguiente partida" hidden>
@@ -130,7 +126,6 @@
           </aside>
         </div>
 
-        <p class="notice">Ambas vistas comparten exactamente la misma ronda, legalidad y puntuación.</p>
       </div>
       <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>
     </main>

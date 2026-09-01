@@ -1,23 +1,22 @@
 .graph-root.is-traditional-view {
-  min-height: 31rem;
   overflow: hidden;
   background:
-    linear-gradient(rgb(255 255 255 / 0.24) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.24) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.1) 1px, transparent 1px),
     #386e5c;
-  background-size: 2rem 2rem;
+  background-size: 3rem 3rem;
 }
 
 .traditional-table {
   position: relative;
   width: 100%;
-  min-height: 31rem;
+  height: 100%;
   overflow: hidden;
 }
 
 .traditional-table__viewport {
   width: 100%;
-  height: 31rem;
+  height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
@@ -39,6 +38,7 @@
   position: relative;
   width: var(--scaled-table-width, var(--table-width));
   height: var(--scaled-table-height, var(--table-height));
+  margin-inline: auto;
 }
 
 .traditional-table__surface {
@@ -344,8 +344,7 @@
 @media (max-width: 36rem) {
   .traditional-table,
   .traditional-table__viewport {
-    min-height: 27rem;
-    height: 27rem;
+    height: 100%;
   }
 
   .traditional-camera-controls {

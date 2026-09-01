@@ -4,6 +4,10 @@ import {
 } from "./ui/BoardRenderer.js";
 import { renderHand } from "./ui/HandRenderer.js";
 import {
+  getGameFeedback,
+  renderGameFeedback,
+} from "./ui/GameFeedback.js";
+import {
   LOCAL_GAME_SCREENS,
   LocalGameSessionController,
 } from "./ui/LocalGameSessionController.js";
@@ -54,11 +58,28 @@ const initialModeInputs = [
 const roundActions = document.querySelector("#round-actions");
 const playAgainButton = document.querySelector("#play-again-action");
 const changeConfigButton = document.querySelector("#change-config-action");
-const prototypeBadge = document.querySelector("#prototype-badge");
+const sessionBadge = document.querySelector("#session-badge");
+const playFeedback = document.querySelector("#play-feedback");
 let sessionController;
+let lastFeedbackSequence = null;
+let feedbackHideTimer = null;
 
 function setMessage(text) {
   message.textContent = text;
+}
+
+function scheduleFeedbackHide(feedback) {
+  if (feedbackHideTimer !== null) {
+    window.clearTimeout(feedbackHideTimer);
+    feedbackHideTimer = null;
+  }
+  if (!feedback?.message) {
+    return;
+  }
+  feedbackHideTimer = window.setTimeout(() => {
+    renderGameFeedback(playFeedback, null);
+    feedbackHideTimer = null;
+  }, 1800);
 }
 
 function runIntent(intent, successMessage) {
@@ -90,7 +111,7 @@ function inspectStructure(structureId) {
   );
 }
 
-function renderRound(presentation, mode) {
+function renderRound(presentation, mode, feedback) {
   const renderer = mode === BOARD_VIEW_MODES.GRAPH
     ? graphRenderer
     : traditionalRenderer;
@@ -143,12 +164,20 @@ function renderRound(presentation, mode) {
         `Ficha ${dominoId} seleccionada.`,
       ),
   });
-  renderTurnPanel(document.querySelector("#turn-panel"), presentation.view);
+  renderTurnPanel(
+    document.querySelector("#turn-panel"),
+    presentation.view,
+    { emphasize: feedback !== null && !feedback.endedRound },
+  );
   renderPlayerCounts(
     document.querySelector("#player-counts"),
     presentation.view,
   );
-  renderScorePanel(document.querySelector("#score-panel"), presentation.view);
+  renderScorePanel(
+    document.querySelector("#score-panel"),
+    presentation.view,
+    { feedback },
+  );
   renderScoringPanel(
     document.querySelector("#scoring-panel"),
     presentation.view,
@@ -157,6 +186,7 @@ function renderRound(presentation, mode) {
     document.querySelector("#round-result"),
     presentation.view,
   );
+  renderGameFeedback(playFeedback, feedback);
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
   roundActions.hidden = !presentation.isFinished;
@@ -180,11 +210,21 @@ function renderSession(session) {
   for (const input of initialModeInputs) {
     input.checked = input.value === session.config.initialViewMode;
   }
-  prototypeBadge.textContent = isConfiguring
-    ? "Una partida · múltiplos de 5"
+  sessionBadge.textContent = isConfiguring
+    ? "Múltiplos de 5"
     : `K=${session.config.K} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : "Tradicional"}`;
   if (!isConfiguring) {
-    renderRound(session.round, session.viewMode);
+    const nextFeedback = getGameFeedback(session.round.view);
+    const feedback = nextFeedback?.sequence !== lastFeedbackSequence
+      ? nextFeedback
+      : null;
+    renderRound(session.round, session.viewMode, feedback);
+    scheduleFeedbackHide(feedback);
+    lastFeedbackSequence = nextFeedback?.sequence ?? null;
+  } else {
+    lastFeedbackSequence = null;
+    renderGameFeedback(playFeedback, null);
+    scheduleFeedbackHide(null);
   }
 }
 
@@ -231,7 +271,7 @@ setupForm.addEventListener("submit", (event) => {
 playAgainButton.addEventListener("click", () =>
   runIntent(
     () => sessionController.playAgain(),
-    "Nueva partida independiente preparada.",
+    "Nueva partida preparada.",
   ),
 );
 

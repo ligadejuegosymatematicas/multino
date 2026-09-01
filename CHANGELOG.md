@@ -92,6 +92,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Coordinador efímero `LocalGameSessionController` para crear partidas independientes con `createMatch`, conservar solo K/vista y reemplazar completamente snapshot e interacción al volver a jugar.
 - Acciones terminales «Jugar otra» y «Cambiar configuración», sin acumulación de score, rondas, bonus ni historial entre partidas.
 - Cobertura automática del ciclo configuración → ronda → cierre → nueva partida, incluida nueva fuente de shuffle, limpieza de selección/inspección/resultado y reinicio 0–0.
+- Jerarquía general compactada en título breve, banda única de turno/marcador/S y flujo vertical tablero → mano → información secundaria.
+- Fichas restantes convertidas en chips compactos con copia de privacidad precisa; bandeja de mano de siete columnas en escritorio y cuatro en teléfono.
+- GraphRenderer aligerado al retirar el resumen permanente de especiales y reducir el badge raíz; la proyección conserva K efectivo y los extremos siguen siendo los objetivos principales.
+- Cámara tradicional con límites geométricos más ajustados, escala mínima legible elevada y cuadrícula de mesa atenuada para priorizar fichas y conexiones.
+- Feedback efímero derivado del último evento para puntos, cambio de turno y primera ficha de una rama, con supresión por secuencia y respeto de `prefers-reduced-motion`.
 
 ### Decidido
 

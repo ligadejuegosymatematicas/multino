@@ -112,6 +112,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - «Cambiar configuración» descarta la ronda terminal y permite elegir otro K/vista sin introducir RoundState, MatchState, divisor editable ni contratos nuevos de motor;
 - el HTML expone únicamente la configuración autorizada y las dos acciones terminales, sin dependencias ni DOM artificial en la suite.
 
+### Fase 2, Bloque 9 — jerarquía y feedback general completados
+
+- `tests/ui/game-presentation.test.js`: feedback derivado de puntos y apertura de rama, neutralidad de PASS, orden tablero → mano → secundarios, cabecera/contadores compactos y ausencia de reglas en la entrada web;
+- `tests/ui/graph-renderer.test.js`: K efectivo sigue disponible en la escena aunque el resumen redundante ya no se serializa dentro del SVG;
+- `tests/ui/traditional-renderer.test.js`: el ajuste conserva el nuevo mínimo legible y el viewport interno en estados que exceden la cámara;
+- CSS comprueba cuatro fichas por fila en teléfono, cuadrícula tradicional atenuada, objetivos táctiles y desactivación de feedback animado con `prefers-reduced-motion`.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

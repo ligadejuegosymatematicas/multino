@@ -599,3 +599,19 @@ GraphRenderer conserva su gramática estratégica, pero unifica el distintivo de
 **Alternativas consideradas:** Recargar la página; mutar el snapshot terminal hasta hacerlo inicial; agregar una acción reglamentaria `NEW_ROUND`; introducir ahora RoundState/MatchState; persistir preferencias dentro del estado del motor.
 
 **Consecuencias:** No cambia schema v6, motor, reglas, puntuación ni renderers. `createMatch` conserva por ahora su nombre técnico aunque cada invocación represente la única ronda de una partida independiente. Multirronda, acumulados, metas y la separación formal RoundState/MatchState continúan pendientes de especificación.
+
+## DEC-043 — Jerarquía compacta y feedback derivado
+
+**Estado:** Aceptada.
+
+**Decisión:** Presentar turno, marcador y S como una sola banda compacta; disponer después tablero, mano y cantidades restantes en ese orden. Las cantidades usan chips y distinguen «Tu mano» de las cantidades rivales sin revelar fichas. K permanece en la banda de sesión, por lo que el resumen `Especiales: s/K` deja de ocupar el SVG.
+
+La cámara tradicional calcula sobre límites más próximos al contenido y nunca baja de una escala mínima legible; si el conjunto no cabe, mantiene pan/scroll interno. El fondo pierde contraste. GraphRenderer conserva vértices, trazos y extremos estratégicos, pero reduce el distintivo raíz y elimina información global duplicada.
+
+`GameFeedback` deriva del último evento proyectado el equipo/puntos y, mediante la topología ya proyectada, reconoce únicamente la primera ficha de un brazo. `main.js` recuerda la última `sequence` presentada para no repetir animaciones al seleccionar, inspeccionar o cambiar de renderer. Este estado es exclusivamente efímero.
+
+**Motivo:** Las pruebas a 100% en escritorio y teléfono mostraron que tarjetas, sidebar y una cámara demasiado conservadora alejaban la mano del tablero. Además, acciones correctas carecían de confirmación visual breve.
+
+**Alternativas consideradas:** Hacer sticky la mano; ocultar el HUD completo; recalcular puntos o ramas en el renderer; mostrar siempre el feedback; encajar toda mesa aunque las fichas fueran diminutas; mantener el resumen de especiales dentro del grafo.
+
+**Consecuencias:** No cambia snapshot v6, proyecciones reglamentarias, reglas, schema ni persistencia. El feedback usa únicamente datos ya derivados y respeta movimiento reducido. Sticky avanzado, zoom gestual y acabado premium siguen pendientes.

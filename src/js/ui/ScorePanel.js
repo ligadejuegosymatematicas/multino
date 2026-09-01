@@ -3,7 +3,7 @@ function teamName(view, teamId) {
     ?.displayName ?? teamId;
 }
 
-export function renderScorePanel(container, view) {
+export function renderScorePanel(container, view, { feedback = null } = {}) {
   if (!container) {
     return;
   }
@@ -11,12 +11,21 @@ export function renderScorePanel(container, view) {
   for (const team of view.participants.teams) {
     const item = document.createElement("div");
     item.className = "score-team";
+    const hasAward = feedback?.teamId === team.teamId &&
+      feedback.scoreAwarded > 0;
+    item.classList.toggle("is-score-feedback", hasAward);
     const name = document.createElement("span");
     name.textContent = team.displayName;
     const score = document.createElement("strong");
     score.textContent = String(team.score);
     score.setAttribute("aria-label", `${team.score} puntos`);
     item.append(name, score);
+    if (hasAward) {
+      const delta = document.createElement("span");
+      delta.className = "score-team__delta";
+      delta.textContent = `+${feedback.scoreAwarded}`;
+      item.append(delta);
+    }
     container.append(item);
   }
 }

@@ -1,32 +1,35 @@
 .app-shell {
-  width: min(88rem, calc(100% - 2rem));
+  width: min(86rem, calc(100% - 1.5rem));
   margin-inline: auto;
-  padding-block: clamp(1.25rem, 4vw, 3rem);
+  padding-block: clamp(0.7rem, 2vw, 1.35rem);
 }
 
 .app-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-block-end: 1.5rem;
+  margin-block-end: 0.65rem;
 }
 
 .round-overview {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr 1.35fr;
-  gap: 1rem;
-  margin-block-end: 1rem;
+  grid-template-columns: 1.05fr 0.9fr 1.25fr;
+  gap: 0;
+  margin-block-end: 0.55rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgb(255 255 255 / 0.9);
 }
 
 .play-layout {
   display: grid;
   grid-template-areas:
-    "board sidebar"
-    "hand sidebar";
-  grid-template-columns: minmax(0, 1fr) 18rem;
-  align-items: start;
-  gap: 1rem;
+    "board"
+    "hand"
+    "sidebar";
+  gap: 0.6rem;
 }
 
 .graph-stage {
@@ -35,8 +38,21 @@
 
 .round-sidebar {
   grid-area: sidebar;
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.round-sidebar > * {
+  flex: 1 1 18rem;
+}
+
+.round-result:not([hidden]) {
+  order: -2;
+}
+
+.round-actions:not([hidden]) {
+  order: -1;
 }
 
 .hand-panel {
@@ -45,54 +61,40 @@
 
 @media (max-width: 58rem) {
   .round-overview {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .round-overview > :last-child {
-    grid-column: 1 / -1;
-  }
-
-  .play-layout {
-    grid-template-areas:
-      "board"
-      "hand"
-      "sidebar";
-    grid-template-columns: 1fr;
-  }
-
-  .round-sidebar {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1.15fr;
   }
 }
 
 @media (max-width: 36rem) {
   .app-shell {
-    width: min(100% - 1rem, 88rem);
-    padding-block: 1rem;
+    width: min(100% - 0.65rem, 86rem);
+    padding-block: 0.45rem 0.8rem;
   }
 
   .app-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .round-overview,
-  .round-sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .round-overview > :last-child {
-    grid-column: auto;
+    margin-block-end: 0.4rem;
   }
 
   .round-overview {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
-    margin-block-end: 0.55rem;
+    grid-template-columns: 1fr 1fr;
+    margin-block-end: 0.4rem;
   }
 
-  .app-header {
-    gap: 0.35rem;
-    margin-block-end: 0.75rem;
+  .round-overview > :last-child {
+    grid-column: 1 / -1;
+    border-block-start: 1px solid var(--line);
+  }
+
+  .play-layout {
+    gap: 0.45rem;
+  }
+
+  .round-sidebar {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .round-sidebar > * {
+    flex-basis: auto;
   }
 }

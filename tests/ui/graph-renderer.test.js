@@ -177,7 +177,7 @@ test("un chancho usa un lazo sólido, una familia A y cuatro curvas exactas", ()
     scene.openTargets.map((target) => target.topology.structureCode),
     ["P", "P", "A", "A"],
   );
-  assert.match(markup, /Especiales: 1\/7/);
+  assert.doesNotMatch(markup, /graph-special-summary|Especiales:/);
   assert.match(markup, /class="open-target__curve"/);
 });
 
@@ -527,7 +527,7 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
   assert.match(branchDoubleMarkup, /Conexiones: 1\/2/);
 });
 
-test("el resumen usa s/effectiveK y no el K configurado imposible", () => {
+test("effectiveK sigue proyectado sin ocupar espacio permanente en el SVG", () => {
   let state = createBoardScenario({ K: 20, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   const scene = createGraphScene(projectGraphView(state));
@@ -539,8 +539,7 @@ test("el resumen usa s/effectiveK y no el K configurado imposible", () => {
     enabledCount: 1,
     remainingCapacity: 6,
   });
-  assert.match(markup, /Especiales: 1\/7/);
-  assert.doesNotMatch(markup, /Especiales: 1\/20/);
+  assert.doesNotMatch(markup, /graph-special-summary|Especiales:/);
 });
 
 test("un grafo denso conserva fichas, targets e inspección individual", () => {

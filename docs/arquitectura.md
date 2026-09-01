@@ -105,7 +105,7 @@ Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptador
 
 ### `src/js/ui/`
 
-Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `InteractionController`, `ViewModeController` y `LocalGameSessionController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. El controlador de vista solo conserva `graph | traditional`. El coordinador local muestra configuración, llama a `createMatch` y reemplaza íntegramente el controlador/snapshot al iniciar otra partida independiente; no es un MatchState. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera y foco pertenecen aquí.
+Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `GameFeedback`, `InteractionController`, `ViewModeController` y `LocalGameSessionController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. `GameFeedback` explica brevemente puntos o apertura de rama desde el último evento y la topología ya proyectados, sin recalcular reglas. El controlador de vista solo conserva `graph | traditional`. El coordinador local muestra configuración, llama a `createMatch` y reemplaza íntegramente el controlador/snapshot al iniciar otra partida independiente; no es un MatchState. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera, secuencia de feedback y foco pertenecen aquí.
 
 ### `src/js/utils/`
 

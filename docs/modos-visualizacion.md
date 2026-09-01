@@ -93,6 +93,8 @@ La página abre una ronda local en GraphRenderer y ofrece un conmutador `Grafo |
 
 En Tradicional, la geometría comunica la estructura: no se muestran permanentemente `P/A`, familias, K ni IDs. Los extremos libres son sockets próximos a la mitad abierta; la selección resalta compatibles y solo numera opciones concretas repetidas. Una cámara local ajusta y centra el contenido sin cruzar un tamaño mínimo legible; si la mesa sigue siendo mayor, se recorre dentro de su viewport mediante tacto o arrastre, sin desplazar horizontalmente la página.
 
+La interfaz compartida usa una jerarquía tablero → mano → cantidades. Turno, marcador y S forman una banda compacta; K es un dato secundario de sesión. Los puntos obtenidos, el nuevo turno y la apertura de un brazo reciben feedback efímero derivado del último evento y su proyección topológica. El cambio de renderer no repite dicho feedback ni altera la partida.
+
 La diferencia entre reconstruir la topología lógica y escoger una geometría tradicional está analizada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). `getTraditionalBoardProjection` confirma la conclusión: la topología es unívoca y la geometría es una decisión descartable, sin metadata persistida.
 
 Conviene conservar la última preferencia de vista como ajuste local del usuario. No debe viajar dentro de un snapshot autoritativo ni producir diferencias en replay.
