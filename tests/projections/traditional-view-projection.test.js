@@ -120,6 +120,8 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
     family.arms.map((arm) => ({
       armIndex: arm.armIndex,
       originPortId: arm.originPortId,
+      originValue: arm.origin.value,
+      originConnectionId: arm.origin.connectionId,
       placementIds: arm.placementIds,
       connectionIds: arm.connectionIds,
       terminalId: arm.openTarget.id,
@@ -128,6 +130,8 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
       {
         armIndex: 1,
         originPortId: "branch:1",
+        originValue: 4,
+        originConnectionId: "connection-3",
         placementIds: ["placement-4", "placement-5"],
         connectionIds: ["connection-3", "connection-4"],
         terminalId: "placement-5:side:b",
@@ -135,6 +139,8 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
       {
         armIndex: 2,
         originPortId: "branch:2",
+        originValue: 4,
+        originConnectionId: "connection-5",
         placementIds: ["placement-6"],
         connectionIds: ["connection-5"],
         terminalId: "placement-6:side:a",

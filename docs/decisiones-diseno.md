@@ -571,3 +571,19 @@ TraditionalRenderer convierte esa proyección en una geometría HTML/CSS descart
 **Alternativas consideradas:** Reconstruir desde aristas SVG; persistir coordenadas; duplicar un controlador por renderer; limpiar siempre la selección; simular una mesa con giros físicos completos desde la primera versión; introducir una librería de layout.
 
 **Consecuencias:** No cambia motor, reglas, schema v6, historial, score ni persistencia. Los dos modos comparten acciones, puntuación, turno y resultado. La primera mesa prioriza fidelidad topológica y scroll local; quedan pendientes giros adaptativos, zoom y acabado premium.
+
+## DEC-041 — Orientación física por puertos y cámara tradicional mínima
+
+**Estado:** Aceptada.
+
+**Decisión:** Mantener en la proyección tradicional el orden raíz→terminal y exponer también el puerto de origen de cada brazo. `TraditionalScene` asigna `start/end` a caras físicas según la dirección descartable: izquierda→derecha en principal, raíz abajo/exterior arriba en el brazo superior y raíz arriba/exterior abajo en el inferior. Cada conexión proyectada conserva sus dos caras y exige que ambas coincidan con su valor lógico.
+
+La vista tradicional elimina códigos `P/A`, familias cromáticas, resumen de K, `×4` y valores dentro de objetivos externos. Los extremos son sockets próximos a la mitad libre; solo una selección con destinos compatibles repetidos añade índices temporales. La cámara calcula una escala de ajuste limitada por un mínimo legible, centra la superficie y ofrece viewport interno, desplazamiento táctil, arrastre con mouse y botón de recuperación.
+
+GraphRenderer conserva su gramática estratégica, pero unifica el distintivo del chancho especial en el lazo reforzado y el único badge de familia; elimina el símbolo de cuatro brazos y los dos indicadores auxiliares alrededor de cada raíz.
+
+**Motivo:** La prueba real mostró dos problemas independientes: una cadena lógica correcta podía invertir físicamente una ficha del brazo superior, y ambas vistas acumulaban metadata que competía con fichas y targets. La orientación debía depender de conexiones, no de heurísticas geométricas; la simplificación debía preservar la diferencia de propósito entre mesa física y grafo estratégico.
+
+**Alternativas consideradas:** Persistir flips o coordenadas; inferir orientación por los números del dominó; mantener códigos estructurales en la mesa; escalar siempre hasta encajar aunque las fichas quedaran diminutas; incorporar una librería de pan/zoom.
+
+**Consecuencias:** No cambia snapshot v6, motor, reglas, historial ni persistencia. El ajuste automático puede conservar scroll interno cuando una mesa densa alcanza el mínimo legible; zoom gestual, giros para cadenas largas y refinamiento premium siguen pendientes.

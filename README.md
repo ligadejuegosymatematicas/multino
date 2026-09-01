@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: GraphRenderer SVG y un primer TraditionalRenderer fiel a la línea y las ramas lógicas. Ambas geometrías son todavía de prototipo; múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: GraphRenderer SVG y TraditionalRenderer con orientación física derivada de puertos reales, extremos tipo socket y una cámara básica ajustable/desplazable. Ambas geometrías siguen siendo prototipos; múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
 
 ## Documentos de autoridad
 

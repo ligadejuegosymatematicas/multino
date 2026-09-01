@@ -115,29 +115,6 @@
   filter: drop-shadow(0 0 5px rgb(107 92 145 / 0.32));
 }
 
-.graph-special-marker__outer {
-  fill: #fff8eb;
-  stroke: #8b5010;
-  stroke-width: 2;
-}
-
-.graph-special-marker__inner {
-  fill: none;
-  stroke: #b66b18;
-  stroke-width: 1.4;
-}
-
-.graph-special-marker__arms {
-  fill: none;
-  stroke: #74400b;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-}
-
-.graph-special-marker__hub {
-  fill: #74400b;
-}
-
 .graph-family-root {
   --family-accent: #6f657d;
   --family-soft: #f3f0f7;
@@ -162,20 +139,6 @@
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
-}
-
-.graph-family-root__arm {
-  stroke: var(--family-accent);
-  stroke-width: 1.3;
-}
-
-.graph-family-root__arm.is-started {
-  fill: var(--family-accent);
-}
-
-.graph-family-root__arm.is-potential {
-  fill: #ffffff;
-  stroke-dasharray: 1.5 1.5;
 }
 
 .graph-family-root.is-inspected .graph-family-root__badge,

@@ -89,7 +89,9 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 
 ## Modos funcionales y conmutador
 
-La página abre una ronda local en GraphRenderer y ofrece un conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
+La página abre una ronda local en GraphRenderer y ofrece un conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La mitad orientada hacia su predecesora proviene del puerto real de conexión: el brazo superior invierte el orden visual raíz→terminal y el inferior lo conserva. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
+
+En Tradicional, la geometría comunica la estructura: no se muestran permanentemente `P/A`, familias, K ni IDs. Los extremos libres son sockets próximos a la mitad abierta; la selección resalta compatibles y solo numera opciones concretas repetidas. Una cámara local ajusta y centra el contenido sin cruzar un tamaño mínimo legible; si la mesa sigue siendo mayor, se recorre dentro de su viewport mediante tacto o arrastre, sin desplazar horizontalmente la página.
 
 La diferencia entre reconstruir la topología lógica y escoger una geometría tradicional está analizada en [`reversibilidad-grafo-tradicional.md`](reversibilidad-grafo-tradicional.md). `getTraditionalBoardProjection` confirma la conclusión: la topología es unívoca y la geometría es una decisión descartable, sin metadata persistida.
 
@@ -105,4 +107,4 @@ Conviene conservar la última preferencia de vista como ajuste local del usuario
 
 ## No implementado
 
-Permanecen pendientes acabado premium, giros físicos de cadenas largas, zoom, gestión avanzada de densidad, replay, animaciones complejas y controles definitivos. Ambos renderers actuales son deliberadamente prototipos funcionales.
+Permanecen pendientes acabado premium, giros físicos de cadenas largas, zoom gestual, gestión avanzada de densidad, replay, animaciones complejas y controles definitivos. Ambos renderers actuales son deliberadamente prototipos funcionales.

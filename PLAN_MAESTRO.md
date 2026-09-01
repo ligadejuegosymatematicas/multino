@@ -119,9 +119,11 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 6 — Primer TraditionalRenderer y conmutador: COMPLETADO.** Añade una proyección pura de cadenas tradicionales, mesa interactiva con línea horizontal y dos brazos laterales por chancho especial, fichas con puntos, extremos exactos y selector Grafo ↔ Tradicional. Ambos modos comparten snapshot, acciones y paneles; cambiar vista es estado efímero de UI.
 
-**Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, refinamiento visual premium, panel estructural completo, layout adaptativo avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar el prototipo tradicional.
+**Bloque 7 — Orientación física, simplificación y cámara tradicional: COMPLETADO.** Corrige cada ficha desde los puertos reales para enfrentar valores iguales, elimina metadata visual redundante en reposo, aligera los símbolos del grafo y añade ajuste/recentrado con viewport desplazable y tamaño mínimo legible. No cambia motor, reglas, schema ni persistencia.
 
-**Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La primera geometría tradicional es funcional; giros físicos, zoom y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
+**Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
+
+**Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
 
 **Estudio de UX posterior a prueba manual: CUATRO ITERACIONES FUNCIONALES COMPLETADAS.** Se adoptaron estilo topológico permanente, inspección contextual, clasificación de targets y familias alfabéticas por chancho especial. La vista normal prioriza valores, extremos y posibilidades estratégicas; la reconstrucción espacial exacta se ofrece ahora en el primer Modo Tradicional. Véase `docs/ux-topologia-modo-grafo.md`.
 

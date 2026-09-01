@@ -168,8 +168,7 @@ test("un chancho usa un lazo sólido, una familia A y cuatro curvas exactas", ()
   assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 4);
   assert.equal(markup.match(/class="open-target /g)?.length, 4);
   assert.match(markup, /class="graph-loop is-main is-special-double"[^>]+role="button" tabindex="0"/);
-  assert.match(markup, /class="graph-special-marker"/);
-  assert.match(markup, /class="graph-special-marker__arms"/);
+  assert.doesNotMatch(markup, /graph-special-marker/);
   assert.doesNotMatch(markup, />E<\/text>/);
   assert.doesNotMatch(markup, /graph-loop__label|>6·6<|>6\|6</);
   assert.equal(markup.match(/class="graph-family-root /g)?.length, 1);
@@ -614,13 +613,11 @@ test("la diferenciación topológica no depende exclusivamente del color", async
     boardCss,
     /\.open-target\.is-started-arm \.open-target__end[\s\S]+?fill:/,
   );
-  assert.match(boardCss, /\.graph-special-marker__arms/);
   assert.match(boardCss, /\.graph-family-root__code/);
-  assert.match(boardCss, /\.graph-family-root__arm\.is-potential/);
-  assert.match(boardCss, /\.graph-family-root__arm\.is-started/);
+  assert.doesNotMatch(boardCss, /\.graph-family-root__arm/);
   assert.match(boardCss, /\.open-target__structure-code/);
   assert.match(componentsCss, /\.legend-branch[\s\S]+?border-top-style:\s*dashed/);
-  assert.match(componentsCss, /\.legend-special::before/);
+  assert.doesNotMatch(componentsCss, /\.legend-special/);
 });
 
 test("el CSS conserva una presentación táctil y adaptable a teléfono", async () => {

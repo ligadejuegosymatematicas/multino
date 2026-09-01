@@ -54,7 +54,6 @@
                 <span class="legend-main"></span> principal
                 <span class="legend-branch"></span> ramificación
                 <span class="legend-structure-code">P/A</span> extremos
-                <span class="legend-special" aria-hidden="true"></span> especial
               </p>
             </div>
           </div>
@@ -63,26 +62,26 @@
           <p id="game-message" class="game-message" aria-live="assertive"></p>
         </section>
 
+        <section class="hand-panel" aria-labelledby="hand-heading">
+          <div class="panel-heading hand-heading-row">
+            <div>
+              <p class="section-kicker">Jugador actual</p>
+              <h2 id="hand-heading">Tu mano</h2>
+            </div>
+            <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+          </div>
+          <div id="hand-root" class="hand-grid"></div>
+        </section>
+
         <aside class="round-sidebar" aria-label="Información local">
           <section class="side-card">
             <h2>Fichas restantes</h2>
             <ul id="player-counts" class="player-counts"></ul>
-            <p class="privacy-note">Solo se muestran cantidades rivales.</p>
+            <p class="privacy-note">Se muestran cantidades; las fichas rivales permanecen ocultas.</p>
           </section>
           <section id="round-result" class="round-result" aria-live="polite" hidden></section>
         </aside>
       </div>
-
-      <section class="hand-panel" aria-labelledby="hand-heading">
-        <div class="panel-heading hand-heading-row">
-          <div>
-            <p class="section-kicker">Jugador actual</p>
-            <h2 id="hand-heading">Tu mano</h2>
-          </div>
-          <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
-        </div>
-        <div id="hand-root" class="hand-grid"></div>
-      </section>
 
       <p class="notice">Ambas vistas comparten exactamente la misma ronda, legalidad y puntuación.</p>
       <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>

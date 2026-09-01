@@ -1,4 +1,7 @@
-import { createTraditionalScene } from "./TraditionalScene.js";
+import {
+  calculateTraditionalFitScale,
+  createTraditionalScene,
+} from "./TraditionalScene.js";
 
 const PIP_POSITIONS = Object.freeze({
   0: [],
@@ -34,7 +37,6 @@ function tileClasses(tile) {
     tile.region === "main" ? "is-main" : "is-branch",
     tile.isDouble ? "is-double" : "",
     tile.isSpecialDouble ? "is-special-double" : "",
-    tile.familyIndex === null ? "" : `family-tone-${tile.familyIndex % 4}`,
   ].filter(Boolean).join(" ");
 }
 
@@ -51,7 +53,7 @@ function renderTile(tile) {
       <span class="traditional-domino__half">${renderPips(tile.firstValue)}</span>
       <span class="traditional-domino__divider" aria-hidden="true"></span>
       <span class="traditional-domino__half">${renderPips(tile.secondValue)}</span>
-      ${tile.isSpecialDouble ? '<span class="traditional-domino__special" aria-hidden="true">×4</span>' : ""}
+      ${tile.isSpecialDouble ? '<span class="traditional-domino__special" aria-hidden="true"></span>' : ""}
     </div>`;
 }
 
@@ -60,7 +62,7 @@ function renderConnection(connection) {
   const top = Math.min(connection.y1, connection.y2);
   const width = Math.max(Math.abs(connection.x2 - connection.x1), 4);
   const height = Math.max(Math.abs(connection.y2 - connection.y1), 4);
-  return `<span class="traditional-connection is-${connection.orientation} is-${connection.region}${connection.familyIndex === null ? "" : ` family-tone-${connection.familyIndex % 4}`}" style="--connection-left:${left}px;--connection-top:${top}px;--connection-width:${width}px;--connection-height:${height}px" data-connection-id="${escapeAttribute(connection.id)}" aria-hidden="true"></span>`;
+  return `<span class="traditional-connection is-${connection.orientation} is-${connection.region}" style="--connection-left:${left}px;--connection-top:${top}px;--connection-width:${width}px;--connection-height:${height}px" data-connection-id="${escapeAttribute(connection.id)}" data-connection-value="${connection.value}" aria-hidden="true"></span>`;
 }
 
 function renderTarget(target) {
@@ -71,16 +73,15 @@ function renderTarget(target) {
     target.topology.region === "main" ? "is-main" : "is-branch",
     target.topology.branchState === "POTENTIAL" ? "is-potential" : "",
     target.topology.branchState === "STARTED" ? "is-started" : "",
-    target.topology.familyIndex === null
-      ? ""
-      : `family-tone-${target.topology.familyIndex % 4}`,
   ].filter(Boolean).join(" ");
-  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span>${target.value}</span><small>${escapeAttribute(target.topology.structureCode)}</small></button>`;
+  const option = target.optionIndex === null
+    ? ""
+    : `<span class="traditional-target__option" aria-hidden="true">${target.optionIndex}</span>`;
+  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${option}</button>`;
 }
 
 /** Serialización comprobable sin incorporar un DOM a la suite. */
 export function renderTraditionalTableMarkup(scene) {
-  const summary = `Especiales: ${scene.specialSummary.enabledCount}/${scene.specialSummary.effectiveK}`;
   const emptyMessage = scene.tiles.length === 0
     ? '<p class="traditional-table__empty">La mesa está vacía. Selecciona una ficha para comenzar.</p>'
     : "";
@@ -89,13 +90,19 @@ export function renderTraditionalTableMarkup(scene) {
     : "";
   return `
     <div class="traditional-table" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
-      <div class="traditional-table__surface">
-        <p class="traditional-special-summary" role="note">${summary}</p>
-        ${scene.connections.map(renderConnection).join("")}
-        ${scene.tiles.map(renderTile).join("")}
-        ${scene.openTargets.map(renderTarget).join("")}
-        ${emptyMessage}
-        ${startMarkup}
+      <div class="traditional-camera-controls">
+        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">Ajustar tablero</button>
+      </div>
+      <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Ventana desplazable sobre la mesa; arrastra para recorrerla">
+        <div class="traditional-table__canvas" data-table-canvas>
+          <div class="traditional-table__surface">
+            ${scene.connections.map(renderConnection).join("")}
+            ${scene.tiles.map(renderTile).join("")}
+            ${scene.openTargets.map(renderTarget).join("")}
+            ${emptyMessage}
+            ${startMarkup}
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -106,14 +113,20 @@ export class TraditionalRenderer {
       throw new TypeError("TraditionalRenderer requiere un contenedor.");
     }
     this.container = container;
-    this.scrollLeft = null;
+    this.scrollPosition = null;
+    this.sceneSignature = null;
+    this.resizeObserver = null;
   }
 
   render(presentation, { onTarget, onStart } = {}) {
-    if (this.container.firstElementChild?.classList.contains(
-      "traditional-table",
-    )) {
-      this.scrollLeft = this.container.firstElementChild.scrollLeft;
+    const previousViewport = this.container.querySelector(
+      "[data-table-viewport]",
+    );
+    if (previousViewport) {
+      this.scrollPosition = {
+        left: previousViewport.scrollLeft,
+        top: previousViewport.scrollTop,
+      };
     }
     const scene = createTraditionalScene(presentation.traditionalView, {
       selectedDominoId: presentation.selectedDominoId,
@@ -121,13 +134,53 @@ export class TraditionalRenderer {
       isFinished: presentation.isFinished,
     });
     this.container.innerHTML = renderTraditionalTableMarkup(scene);
-    const viewport = this.container.firstElementChild;
-    const mainFocusX = scene.mainTiles[0]?.x ?? scene.width / 2;
-    viewport.scrollLeft = this.scrollLeft ?? Math.max(
-      0,
-      mainFocusX - viewport.clientWidth / 2,
+    const viewport = this.container.querySelector("[data-table-viewport]");
+    const nextSignature = `${scene.width}:${scene.height}`;
+    const shouldRecenter = this.sceneSignature !== nextSignature;
+    this.sceneSignature = nextSignature;
+    const fitAndPosition = ({ recenter = false } = {}) => {
+      const scale = calculateTraditionalFitScale({
+        contentWidth: scene.width,
+        contentHeight: scene.height,
+        viewportWidth: viewport.clientWidth,
+        viewportHeight: viewport.clientHeight,
+      });
+      const canvas = viewport.querySelector("[data-table-canvas]");
+      canvas.style.setProperty("--table-scale", String(scale));
+      canvas.style.setProperty("--scaled-table-width", `${scene.width * scale}px`);
+      canvas.style.setProperty("--scaled-table-height", `${scene.height * scale}px`);
+      if (recenter || this.scrollPosition === null) {
+        viewport.scrollLeft = Math.max(
+          0,
+          (scene.width * scale - viewport.clientWidth) / 2,
+        );
+        viewport.scrollTop = Math.max(
+          0,
+          (scene.height * scale - viewport.clientHeight) / 2,
+        );
+      } else {
+        viewport.scrollLeft = this.scrollPosition.left;
+        viewport.scrollTop = this.scrollPosition.top;
+      }
+      this.scrollPosition = {
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+      };
+      return scale;
+    };
+    fitAndPosition({ recenter: shouldRecenter });
+    this.container.querySelector("[data-fit-table]")?.addEventListener(
+      "click",
+      () => fitAndPosition({ recenter: true }),
     );
-    this.scrollLeft = viewport.scrollLeft;
+    this.resizeObserver?.disconnect();
+    if (typeof ResizeObserver === "function") {
+      this.resizeObserver = new ResizeObserver(() => {
+        fitAndPosition({ recenter: true });
+      });
+      this.resizeObserver.observe(viewport);
+    }
+    this.#enableMousePan(viewport);
     const targetById = new Map(
       scene.openTargets.map((target) => [target.id, target]),
     );
@@ -142,5 +195,47 @@ export class TraditionalRenderer {
       .querySelector("[data-start-action]")
       ?.addEventListener("click", () => onStart?.({ kind: "START" }));
     return scene;
+  }
+
+  #enableMousePan(viewport) {
+    let drag = null;
+    viewport.addEventListener("pointerdown", (event) => {
+      if (
+        event.pointerType !== "mouse" ||
+        event.button !== 0 ||
+        event.target.closest("button")
+      ) {
+        return;
+      }
+      drag = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+      };
+      viewport.setPointerCapture(event.pointerId);
+      viewport.classList.add("is-panning");
+    });
+    viewport.addEventListener("pointermove", (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+      }
+      viewport.scrollLeft = drag.left - (event.clientX - drag.x);
+      viewport.scrollTop = drag.top - (event.clientY - drag.y);
+    });
+    const stopPan = (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+      }
+      this.scrollPosition = {
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+      };
+      viewport.classList.remove("is-panning");
+      drag = null;
+    };
+    viewport.addEventListener("pointerup", stopPan);
+    viewport.addEventListener("pointercancel", stopPan);
   }
 }

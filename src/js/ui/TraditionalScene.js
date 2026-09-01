@@ -5,6 +5,7 @@ const TILE_SHORT = 38;
 const MIN_WIDTH = 720;
 const MIN_HEIGHT = 430;
 const TABLE_PADDING = 72;
+export const TRADITIONAL_MIN_READABLE_SCALE = 0.58;
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
@@ -19,28 +20,99 @@ function tileDimensions(tile) {
   };
 }
 
-function projectTile(tile, x, y) {
+function physicalSidesFor(direction) {
+  switch (direction) {
+    case "right":
+      return { start: "left", end: "right" };
+    case "up":
+      return { start: "bottom", end: "top" };
+    case "down":
+      return { start: "top", end: "bottom" };
+    default:
+      throw new TypeError(`Dirección tradicional desconocida: ${direction}.`);
+  }
+}
+
+function valueAtPhysicalSide(tile, sides, physicalSide, fallbackIndex) {
+  if (sides.start === physicalSide) {
+    return tile.start.value;
+  }
+  if (sides.end === physicalSide) {
+    return tile.end.value;
+  }
+  return tile.values[fallbackIndex];
+}
+
+function projectTile(tile, x, y, direction) {
+  const dimensions = tileDimensions(tile);
+  const sides = physicalSidesFor(direction);
+  const firstSide = dimensions.orientation === "horizontal" ? "left" : "top";
+  const secondSide = dimensions.orientation === "horizontal"
+    ? "right"
+    : "bottom";
   return {
     ...tile,
-    ...tileDimensions(tile),
+    ...dimensions,
     x,
     y,
-    firstValue: tile.start.value,
-    secondValue: tile.end.value,
+    direction,
+    physicalStart: { ...tile.start, side: sides.start },
+    physicalEnd: { ...tile.end, side: sides.end },
+    firstValue: valueAtPhysicalSide(
+      tile,
+      sides,
+      firstSide,
+      0,
+    ),
+    secondValue: valueAtPhysicalSide(
+      tile,
+      sides,
+      secondSide,
+      1,
+    ),
   };
 }
 
-function createConnection(id, first, second, region, familyIndex = null) {
+function createConnection(
+  id,
+  first,
+  second,
+  firstFace,
+  secondFace,
+  region,
+) {
+  if (firstFace.value !== secondFace.value) {
+    throw new Error(
+      `La conexión visual ${id} enfrenta ${firstFace.value} con ${secondFace.value}.`,
+    );
+  }
   return {
     id,
     region,
-    familyIndex,
+    value: firstFace.value,
+    firstFace: { ...firstFace },
+    secondFace: { ...secondFace },
     x1: first.x,
     y1: first.y,
     x2: second.x,
     y2: second.y,
     orientation: first.y === second.y ? "horizontal" : "vertical",
   };
+}
+
+function pointOutsideTile(tile, face, distance = 18) {
+  switch (face.side) {
+    case "left":
+      return { x: tile.x - tile.width / 2 - distance, y: tile.y };
+    case "right":
+      return { x: tile.x + tile.width / 2 + distance, y: tile.y };
+    case "top":
+      return { x: tile.x, y: tile.y - tile.height / 2 - distance };
+    case "bottom":
+      return { x: tile.x, y: tile.y + tile.height / 2 + distance };
+    default:
+      throw new TypeError(`Cara tradicional desconocida: ${face.side}.`);
+  }
 }
 
 function createTargetScene(
@@ -51,6 +123,8 @@ function createTargetScene(
   legalTargetIds,
   hasSelection,
   isFinished,
+  optionIndex = null,
+  optionCount = 0,
 ) {
   const isLegal = !isFinished && hasSelection && legalTargetIds.has(target.id);
   return {
@@ -59,6 +133,7 @@ function createTargetScene(
     y,
     direction,
     isLegal,
+    optionIndex,
     isDisabled: !isLegal,
     state: isFinished
       ? "finished"
@@ -67,7 +142,7 @@ function createTargetScene(
         : hasSelection
           ? "incompatible"
           : "neutral",
-    accessibleLabel: `Extremo ${target.topology.structureCode}, valor ${target.value}, ${target.topology.region === "main" ? "línea principal" : `${target.topology.familyLabel}, brazo ${target.topology.armIndex}`}${isLegal ? ", destino compatible" : ""}`,
+    accessibleLabel: `Extremo ${target.topology.structureCode}, valor ${target.value}, ${target.topology.region === "main" ? "línea principal" : `${target.topology.familyLabel}, brazo ${target.topology.armIndex}`}${isLegal ? optionIndex === null ? ", destino compatible" : `, opción ${optionIndex} de ${optionCount}` : ""}`,
   };
 }
 
@@ -107,7 +182,7 @@ export function createTraditionalScene(
   const sequenceWidth = Math.max(mainCount, 1) * MAIN_SLOT;
   const firstMainX = (width - sequenceWidth) / 2 + MAIN_SLOT / 2;
   const mainTiles = view.table.mainLine.tiles.map((tile, index) =>
-    projectTile(tile, firstMainX + index * MAIN_SLOT, mainY)
+    projectTile(tile, firstMainX + index * MAIN_SLOT, mainY, "right")
   );
   const tileByPlacementId = new Map(
     mainTiles.map((tile) => [tile.placementId, tile]),
@@ -120,6 +195,8 @@ export function createTraditionalScene(
         view.table.mainLine.connectionIds[index],
         tile,
         mainTiles[index + 1],
+        tile.physicalEnd,
+        mainTiles[index + 1].physicalStart,
         "main",
       ),
     );
@@ -129,48 +206,80 @@ export function createTraditionalScene(
     const root = tileByPlacementId.get(family.rootPlacementId);
     const arms = family.arms.map((arm) => {
       const direction = arm.armIndex === 1 ? -1 : 1;
+      const directionName = direction < 0 ? "up" : "down";
       const tiles = arm.tiles.map((tile, index) =>
         projectTile(
           tile,
           root.x,
           mainY + direction * (index + 1) * BRANCH_SLOT,
+          directionName,
         )
       );
       tiles.forEach((tile) => tileByPlacementId.set(tile.placementId, tile));
       tiles.forEach((tile, index) => {
+        const previous = index === 0 ? root : tiles[index - 1];
+        const previousFace = index === 0
+          ? {
+              ...arm.origin,
+              side: direction < 0 ? "top" : "bottom",
+            }
+          : previous.physicalEnd;
         connections.push(
           createConnection(
             arm.connectionIds[index],
-            index === 0 ? root : tiles[index - 1],
+            previous,
             tile,
+            previousFace,
+            tile.physicalStart,
             "branch",
-            family.familyIndex,
           ),
         );
       });
       return {
         ...arm,
-        direction: direction < 0 ? "up" : "down",
+        direction: directionName,
         tiles,
       };
     });
     return { ...family, root, arms };
   });
 
+  const compatibleCountByValue = new Map();
+  for (const target of view.table.openTargets) {
+    if (hasSelection && legalTargetIds.has(target.id)) {
+      compatibleCountByValue.set(
+        target.value,
+        (compatibleCountByValue.get(target.value) ?? 0) + 1,
+      );
+    }
+  }
+  const compatibleIndexByValue = new Map();
   const openTargets = view.table.openTargets.map((target) => {
+    const isLegal = hasSelection && legalTargetIds.has(target.id);
+    let optionIndex = null;
+    if (isLegal && compatibleCountByValue.get(target.value) > 1) {
+      optionIndex = (compatibleIndexByValue.get(target.value) ?? 0) + 1;
+      compatibleIndexByValue.set(target.value, optionIndex);
+    }
     if (target.kind === "main") {
       const tile = target.mainLineEnd === "start"
         ? mainTiles[0]
         : mainTiles.at(-1);
       const direction = target.mainLineEnd === "start" ? "left" : "right";
+      const face = target.mainLineEnd === "start"
+        ? tile.physicalStart
+        : tile.physicalEnd;
+      const point = pointOutsideTile(tile, face);
       return createTargetScene(
         target,
-        tile.x + (direction === "left" ? -MAIN_SLOT : MAIN_SLOT),
-        mainY,
+        point.x,
+        point.y,
         direction,
         legalTargetIds,
         hasSelection,
         isFinished,
+        optionIndex,
+        compatibleCountByValue.get(target.value) ?? 0,
       );
     }
 
@@ -182,14 +291,23 @@ export function createTraditionalScene(
     );
     const direction = arm.armIndex === 1 ? -1 : 1;
     const anchor = arm.tiles.at(-1) ?? family.root;
+    const face = arm.tiles.length > 0
+      ? anchor.physicalEnd
+      : {
+          ...arm.origin,
+          side: direction < 0 ? "top" : "bottom",
+        };
+    const point = pointOutsideTile(anchor, face);
     return createTargetScene(
       target,
-      anchor.x,
-      anchor.y + direction * BRANCH_SLOT,
+      point.x,
+      point.y,
       direction < 0 ? "up" : "down",
       legalTargetIds,
       hasSelection,
       isFinished,
+      optionIndex,
+      compatibleCountByValue.get(target.value) ?? 0,
     );
   });
 
@@ -207,6 +325,25 @@ export function createTraditionalScene(
     tiles: [...tileByPlacementId.values()],
     connections,
     openTargets,
-    specialSummary: { ...view.table.specialDoubles },
   };
+}
+
+/** Escala inicial de cámara: ajusta sin volver ilegibles las fichas. */
+export function calculateTraditionalFitScale({
+  contentWidth,
+  contentHeight,
+  viewportWidth,
+  viewportHeight,
+  minScale = TRADITIONAL_MIN_READABLE_SCALE,
+  maxScale = 1,
+  padding = 24,
+}) {
+  const usableWidth = Math.max(viewportWidth - padding * 2, 1);
+  const usableHeight = Math.max(viewportHeight - padding * 2, 1);
+  const fitted = Math.min(
+    maxScale,
+    usableWidth / contentWidth,
+    usableHeight / contentHeight,
+  );
+  return Math.max(minScale, Number(fitted.toFixed(3)));
 }

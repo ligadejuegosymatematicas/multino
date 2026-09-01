@@ -177,33 +177,6 @@
   font-weight: 900;
 }
 
-.legend-special {
-  position: relative;
-  display: inline-block;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid #8b5010;
-  border-radius: 50%;
-  background: #fff8eb;
-  box-shadow: inset 0 0 0 2px #fff8eb, inset 0 0 0 3px #b66b18;
-}
-
-.legend-special::before,
-.legend-special::after {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  width: 0.72rem;
-  height: 2px;
-  border-radius: 999px;
-  background: #74400b;
-  content: "";
-  transform: translate(-50%, -50%);
-}
-
-.legend-special::after {
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-
 .selection-hint,
 .game-message {
   min-height: 1.3rem;
@@ -337,6 +310,48 @@
 }
 
 @media (max-width: 36rem) {
+  .app-header .eyebrow,
+  .app-header .lead {
+    display: none;
+  }
+
+  .prototype-badge {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .overview-card {
+    min-width: 0;
+    padding: 0.55rem;
+  }
+
+  .overview-card h2 {
+    font-size: 0.72rem;
+  }
+
+  .turn-panel strong,
+  .scoring-sum,
+  .score-team strong {
+    font-size: 0.9rem;
+  }
+
+  .turn-panel span,
+  .scoring-detail,
+  .score-no-award,
+  .score-award,
+  .score-team span {
+    font-size: 0.66rem;
+  }
+
+  .score-panel {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .score-team {
+    padding: 0.2rem 0.35rem;
+  }
+
   .panel-heading {
     align-items: flex-start;
   }
@@ -356,5 +371,13 @@
   .hand-domino {
     min-width: 0;
     padding-inline: 0.4rem;
+  }
+
+  .hand-panel {
+    padding: 0.75rem;
+  }
+
+  .hand-heading-row {
+    margin-block-end: 0.55rem;
   }
 }

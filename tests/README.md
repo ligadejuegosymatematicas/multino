@@ -97,6 +97,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `ViewModeController` se prueba como preferencia efímera y el cambio repetido conserva snapshot y selección local.
 - `tests/ui/interaction-controller.test.js`: la inspección puede comenzar desde una familia visual y sigue siendo estado efímero ajeno al snapshot; cualquier acción aceptada la limpia.
 
+### Fase 2, Bloque 7 — orientación, simplificación y cámara completadas
+
+- `tests/projections/traditional-view-projection.test.js`: cada brazo expone su puerto/valor de origen además de la cadena ordenada, sin geometría ni persistencia nueva;
+- `tests/ui/traditional-renderer.test.js`: fichas asimétricas por ambos extremos principales, brazo superior/inferior, cadena lateral, doble ordinario y dos especiales; cada unión comprueba ambas caras contra el valor lógico;
+- la mesa en reposo rechaza códigos estructurales, resumen de K, `×4`, familias cromáticas y valores dentro de grandes objetivos; los índices existen solo durante una selección ambigua;
+- la cámara pura cubre ajuste de escritorio y límite mínimo legible en teléfono/estado denso; CSS y renderer cubren viewport interno, tacto, arrastre, recentrado y movimiento reducido;
+- `tests/ui/graph-renderer.test.js` conserva trazo principal/segmentado, targets y familias, pero verifica la ausencia del símbolo especial y de indicadores de brazos redundantes.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

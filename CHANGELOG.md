@@ -82,6 +82,12 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - `TraditionalRenderer` HTML/CSS con fichas de puntos, línea principal horizontal, chanchos especiales transversales, brazos superior/inferior, extremos exactos, START y acciones canónicas.
 - Conmutador accesible Grafo ↔ Tradicional como preferencia efímera; conserva snapshot, selección de mano, turno, historial y marcador.
 - Cobertura automática de orden principal, ambos brazos, dobles ordinarios, K agotado, targets, terminalidad, inmutabilidad, responsive y equivalencia de acciones entre modos.
+- Corrección de orientación física del Modo Tradicional: cada mitad que toca otra ficha se deriva del puerto y valor de la conexión, incluida la principal en ambos sentidos y los dos brazos laterales.
+- Escena tradicional con caras físicas explícitas y validación ejecutable de que ambos extremos enfrentados coinciden con el valor lógico de cada conexión.
+- Mesa tradicional simplificada sin códigos estructurales, badges `×4`, resumen de K ni círculos técnicos; extremos reducidos a sockets físicos con índices solo durante elecciones ambiguas.
+- Cámara tradicional básica con ajuste automático limitado por tamaño legible, recentrado, viewport interno, arrastre de escritorio y desplazamiento táctil sin overflow horizontal de página.
+- GraphRenderer aligerado mediante un único badge de familia por chancho especial, eliminando el símbolo especial y los indicadores de brazos redundantes alrededor del lazo.
+- Layout móvil reorganizado como tablero → mano → información secundaria, con cabecera reglamentaria compacta y texto de privacidad corregido.
 
 ### Decidido
 
@@ -131,3 +137,4 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - `SCORING_READY`, `RULES_READY` y `gameplayReady` pasan a `true` para una ronda completa; multirronda, variantes y renderers no forman parte de ese readiness.
 - Fase 1 declarada completada tras satisfacer sus criterios de salida.
 - Fase 2 iniciada únicamente con proyecciones puras; `gameplayReady` y schema v6 permanecen sin cambios.
+- La iteración de orientación, simplificación y cámara modifica solo proyecciones/renderers/documentación; motor, `REGLAS.md`, persistencia y schema v6 permanecen intactos.

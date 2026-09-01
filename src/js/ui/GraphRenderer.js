@@ -33,36 +33,18 @@ function describeRootedBranches(topology) {
   return `; origina ${topology.branchFamily.label}`;
 }
 
-function renderSpecialMarker(edge) {
-  if (!edge.topology.isSpecialDouble) {
-    return "";
-  }
-  const markerX = edge.labelX - 15;
-  const markerY = edge.labelY;
-  return `
-      <g class="graph-special-marker" transform="translate(${markerX} ${markerY})" aria-hidden="true">
-        <circle class="graph-special-marker__outer" r="11"></circle>
-        <circle class="graph-special-marker__inner" r="7"></circle>
-        <path class="graph-special-marker__arms" d="M 0 -7 V 7 M -7 0 H 7"></path>
-        <circle class="graph-special-marker__hub" r="2.2"></circle>
-      </g>`;
-}
-
 function renderFamilyRootMarker(edge) {
   const family = edge.topology.branchFamily;
   if (!family) {
     return "";
   }
   const familyTone = family.familyIndex % 4;
-  const armMarkers = family.arms.map((arm, index) => `
-        <circle class="graph-family-root__arm ${arm.isOccupied ? "is-started" : "is-potential"}" cx="${index === 0 ? -5 : 5}" cy="15" r="2.8"></circle>`).join("");
   const label = `Inspeccionar ${family.label}; nace del chancho ${edge.a}-${edge.b}; ${family.arms.filter((arm) => arm.isOccupied).length} de 2 brazos iniciados`;
   return `
     <g class="graph-family-root family-tone-${familyTone}${edge.isTopologyRoot ? " is-inspected" : ""}${edge.isTopologyDimmed ? " is-dimmed" : ""}" transform="translate(${edge.labelX + 16} ${edge.labelY})" data-family-id="${escapeAttribute(family.id)}" data-family-code="${escapeAttribute(family.code)}" role="button" tabindex="0" aria-pressed="${edge.isTopologyRoot}" aria-label="${escapeAttribute(label)}">
       <circle class="graph-family-root__hit" r="22"></circle>
       <circle class="graph-family-root__badge" r="11"></circle>
       <text class="graph-family-root__code">${escapeAttribute(family.code)}</text>
-      ${armMarkers}
     </g>`;
 }
 
@@ -72,7 +54,6 @@ function renderEdge(edge) {
     <g class="graph-edge ${getTopologyClasses(edge)}" data-placement-id="${escapeAttribute(edge.placementId)}" data-region="${edge.topology.region}" data-family-id="${escapeAttribute(edge.topology.familyId ?? "")}" data-special-double="${edge.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${edge.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-edge__hit" d="${edge.path}"></path>
       <path class="graph-edge__line" d="${edge.path}"></path>
-      ${renderSpecialMarker(edge)}
     </g>`;
 }
 
@@ -82,7 +63,6 @@ function renderLoop(loop) {
     <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-family-id="${escapeAttribute(loop.topology.familyId ?? "")}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-loop__hit" d="${loop.path}"></path>
       <path class="graph-loop__shape" d="${loop.path}"></path>
-      ${renderSpecialMarker(loop)}
     </g>`;
 }
 
@@ -142,7 +122,7 @@ export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. P identifica los dos extremos de la línea principal. Cada chancho especial origina una familia A, B, C o siguiente; sus dos brazos conservan targets internos distintos. Las líneas continuas son principales, las segmentadas son ramificaciones y el símbolo de cuatro brazos identifica un chancho especial.</desc>
+      <desc id="graph-description">Siete valores fijos. P identifica los dos extremos de la línea principal. Cada chancho especial origina una familia A, B, C o siguiente; sus dos brazos conservan targets internos distintos. Las líneas continuas son principales, las segmentadas son ramificaciones y el código junto a un lazo identifica su familia especial.</desc>
       <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>

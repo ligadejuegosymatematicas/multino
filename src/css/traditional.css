@@ -9,20 +9,44 @@
 }
 
 .traditional-table {
+  position: relative;
   width: 100%;
   min-height: 31rem;
+  overflow: hidden;
+}
+
+.traditional-table__viewport {
+  width: 100%;
+  height: 31rem;
   overflow: auto;
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
   scrollbar-color: rgb(255 255 255 / 0.5) rgb(13 55 46 / 0.28);
+  cursor: grab;
+}
+
+.traditional-table__viewport.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.traditional-table__viewport:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: -4px;
+}
+
+.traditional-table__canvas {
+  position: relative;
+  width: var(--scaled-table-width, var(--table-width));
+  height: var(--scaled-table-height, var(--table-height));
 }
 
 .traditional-table__surface {
   position: relative;
   width: var(--table-width);
-  min-width: 100%;
   height: var(--table-height);
-  min-height: 31rem;
+  transform: scale(var(--table-scale, 1));
+  transform-origin: left top;
 }
 
 .traditional-table__empty {
@@ -35,20 +59,29 @@
   transform: translate(-50%, -50%);
 }
 
-.traditional-special-summary {
-  position: sticky;
-  z-index: 6;
-  inset: 0.75rem auto auto 0.75rem;
-  width: max-content;
-  margin: 0;
-  padding: 0.42rem 0.7rem;
-  border: 1px solid rgb(255 255 255 / 0.48);
+.traditional-camera-controls {
+  position: absolute;
+  z-index: 9;
+  inset: 0.65rem 0.65rem auto auto;
+}
+
+.traditional-camera-controls button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.58);
   border-radius: 999px;
   color: #ffffff;
-  background: rgb(18 71 59 / 0.82);
+  background: rgb(18 71 59 / 0.88);
+  box-shadow: 0 0.2rem 0.65rem rgb(8 35 29 / 0.24);
   font-size: 0.72rem;
   font-weight: 800;
+  cursor: pointer;
   backdrop-filter: blur(6px);
+}
+
+.traditional-camera-controls button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .traditional-connection {
@@ -78,11 +111,6 @@
   transform: translateX(-50%);
 }
 
-.traditional-connection.is-branch::before {
-  border-color: var(--family-soft, #e2dde9);
-  border-style: dashed;
-}
-
 .traditional-domino {
   position: absolute;
   z-index: 2;
@@ -109,9 +137,7 @@
 }
 
 .traditional-domino.is-branch {
-  box-shadow:
-    0 0 0 2px var(--family-accent, #6f657d),
-    0 0.18rem 0.42rem rgb(11 35 30 / 0.3);
+  box-shadow: 0 0.18rem 0.42rem rgb(11 35 30 / 0.3);
 }
 
 .traditional-domino.is-special-double {
@@ -157,17 +183,28 @@
 
 .traditional-domino__special {
   position: absolute;
-  inset: -0.75rem -0.72rem auto auto;
-  display: grid;
-  min-width: 1.45rem;
-  min-height: 1.45rem;
-  place-items: center;
-  border: 2px solid #74400b;
+  inset: -0.48rem -0.48rem auto auto;
+  width: 0.92rem;
+  height: 0.92rem;
+  border: 1.5px solid #74400b;
   border-radius: 50%;
-  color: #74400b;
   background: #fff6e8;
-  font-size: 0.58rem;
-  font-weight: 900;
+}
+
+.traditional-domino__special::before,
+.traditional-domino__special::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 0.52rem;
+  height: 1.5px;
+  border-radius: 999px;
+  background: #74400b;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.traditional-domino__special::after {
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .traditional-target {
@@ -176,23 +213,22 @@
   left: var(--target-x);
   top: var(--target-y);
   display: grid;
-  width: 3rem;
-  height: 3rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   place-content: center;
-  border: 3px solid currentColor;
+  border: 0;
   border-radius: 50%;
   color: #263f3c;
-  background: #f7fbf5;
-  box-shadow: 0 0.16rem 0.4rem rgb(10 38 32 / 0.3);
+  background: transparent;
   transform: translate(-50%, -50%);
 }
 
 .traditional-target::before {
   position: absolute;
   z-index: -1;
-  width: 2.5rem;
-  border-top: 4px solid currentColor;
+  width: 1.15rem;
+  border-top: 3px solid currentColor;
   content: "";
 }
 
@@ -207,9 +243,9 @@
 .traditional-target.points-up::before,
 .traditional-target.points-down::before {
   width: 0;
-  height: 2.5rem;
+  height: 1.15rem;
   border-top: 0;
-  border-left: 4px solid currentColor;
+  border-left: 3px solid currentColor;
 }
 
 .traditional-target.points-up::before {
@@ -220,25 +256,38 @@
   inset: auto auto 100% 50%;
 }
 
-.traditional-target.is-branch::before {
-  border-style: dashed;
-}
-
 .traditional-target.is-potential {
-  background: transparent;
+  opacity: 0.68;
+}
+
+.traditional-target__socket {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  background: #f7fbf5;
+  box-shadow: 0 0.12rem 0.3rem rgb(10 38 32 / 0.28);
+}
+
+.traditional-target.is-potential .traditional-target__socket {
   border-style: dashed;
+  background: rgb(247 251 245 / 0.38);
 }
 
-.traditional-target > span {
-  font-size: 1rem;
+.traditional-target__option {
+  position: absolute;
+  inset: -0.35rem -0.35rem auto auto;
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: #74400b;
+  background: #fff8eb;
+  font-size: 0.64rem;
   font-weight: 900;
-  line-height: 1;
-}
-
-.traditional-target > small {
-  font-size: 0.55rem;
-  font-weight: 850;
-  line-height: 1;
 }
 
 .traditional-target.is-neutral {
@@ -251,9 +300,14 @@
 
 .traditional-target.is-legal {
   color: #7b4207;
-  background: #fff2d8;
   cursor: pointer;
   animation: traditional-target-pulse 1.8s ease-in-out infinite;
+}
+
+.traditional-target.is-legal .traditional-target__socket {
+  border-width: 4px;
+  background: #fff2d8;
+  box-shadow: 0 0 0 5px rgb(255 242 216 / 0.38);
 }
 
 .traditional-target.is-finished {
@@ -265,7 +319,7 @@
 }
 
 .traditional-target:focus-visible {
-  outline: 4px solid #ffffff;
+  outline: 3px solid #ffffff;
   outline-offset: 3px;
 }
 
@@ -289,11 +343,12 @@
 
 @media (max-width: 36rem) {
   .traditional-table,
-  .traditional-table__surface {
+  .traditional-table__viewport {
     min-height: 27rem;
+    height: 27rem;
   }
 
-  .traditional-special-summary {
-    font-size: 0.66rem;
+  .traditional-camera-controls {
+    inset: 0.45rem 0.45rem auto auto;
   }
 }

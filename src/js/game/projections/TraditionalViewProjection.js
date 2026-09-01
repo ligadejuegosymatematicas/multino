@@ -176,6 +176,9 @@ function projectBranchArm(
   const occupied = occupiedById.get(arm.id) ?? null;
   const placementIds = occupied ? [...occupied.placementIds] : [];
   const connectionIds = occupied ? [...occupied.connectionIds] : [];
+  const originConnection = occupied
+    ? state.board.connections[connectionIds[0]]
+    : null;
   const tiles = placementIds.map((placementId, index) => {
     const startConnection = state.board.connections[connectionIds[index]];
     const endConnectionId = connectionIds[index + 1] ?? null;
@@ -204,6 +207,12 @@ function projectBranchArm(
     armIndex: arm.armIndex,
     originPlacementId: family.originPlacementId,
     originPortId: arm.originPortId,
+    origin: createVisualPort(
+      state,
+      family.originPlacementId,
+      arm.originPortId,
+      originConnection,
+    ),
     isStarted: occupied !== null,
     placementIds,
     connectionIds,

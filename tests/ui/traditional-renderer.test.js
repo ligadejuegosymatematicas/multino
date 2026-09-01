@@ -11,7 +11,11 @@ import {
 import {
   renderTraditionalTableMarkup,
 } from "../../src/js/ui/TraditionalRenderer.js";
-import { createTraditionalScene } from "../../src/js/ui/TraditionalScene.js";
+import {
+  calculateTraditionalFitScale,
+  createTraditionalScene,
+  TRADITIONAL_MIN_READABLE_SCALE,
+} from "../../src/js/ui/TraditionalScene.js";
 import { InteractionController } from "../../src/js/ui/InteractionController.js";
 import {
   BOARD_VIEW_MODES,
@@ -54,6 +58,20 @@ function createTraditionalScenario() {
   );
 }
 
+function createOrientationScenario() {
+  let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
+  state = playDomino(state, "3-3", targetAt("placement-2", "side:a"));
+  state = playDomino(state, "4-6", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "5-6", targetAt("placement-4", "side:b"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "branch:1"));
+  state = playDomino(state, "1-1", targetAt("placement-6", "side:a"));
+  state = playDomino(state, "0-1", targetAt("placement-7", "side:b"));
+  state = playDomino(state, "2-4", targetAt("placement-1", "branch:2"));
+  return playDomino(state, "2-5", targetAt("placement-9", "side:a"));
+}
+
 function createDeterministicMatch() {
   return createMatch({
     ...createValidParticipantInput(),
@@ -82,6 +100,73 @@ test("la escena ubica principal horizontal y ambos brazos verticales", () => {
   assert.equal(family.arms[0].tiles[1].isSpecialDouble, false);
 });
 
+test("cada unión física enfrenta el valor exacto de su conexión lógica", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createOrientationScenario()),
+  );
+
+  assert.ok(scene.connections.length >= 9);
+  for (const connection of scene.connections) {
+    assert.equal(connection.firstFace.value, connection.value);
+    assert.equal(connection.secondFace.value, connection.value);
+  }
+
+  const connections = new Map(
+    scene.connections.map((connection) => [connection.id, connection]),
+  );
+  for (const id of ["connection-1", "connection-2", "connection-3", "connection-4"]) {
+    assert.equal(connections.get(id).firstFace.side, "right");
+    assert.equal(connections.get(id).secondFace.side, "left");
+  }
+  for (const id of ["connection-5", "connection-6", "connection-7"]) {
+    assert.equal(connections.get(id).firstFace.side, "top");
+    assert.equal(connections.get(id).secondFace.side, "bottom");
+  }
+  for (const id of ["connection-8", "connection-9"]) {
+    assert.equal(connections.get(id).firstFace.side, "bottom");
+    assert.equal(connections.get(id).secondFace.side, "top");
+  }
+});
+
+test("orienta fichas asimétricas hacia ambos extremos y ambos brazos", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createOrientationScenario()),
+  );
+  const tiles = new Map(scene.tiles.map((tile) => [tile.placementId, tile]));
+
+  assert.deepEqual(
+    ["placement-5", "placement-4", "placement-2"].map((id) => ({
+      id,
+      first: tiles.get(id).firstValue,
+      second: tiles.get(id).secondValue,
+    })),
+    [
+      { id: "placement-5", first: 5, second: 6 },
+      { id: "placement-4", first: 6, second: 4 },
+      { id: "placement-2", first: 4, second: 3 },
+    ],
+  );
+  assert.deepEqual(
+    ["placement-6", "placement-8", "placement-9", "placement-10"].map(
+      (id) => ({
+        id,
+        first: tiles.get(id).firstValue,
+        second: tiles.get(id).secondValue,
+      }),
+    ),
+    [
+      { id: "placement-6", first: 1, second: 4 },
+      { id: "placement-8", first: 0, second: 1 },
+      { id: "placement-9", first: 4, second: 2 },
+      { id: "placement-10", first: 2, second: 5 },
+    ],
+  );
+  assert.equal(tiles.get("placement-7").isDouble, true);
+  assert.equal(tiles.get("placement-7").isSpecialDouble, false);
+  assert.equal(tiles.get("placement-1").isSpecialDouble, true);
+  assert.equal(tiles.get("placement-3").isSpecialDouble, true);
+});
+
 test("el markup muestra fichas, cruce especial y extremos abiertos exactos", () => {
   const scene = createTraditionalScene(
     projectTraditionalView(createTraditionalScenario()),
@@ -100,12 +185,13 @@ test("el markup muestra fichas, cruce especial y extremos abiertos exactos", () 
     markup,
     /data-placement-id="placement-1"[^>]+data-special-double="true"/,
   );
-  assert.match(markup, /traditional-domino__special[^>]*>×4</);
+  assert.match(markup, /traditional-domino__special[^>]*><\/span>/);
   assert.match(
     markup,
     /data-target-id="placement-4:side:b"[^>]+data-port-id="side:b"/,
   );
-  assert.match(markup, /Especiales: 1\/2/);
+  assert.doesNotMatch(markup, /Especiales:|>×4<|<small>|family-tone-/);
+  assert.match(markup, /data-fit-table/);
 });
 
 test("un brazo iniciado y uno potencial se distinguen sin alterar sus puertos", () => {
@@ -171,6 +257,35 @@ test("la selección destaca solo extremos legales y conserva targets concretos",
       placementId: target.placementId,
       portId: target.portId,
     })),
+  );
+});
+
+test("los números de opción aparecen solo para targets compatibles repetidos", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  const view = projectTraditionalView(state);
+  const neutral = createTraditionalScene(view);
+  const legalTargets = view.table.openTargets.map((target) => ({ ...target }));
+  const selected = createTraditionalScene(view, {
+    selectedDominoId: "0-4",
+    legalTargets,
+  });
+
+  assert.ok(neutral.openTargets.every((target) => target.optionIndex === null));
+  assert.deepEqual(
+    selected.openTargets.map((target) => target.optionIndex),
+    [1, 2, 3, 4],
+  );
+  assert.match(selected.openTargets[0].accessibleLabel, /opción 1 de 4/);
+  assert.doesNotMatch(
+    renderTraditionalTableMarkup(neutral),
+    /traditional-target__option/,
+  );
+  assert.equal(
+    renderTraditionalTableMarkup(selected).match(
+      /traditional-target__option/g,
+    )?.length,
+    4,
   );
 });
 
@@ -270,8 +385,40 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.doesNotMatch(rendererSource, /\bstate\.board\b|\bview\.board\b/);
   assert.doesNotMatch(sceneSource, /\bstate\.board\b|\bview\.board\b/);
   assert.match(rendererSource, /aria-label="Mesa tradicional de dominó"/);
-  assert.match(css, /\.traditional-table \{[\s\S]+?overflow:\s*auto/);
+  assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*auto/);
   assert.match(css, /touch-action:\s*pan-x pan-y/);
+  assert.match(rendererSource, /data-fit-table/);
+  assert.match(rendererSource, /pointermove/);
   assert.match(css, /@media \(max-width: 36rem\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("la cámara ajusta el tablero sin reducir las fichas bajo el mínimo legible", () => {
+  assert.equal(
+    calculateTraditionalFitScale({
+      contentWidth: 720,
+      contentHeight: 430,
+      viewportWidth: 1000,
+      viewportHeight: 650,
+    }),
+    1,
+  );
+  assert.equal(
+    calculateTraditionalFitScale({
+      contentWidth: 720,
+      contentHeight: 430,
+      viewportWidth: 360,
+      viewportHeight: 430,
+    }),
+    TRADITIONAL_MIN_READABLE_SCALE,
+  );
+  assert.equal(
+    calculateTraditionalFitScale({
+      contentWidth: 1600,
+      contentHeight: 900,
+      viewportWidth: 390,
+      viewportHeight: 430,
+    }),
+    TRADITIONAL_MIN_READABLE_SCALE,
+  );
 });
