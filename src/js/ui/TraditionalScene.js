@@ -2,9 +2,9 @@ const MAIN_SLOT = 84;
 const BRANCH_SLOT = 82;
 const TILE_LONG = 72;
 const TILE_SHORT = 38;
-const MIN_WIDTH = 440;
-const MIN_HEIGHT = 300;
-const TABLE_PADDING = 52;
+const MIN_WIDTH = 260;
+const MIN_HEIGHT = 220;
+const TABLE_PADDING = 44;
 export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
 
 function targetIdentity(target) {
@@ -86,18 +86,37 @@ function createConnection(
       `La conexión visual ${id} enfrenta ${firstFace.value} con ${secondFace.value}.`,
     );
   }
+  const firstPoint = pointAtTileFace(first, firstFace);
+  const secondPoint = pointAtTileFace(second, secondFace);
   return {
     id,
     region,
     value: firstFace.value,
     firstFace: { ...firstFace },
     secondFace: { ...secondFace },
-    x1: first.x,
-    y1: first.y,
-    x2: second.x,
-    y2: second.y,
-    orientation: first.y === second.y ? "horizontal" : "vertical",
+    firstPlacementId: first.placementId,
+    secondPlacementId: second.placementId,
+    x1: firstPoint.x,
+    y1: firstPoint.y,
+    x2: secondPoint.x,
+    y2: secondPoint.y,
+    orientation: firstPoint.y === secondPoint.y ? "horizontal" : "vertical",
   };
+}
+
+function pointAtTileFace(tile, face) {
+  switch (face.side) {
+    case "left":
+      return { x: tile.x - tile.width / 2, y: tile.y };
+    case "right":
+      return { x: tile.x + tile.width / 2, y: tile.y };
+    case "top":
+      return { x: tile.x, y: tile.y - tile.height / 2 };
+    case "bottom":
+      return { x: tile.x, y: tile.y + tile.height / 2 };
+    default:
+      throw new TypeError(`Cara tradicional desconocida: ${face.side}.`);
+  }
 }
 
 function pointOutsideTile(tile, face, distance = 18) {
@@ -335,7 +354,7 @@ export function calculateTraditionalFitScale({
   viewportWidth,
   viewportHeight,
   minScale = TRADITIONAL_MIN_READABLE_SCALE,
-  maxScale = 1,
+  maxScale = 1.35,
   padding = 18,
 }) {
   const usableWidth = Math.max(viewportWidth - padding * 2, 1);

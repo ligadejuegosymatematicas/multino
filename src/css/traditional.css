@@ -1,10 +1,10 @@
 .graph-root.is-traditional-view {
   overflow: hidden;
   background:
-    linear-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.055) 1px, transparent 1px),
     #386e5c;
-  background-size: 3rem 3rem;
+  background-size: 4rem 4rem;
 }
 
 .traditional-table {
@@ -43,6 +43,7 @@
 
 .traditional-table__surface {
   position: relative;
+  isolation: isolate;
   width: var(--table-width);
   height: var(--table-height);
   transform: scale(var(--table-scale, 1));
@@ -61,7 +62,7 @@
 
 .traditional-camera-controls {
   position: absolute;
-  z-index: 9;
+  z-index: 40;
   inset: 0.65rem 0.65rem auto auto;
 }
 
@@ -86,7 +87,7 @@
 
 .traditional-connection {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   left: var(--connection-left);
   top: var(--connection-top);
   display: block;
@@ -113,7 +114,7 @@
 
 .traditional-domino {
   position: absolute;
-  z-index: 2;
+  z-index: 10;
   left: var(--tile-x);
   top: var(--tile-y);
   display: flex;
@@ -209,7 +210,7 @@
 
 .traditional-target {
   position: absolute;
-  z-index: 4;
+  z-index: 20;
   left: var(--target-x);
   top: var(--target-y);
   display: grid;
@@ -325,7 +326,7 @@
 
 .traditional-start {
   position: absolute;
-  z-index: 7;
+  z-index: 30;
   inset: auto auto 1rem 50%;
   transform: translateX(-50%);
 }

@@ -2,16 +2,7 @@ import {
   calculateTraditionalFitScale,
   createTraditionalScene,
 } from "./TraditionalScene.js";
-
-const PIP_POSITIONS = Object.freeze({
-  0: [],
-  1: [5],
-  2: [1, 9],
-  3: [1, 5, 9],
-  4: [1, 3, 7, 9],
-  5: [1, 3, 5, 7, 9],
-  6: [1, 3, 4, 6, 7, 9],
-});
+import { renderPipsMarkup } from "./DominoPips.js";
 
 function escapeAttribute(value) {
   return String(value)
@@ -22,12 +13,10 @@ function escapeAttribute(value) {
 }
 
 function renderPips(value) {
-  const occupied = new Set(PIP_POSITIONS[value]);
-  return `<span class="traditional-domino__pips" data-value="${value}" aria-hidden="true">${Array.from(
-    { length: 9 },
-    (_, index) =>
-      `<i class="traditional-domino__pip${occupied.has(index + 1) ? " is-visible" : ""}"></i>`,
-  ).join("")}</span>`;
+  return renderPipsMarkup(value, {
+    gridClass: "traditional-domino__pips",
+    pipClass: "traditional-domino__pip",
+  });
 }
 
 function tileClasses(tile) {

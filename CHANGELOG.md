@@ -97,6 +97,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - GraphRenderer aligerado al retirar el resumen permanente de especiales y reducir el badge raíz; la proyección conserva K efectivo y los extremos siguen siendo los objetivos principales.
 - Cámara tradicional con límites geométricos más ajustados, escala mínima legible elevada y cuadrícula de mesa atenuada para priorizar fichas y conexiones.
 - Feedback efímero derivado del último evento para puntos, cambio de turno y primera ficha de una rama, con supresión por secuencia y respeto de `prefers-reduced-motion`.
+- Encuadre responsivo del Grafo con geometrías compacta y ancha: los siete vértices aprovechan el panel disponible sin alterar identidad, legalidad ni targets.
+- Cámara tradicional ampliable hasta `1.35×` en estados holgados, límites mínimos reducidos al contenido real y conectores recortados exactamente entre caras físicas.
+- Capas explícitas de mesa (`conexiones < fichas < extremos < controles`) y cuadrícula más tenue para impedir que segmentos auxiliares tapen las fichas.
+- Mano convertida en mini-fichas de puntos compartidos con la mesa, con menor altura y badges solo para dos o más destinos; mensajes redundantes de selección, vista e inicio retirados.
 
 ### Decidido
 

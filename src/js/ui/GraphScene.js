@@ -1,6 +1,24 @@
-const VIEWBOX = Object.freeze({ width: 760, height: 620 });
-const CENTER = Object.freeze({ x: 380, y: 300 });
-const RADII = Object.freeze({ x: 245, y: 205 });
+export const GRAPH_SCENE_LAYOUTS = Object.freeze({
+  COMPACT: "compact",
+  WIDE: "wide",
+});
+
+const LAYOUT_GEOMETRY = Object.freeze({
+  [GRAPH_SCENE_LAYOUTS.COMPACT]: Object.freeze({
+    width: 760,
+    height: 620,
+    center: Object.freeze({ x: 380, y: 300 }),
+    radii: Object.freeze({ x: 245, y: 205 }),
+    orbit: Object.freeze({ rx: 218, ry: 218 }),
+  }),
+  [GRAPH_SCENE_LAYOUTS.WIDE]: Object.freeze({
+    width: 1320,
+    height: 400,
+    center: Object.freeze({ x: 660, y: 200 }),
+    radii: Object.freeze({ x: 510, y: 80 }),
+    orbit: Object.freeze({ rx: 460, ry: 64 }),
+  }),
+});
 const VERTEX_RADIUS = 35;
 const FULL_TURN = Math.PI * 2;
 
@@ -15,12 +33,12 @@ function pointAt(origin, angle, distance) {
   };
 }
 
-function getVertexPosition(value) {
+function getVertexPosition(value, geometry) {
   const angle = -Math.PI / 2 + (FULL_TURN * value) / 7;
   return {
     value,
-    x: round(CENTER.x + Math.cos(angle) * RADII.x),
-    y: round(CENTER.y + Math.sin(angle) * RADII.y),
+    x: round(geometry.center.x + Math.cos(angle) * geometry.radii.x),
+    y: round(geometry.center.y + Math.sin(angle) * geometry.radii.y),
     outwardAngle: angle,
   };
 }
@@ -221,10 +239,18 @@ export function createGraphScene(
     legalTargets = [],
     inspectedStructureId = null,
     inspectedPlacementId = null,
+    layout = GRAPH_SCENE_LAYOUTS.COMPACT,
   } = {},
 ) {
+  const geometry = LAYOUT_GEOMETRY[layout];
+  if (!geometry) {
+    throw new TypeError(`Layout de grafo desconocido: ${layout}.`);
+  }
   const positions = new Map(
-    view.vertices.map((vertex) => [vertex.value, getVertexPosition(vertex.value)]),
+    view.vertices.map((vertex) => [
+      vertex.value,
+      getVertexPosition(vertex.value, geometry),
+    ]),
   );
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const hasSelection = selectedDominoId !== null;
@@ -327,9 +353,16 @@ export function createGraphScene(
   }
 
   return {
-    viewBox: `0 0 ${VIEWBOX.width} ${VIEWBOX.height}`,
-    width: VIEWBOX.width,
-    height: VIEWBOX.height,
+    viewBox: `0 0 ${geometry.width} ${geometry.height}`,
+    width: geometry.width,
+    height: geometry.height,
+    layout,
+    orbit: {
+      cx: geometry.center.x,
+      cy: geometry.center.y,
+      rx: geometry.orbit.rx,
+      ry: geometry.orbit.ry,
+    },
     hasSelection,
     selectedDominoId,
     inspection,

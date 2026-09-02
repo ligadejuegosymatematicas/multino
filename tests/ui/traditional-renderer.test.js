@@ -106,9 +106,33 @@ test("cada unión física enfrenta el valor exacto de su conexión lógica", () 
   );
 
   assert.ok(scene.connections.length >= 9);
+  const tiles = new Map(scene.tiles.map((tile) => [tile.placementId, tile]));
+  const facePoint = (tile, side) => {
+    switch (side) {
+      case "left": return { x: tile.x - tile.width / 2, y: tile.y };
+      case "right": return { x: tile.x + tile.width / 2, y: tile.y };
+      case "top": return { x: tile.x, y: tile.y - tile.height / 2 };
+      case "bottom": return { x: tile.x, y: tile.y + tile.height / 2 };
+      default: throw new Error(`Cara inesperada: ${side}`);
+    }
+  };
   for (const connection of scene.connections) {
     assert.equal(connection.firstFace.value, connection.value);
     assert.equal(connection.secondFace.value, connection.value);
+    assert.deepEqual(
+      { x: connection.x1, y: connection.y1 },
+      facePoint(
+        tiles.get(connection.firstPlacementId),
+        connection.firstFace.side,
+      ),
+    );
+    assert.deepEqual(
+      { x: connection.x2, y: connection.y2 },
+      facePoint(
+        tiles.get(connection.secondPlacementId),
+        connection.secondFace.side,
+      ),
+    );
   }
 
   const connections = new Map(
@@ -393,7 +417,7 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
-test("la cámara ajusta el tablero sin reducir las fichas bajo el mínimo legible", () => {
+test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo legible", () => {
   assert.equal(
     calculateTraditionalFitScale({
       contentWidth: 720,
@@ -401,7 +425,7 @@ test("la cámara ajusta el tablero sin reducir las fichas bajo el mínimo legibl
       viewportWidth: 1000,
       viewportHeight: 650,
     }),
-    1,
+    1.339,
   );
   assert.equal(
     calculateTraditionalFitScale({

@@ -11,6 +11,7 @@ import {
 } from "../../src/js/game/index.js";
 import {
   createGraphScene,
+  GRAPH_SCENE_LAYOUTS,
 } from "../../src/js/ui/GraphScene.js";
 import {
   renderGraphSvgMarkup,
@@ -138,6 +139,24 @@ test("el SVG inicial renderiza exactamente los siete vértices estables", () => 
   assert.equal(scene.edges.length, 0);
   assert.equal(scene.loops.length, 0);
   assert.equal(scene.openTargets.length, 0);
+});
+
+test("el encuadre ancho expande el grafo sin alterar sus siete valores", () => {
+  const view = projectGraphView(createDeterministicMatch());
+  const compact = createGraphScene(view);
+  const wide = createGraphScene(view, {
+    layout: GRAPH_SCENE_LAYOUTS.WIDE,
+  });
+  const compactSpan = Math.max(...compact.vertices.map(({ x }) => x)) -
+    Math.min(...compact.vertices.map(({ x }) => x));
+  const wideSpan = Math.max(...wide.vertices.map(({ x }) => x)) -
+    Math.min(...wide.vertices.map(({ x }) => x));
+
+  assert.equal(wide.layout, "wide");
+  assert.equal(wide.viewBox, "0 0 1320 400");
+  assert.equal(wide.vertices.length, 7);
+  assert.ok(wideSpan > compactSpan * 1.8);
+  assert.match(renderGraphSvgMarkup(wide), /<ellipse class="graph-orbit"/);
 });
 
 test("una ficha ordinaria produce una arista identificable sin etiqueta redundante", () => {

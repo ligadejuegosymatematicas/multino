@@ -1,4 +1,7 @@
-import { createGraphScene } from "./GraphScene.js";
+import {
+  createGraphScene,
+  GRAPH_SCENE_LAYOUTS,
+} from "./GraphScene.js";
 
 function escapeAttribute(value) {
   return String(value)
@@ -122,7 +125,7 @@ export function renderGraphSvgMarkup(scene) {
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
       <desc id="graph-description">Siete valores fijos. P identifica los dos extremos de la línea principal. Cada chancho especial origina una familia A, B, C o siguiente; sus dos brazos conservan targets internos distintos. Las líneas continuas son principales, las segmentadas son ramificaciones y el código junto a un lazo identifica su familia especial.</desc>
-      <circle class="graph-orbit" cx="380" cy="300" r="218"></circle>
+      <ellipse class="graph-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
       <g class="graph-family-roots">${scene.loops.map(renderFamilyRootMarker).join("")}</g>
@@ -215,6 +218,9 @@ export class GraphRenderer {
       legalTargets: presentation.selectedLegalTargets,
       inspectedStructureId: presentation.inspectedStructureId,
       inspectedPlacementId: presentation.inspectedPlacementId,
+      layout: this.container.clientWidth >= 720
+        ? GRAPH_SCENE_LAYOUTS.WIDE
+        : GRAPH_SCENE_LAYOUTS.COMPACT,
     });
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`

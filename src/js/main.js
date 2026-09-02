@@ -60,6 +60,7 @@ const playAgainButton = document.querySelector("#play-again-action");
 const changeConfigButton = document.querySelector("#change-config-action");
 const sessionBadge = document.querySelector("#session-badge");
 const playFeedback = document.querySelector("#play-feedback");
+const appShell = document.querySelector(".app-shell");
 let sessionController;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
@@ -132,11 +133,11 @@ function renderRound(presentation, mode, feedback) {
 
   renderer.render(presentation, {
     onTarget: (target) =>
-      runIntent(() => sessionController.submitTarget(target), "Jugada aplicada."),
+      runIntent(() => sessionController.submitTarget(target), ""),
     onStart: (target) =>
       runIntent(
         () => sessionController.submitTarget(target),
-        "Primera jugada aplicada.",
+        "",
       ),
     onInspectEdge: (edge) => {
       const presentation = sessionController.getPresentation().round;
@@ -161,7 +162,7 @@ function renderRound(presentation, mode, feedback) {
     onSelect: (dominoId) =>
       runIntent(
         () => sessionController.selectDomino(dominoId),
-        `Ficha ${dominoId} seleccionada.`,
+        "",
       ),
   });
   renderTurnPanel(
@@ -206,6 +207,7 @@ function renderSession(session) {
   const isConfiguring = session.screen === LOCAL_GAME_SCREENS.CONFIGURATION;
   setupScreen.hidden = !isConfiguring;
   gameScreen.hidden = isConfiguring;
+  appShell.classList.toggle("is-playing", !isConfiguring);
   setupK.value = String(session.config.K);
   for (const input of initialModeInputs) {
     input.checked = input.value === session.config.initialViewMode;
@@ -240,11 +242,7 @@ passButton.addEventListener("click", () =>
 for (const button of modeButtons) {
   button.addEventListener("click", () => {
     sessionController.setViewMode(button.dataset.viewMode);
-    setMessage(
-      button.dataset.viewMode === BOARD_VIEW_MODES.GRAPH
-        ? "Vista de grafo activa."
-        : "Vista tradicional activa.",
-    );
+    setMessage("");
   });
 }
 
@@ -264,14 +262,14 @@ setupForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runIntent(
     () => sessionController.startNewGame(),
-    "Partida local preparada.",
+    "",
   );
 });
 
 playAgainButton.addEventListener("click", () =>
   runIntent(
     () => sessionController.playAgain(),
-    "Nueva partida preparada.",
+    "",
   ),
 );
 

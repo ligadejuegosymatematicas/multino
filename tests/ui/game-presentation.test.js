@@ -4,6 +4,7 @@ import test from "node:test";
 
 import { projectGraphView } from "../../src/js/game/index.js";
 import { getGameFeedback } from "../../src/js/ui/GameFeedback.js";
+import { renderPipsMarkup } from "../../src/js/ui/DominoPips.js";
 import {
   createBoardScenario,
   playDomino,
@@ -90,7 +91,10 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?repeat\(7/);
   assert.match(componentsCss, /@media \(max-width: 36rem\)[\s\S]+?repeat\(4/);
   assert.match(boardCss, /height:\s*clamp\(20rem, 44vh, 26rem\)/);
-  assert.match(traditionalCss, /background-size:\s*3rem 3rem/);
+  assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
+  assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
+  assert.match(traditionalCss, /\.traditional-connection \{[\s\S]+?z-index:\s*1/);
+  assert.match(traditionalCss, /\.traditional-domino \{[\s\S]+?z-index:\s*10/);
   assert.match(traditionalCss, /\.traditional-table__canvas \{[\s\S]+?margin-inline:\s*auto/);
   assert.doesNotMatch(traditionalCss, /rgb\(255 255 255 \/ 0\.24\)/);
   assert.match(html, /De las demás manos solo se muestra la cantidad/);
@@ -99,4 +103,23 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.match(mainSource, /lastFeedbackSequence/);
   assert.match(mainSource, /window\.setTimeout[\s\S]+?1800/);
   assert.doesNotMatch(mainSource, /state\.board|applyTurnAction|calculateMoveScore/);
+  assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
+});
+
+test("la mano reutiliza puntos de dominó y omite el texto redundante de un destino", async () => {
+  const [handSource, componentsCss] = await Promise.all([
+    readFile(new URL("../../src/js/ui/HandRenderer.js", import.meta.url), "utf8"),
+    readFile(new URL("../../src/css/components.css", import.meta.url), "utf8"),
+  ]);
+  const six = renderPipsMarkup(6, {
+    gridClass: "test-grid",
+    pipClass: "test-pip",
+  });
+
+  assert.equal(six.match(/test-pip is-visible/g)?.length, 6);
+  assert.match(handSource, /hand-domino__tile/);
+  assert.match(handSource, /legalTargetCount > 1/);
+  assert.doesNotMatch(handSource, /1 destino/);
+  assert.match(componentsCss, /\.hand-domino__tile \{[\s\S]+?border:\s*2px solid/);
+  assert.match(componentsCss, /\.hand-domino__pips \{[\s\S]+?repeat\(3, 1fr\)/);
 });

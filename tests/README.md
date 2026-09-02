@@ -119,6 +119,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/traditional-renderer.test.js`: el ajuste conserva el nuevo mínimo legible y el viewport interno en estados que exceden la cámara;
 - CSS comprueba cuatro fichas por fila en teléfono, cuadrícula tradicional atenuada, objetivos táctiles y desactivación de feedback animado con `prefers-reduced-motion`.
 
+### Fase 2, Bloque 10 — escala, capas y mano compacta completados
+
+- `tests/ui/graph-renderer.test.js`: la geometría ancha conserva los siete valores y expande materialmente su ocupación horizontal; el SVG deriva la órbita de la escena.
+- `tests/ui/traditional-renderer.test.js`: cada segmento comienza y termina en la cara física proyectada, la cámara amplía contenido holgado y mantiene el mínimo legible en estados densos.
+- `tests/ui/game-presentation.test.js`: verifica el orden de capas, la cuadrícula secundaria, mini-fichas con puntos compartidos, ausencia del rótulo visible de destino único y eliminación de mensajes de vista redundantes.
+- La revisión manual cubre 1366×768 y 390×844 a 100%, estado temprano y estado de 22 fichas; ambos modos evitan overflow horizontal de página y Tradicional conserva pan interno en densidad alta.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

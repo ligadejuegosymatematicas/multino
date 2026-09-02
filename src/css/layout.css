@@ -29,7 +29,19 @@
     "board"
     "hand"
     "sidebar";
-  gap: 0.6rem;
+  gap: 0.42rem;
+}
+
+.app-shell.is-playing {
+  padding-block-start: 0.55rem;
+}
+
+.app-shell.is-playing .app-header {
+  margin-block-end: 0.4rem;
+}
+
+.app-shell.is-playing .app-header h1 {
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
 }
 
 .graph-stage {
@@ -86,7 +98,7 @@
   }
 
   .play-layout {
-    gap: 0.45rem;
+    gap: 0.32rem;
   }
 
   .round-sidebar {

@@ -615,3 +615,15 @@ La cámara tradicional calcula sobre límites más próximos al contenido y nunc
 **Alternativas consideradas:** Hacer sticky la mano; ocultar el HUD completo; recalcular puntos o ramas en el renderer; mostrar siempre el feedback; encajar toda mesa aunque las fichas fueran diminutas; mantener el resumen de especiales dentro del grafo.
 
 **Consecuencias:** No cambia snapshot v6, proyecciones reglamentarias, reglas, schema ni persistencia. El feedback usa únicamente datos ya derivados y respeta movimiento reducido. Sticky avanzado, zoom gestual y acabado premium siguen pendientes.
+
+## DEC-044 — Geometría responsiva, capas de mesa y mini-fichas de mano
+
+**Estado:** Aceptada.
+
+**Decisión:** Mantener dos geometrías descartables del Grafo: una compacta para teléfono y otra ancha para paneles de al menos 720 px. Ambas conservan los mismos siete valores, aristas, lazos y targets; solo cambian `viewBox`, centro y radios. En la mesa tradicional, reducir el lienzo mínimo artificial y permitir ampliación hasta `1.35×` cuando el contenido real cabe, sin rebajar el mínimo legible de estados densos.
+
+Cada conector tradicional termina en el punto exacto de la cara física de ambas fichas y la superficie aísla las capas en el orden conexión, ficha, extremo y control. Mesa y mano comparten una única serialización de puntos. La mano representa cada opción como mini-ficha táctil; solo muestra cantidad cuando existen dos o más destinos y conserva toda la información en el nombre accesible.
+
+**Motivo:** A 100% el Grafo casi cuadrado desaprovechaba paneles anchos, la cámara reservaba vacío alrededor de mesas tempranas y los conectores podían atravesar visualmente el cuerpo de una ficha. La mano basada en tarjetas competía con el tablero y repetía información obvia.
+
+**Consecuencias:** Solo cambian escenas, renderers, CSS y estado efímero de presentación. Motor, legalidad, targets canónicos, snapshot v6, schema, persistencia, puntuación y K permanecen intactos. Una mesa densa sigue usando pan interno al alcanzar el mínimo legible; zoom gestual y refinamiento premium continúan pendientes.

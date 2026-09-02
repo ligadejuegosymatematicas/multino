@@ -52,7 +52,7 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
 
 GraphRenderer es la vista inicial. TraditionalRenderer representa el mismo snapshot como fichas y cadenas. Alternar entre ambos mediante `ViewModeController` solo cambia una preferencia efímera de UI; nunca `config`, `board`, `history`, `score` ni turno.
 
-`projectRoundView` concentra mano, legalidad, puntuación, participantes, turno y resultado compartidos. `projectGraphView` añade grafo de valores/topología visual; `projectTraditionalView` añade `getTraditionalBoardProjection`, que ordena la línea y cada brazo con sus puertos, incluido el puerto de origen de cada brazo. `TraditionalScene` asigna esos puertos a caras físicas y verifica el valor enfrentado en cada unión. Geometría, hit areas, cámara, rotaciones y trazados pertenecen a `GraphScene` o `TraditionalScene`. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
+`projectRoundView` concentra mano, legalidad, puntuación, participantes, turno y resultado compartidos. `projectGraphView` añade grafo de valores/topología visual; `projectTraditionalView` añade `getTraditionalBoardProjection`, que ordena la línea y cada brazo con sus puertos, incluido el puerto de origen de cada brazo. `TraditionalScene` asigna esos puertos a caras físicas, verifica el valor enfrentado y recorta cada conector entre los bordes de las fichas. `GraphScene` elige una geometría compacta o ancha según el panel, sin alterar la proyección. Geometría, hit areas, cámara, capas, rotaciones y trazados pertenecen exclusivamente a estas escenas/renderers. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
 
 ## Responsabilidades
 

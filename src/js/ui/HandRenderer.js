@@ -1,3 +1,12 @@
+import { renderPipsMarkup } from "./DominoPips.js";
+
+function renderHandPips(value) {
+  return renderPipsMarkup(value, {
+    gridClass: "hand-domino__pips",
+    pipClass: "hand-domino__pip",
+  });
+}
+
 function createDominoButton(domino, selected, disabled, onSelect) {
   const button = document.createElement("button");
   button.type = "button";
@@ -13,15 +22,16 @@ function createDominoButton(domino, selected, disabled, onSelect) {
     `Ficha ${domino.a}-${domino.b}, ${domino.legalTargetCount > 0 ? `${domino.legalTargetCount} destinos` : "sin jugada legal"}`,
   );
 
-  const values = document.createElement("span");
-  values.className = "hand-domino__values";
-  values.innerHTML = `<span>${domino.a}</span><span aria-hidden="true" class="hand-domino__divider"></span><span>${domino.b}</span>`;
-  const status = document.createElement("span");
-  status.className = "hand-domino__status";
-  status.textContent = domino.legalTargetCount > 0
-    ? `${domino.legalTargetCount} destino${domino.legalTargetCount === 1 ? "" : "s"}`
-    : "Sin jugada";
-  button.append(values, status);
+  const tile = document.createElement("span");
+  tile.className = "hand-domino__tile";
+  tile.innerHTML = `<span class="hand-domino__half">${renderHandPips(domino.a)}</span><span aria-hidden="true" class="hand-domino__divider"></span><span class="hand-domino__half">${renderHandPips(domino.b)}</span>`;
+  button.append(tile);
+  if (domino.legalTargetCount > 1) {
+    const status = document.createElement("span");
+    status.className = "hand-domino__status";
+    status.textContent = `${domino.legalTargetCount} destinos`;
+    button.append(status);
+  }
   button.addEventListener("click", () => onSelect?.(domino.dominoId));
   return button;
 }
