@@ -1,6 +1,7 @@
 import {
   calculateTraditionalFitScale,
   createTraditionalScene,
+  TRADITIONAL_FINAL_MIN_SCALE,
 } from "./TraditionalScene.js";
 import { renderPipsMarkup } from "./DominoPips.js";
 
@@ -26,6 +27,7 @@ function tileClasses(tile) {
     tile.region === "main" ? "is-main" : "is-branch",
     tile.isDouble ? "is-double" : "",
     tile.isSpecialDouble ? "is-special-double" : "",
+    tile.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
 }
 
@@ -62,6 +64,7 @@ function renderTarget(target) {
     target.topology.region === "main" ? "is-main" : "is-branch",
     target.topology.branchState === "POTENTIAL" ? "is-potential" : "",
     target.topology.branchState === "STARTED" ? "is-started" : "",
+    target.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
   const option = target.optionIndex === null
     ? ""
@@ -80,7 +83,7 @@ export function renderTraditionalTableMarkup(scene) {
   return `
     <div class="traditional-table" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
       <div class="traditional-camera-controls">
-        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">Ajustar tablero</button>
+        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">${scene.isFinished ? "Ver mesa completa" : "Ajustar tablero"}</button>
       </div>
       <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Ventana desplazable sobre la mesa; arrastra para recorrerla">
         <div class="traditional-table__canvas" data-table-canvas>
@@ -121,11 +124,13 @@ export class TraditionalRenderer {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
       isFinished: presentation.isFinished,
+      scoringResolution: presentation.scoringResolution ?? null,
     });
     this.container.innerHTML = renderTraditionalTableMarkup(scene);
     const viewport = this.container.querySelector("[data-table-viewport]");
     const nextSignature = `${scene.width}:${scene.height}`;
-    const shouldRecenter = this.sceneSignature !== nextSignature;
+    const shouldRecenter = scene.isFinished ||
+      this.sceneSignature !== nextSignature;
     this.sceneSignature = nextSignature;
     const fitAndPosition = ({ recenter = false } = {}) => {
       const scale = calculateTraditionalFitScale({
@@ -133,6 +138,9 @@ export class TraditionalRenderer {
         contentHeight: scene.height,
         viewportWidth: viewport.clientWidth,
         viewportHeight: viewport.clientHeight,
+        minScale: scene.isFinished
+          ? TRADITIONAL_FINAL_MIN_SCALE
+          : undefined,
       });
       const canvas = viewport.querySelector("[data-table-canvas]");
       canvas.style.setProperty("--table-scale", String(scale));

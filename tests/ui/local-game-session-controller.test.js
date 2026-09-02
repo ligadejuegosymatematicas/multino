@@ -29,6 +29,7 @@ function finishCurrentGame(session) {
     if (state.phase === "finished") {
       return state;
     }
+    session.revealCurrentHand();
     const action = getAvailableActions(state)[0];
     if (action.type === "PASS") {
       session.pass();
@@ -105,6 +106,52 @@ test("la vista inicial puede ser Grafo o Tradicional y luego cambia sin tocar K"
   assert.deepEqual(traditionalSession.getRoundState(), before);
 });
 
+test("la barrera local oculta la mano entre turnos sin modificar el snapshot", () => {
+  const session = createSession();
+  session.startNewGame();
+  const initial = structuredClone(session.getRoundState());
+  let presentation = session.getPresentation();
+
+  assert.equal(presentation.round.handPrivacy.isRevealed, false);
+  assert.deepEqual(presentation.round.view.hand, []);
+  assert.deepEqual(presentation.round.view.legalPlays, []);
+  assert.equal(presentation.round.canPass, false);
+  assert.throws(
+    () => session.selectDomino(initial.hands[initial.currentPlayerId][0]),
+    /Muestra la mano/,
+  );
+
+  session.revealCurrentHand();
+  presentation = session.getPresentation();
+  assert.equal(presentation.round.handPrivacy.isRevealed, true);
+  assert.equal(presentation.round.view.hand.length, 7);
+  assert.deepEqual(session.getRoundState(), initial);
+
+  const action = getAvailableActions(initial)[0];
+  session.selectDomino(action.dominoId);
+  session.submitTarget(action.target);
+  presentation = session.getPresentation();
+  assert.equal(presentation.round.handPrivacy.isRevealed, false);
+  assert.deepEqual(presentation.round.view.hand, []);
+  assert.equal(presentation.round.selectedDominoId, null);
+  assert.notEqual(session.getRoundState().currentPlayerId, initial.currentPlayerId);
+});
+
+test("cambiar renderer conserva la privacidad y no vuelve a revelar una mano", () => {
+  const session = createSession();
+  session.startNewGame();
+  const before = structuredClone(session.getRoundState());
+
+  session.setViewMode(BOARD_VIEW_MODES.TRADITIONAL);
+  session.setViewMode(BOARD_VIEW_MODES.GRAPH);
+
+  const presentation = session.getPresentation();
+  assert.equal(presentation.round.handPrivacy.isRevealed, false);
+  assert.deepEqual(presentation.round.view.hand, []);
+  assert.deepEqual(presentation.round.traditionalView.hand, []);
+  assert.deepEqual(session.getRoundState(), before);
+});
+
 test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", () => {
   const randomSources = [() => 0.999999, () => 0];
   let randomSourceIndex = 0;
@@ -118,11 +165,16 @@ test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", 
   const terminal = finishCurrentGame(session);
   const firstPlacementId = Object.keys(terminal.board.placements)[0];
   session.inspectPlacement(firstPlacementId);
+  const terminalPresentation = session.getPresentation();
 
   assert.equal(terminal.phase, "finished");
   assert.notEqual(terminal.roundResult, undefined);
+  assert.equal(terminalPresentation.round.handPrivacy.isRevealed, false);
+  assert.deepEqual(terminalPresentation.round.view.hand, []);
+  assert.deepEqual(terminalPresentation.round.traditionalView.hand, []);
+  assert.equal(terminalPresentation.round.canPass, false);
   assert.notEqual(
-    session.getPresentation().round.inspectedStructureId,
+    terminalPresentation.round.inspectedStructureId,
     null,
   );
 
@@ -150,6 +202,9 @@ test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", 
   assert.equal(presentation.round.selectedDominoId, null);
   assert.equal(presentation.round.inspectedPlacementId, null);
   assert.equal(presentation.round.inspectedStructureId, null);
+  assert.equal(presentation.round.handPrivacy.isRevealed, false);
+  assert.deepEqual(presentation.round.view.hand, []);
+  assert.equal(presentation.round.canPass, false);
 });
 
 test("Cambiar configuración descarta el resultado y permite otro K y vista inicial", () => {

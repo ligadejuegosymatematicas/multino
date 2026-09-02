@@ -627,3 +627,15 @@ Cada conector tradicional termina en el punto exacto de la cara física de ambas
 **Motivo:** A 100% el Grafo casi cuadrado desaprovechaba paneles anchos, la cámara reservaba vacío alrededor de mesas tempranas y los conectores podían atravesar visualmente el cuerpo de una ficha. La mano basada en tarjetas competía con el tablero y repetía información obvia.
 
 **Consecuencias:** Solo cambian escenas, renderers, CSS y estado efímero de presentación. Motor, legalidad, targets canónicos, snapshot v6, schema, persistencia, puntuación y K permanecen intactos. Una mesa densa sigue usando pan interno al alcanzar el mínimo legible; zoom gestual y refinamiento premium continúan pendientes.
+
+## DEC-045 — Presentación única de puntuación y privacidad por entrega local
+
+**Estado:** Aceptada.
+
+**Decisión:** Exponer `PLAY_SCORING_POLICY` y componer una proyección pura `scoringPresentation` con política, divisor, términos explicables, expresión, S y resolución de la última jugada. GraphRenderer y TraditionalRenderer reciben esa misma resolución únicamente durante el feedback de una secuencia nueva; resaltan placements/puertos proyectados, no todos los extremos abiertos. El panel permanente conserva solo `S` y un detalle desplegable.
+
+`LocalGameSessionController` oculta mano, jugadas legales, selección y PASS hasta que el jugador actual pulsa «Mostrar mi mano». La revelación se borra al cambiar el jugador, terminar o crear otra partida. El tablero y los datos públicos siguen visibles; el snapshot no cambia. En terminal, la mano y PASS desaparecen y el resultado prioriza ganador por puntaje o empate sobre la explicación tradicional.
+
+**Motivo:** La puntuación reglamentaria funcionaba pero no se percibía como momento central, y una partida local compartida revelaba automáticamente la mano siguiente. Una proyección común evita que cada renderer replique reglas o codifique el divisor. La barrera local resuelve privacidad básica sin convertirla en networking ni persistencia.
+
+**Consecuencias:** La política activa sigue siendo exclusivamente `DIVISIBLE/5`; `enabled: false` solo define cómo callar la presentación futura y no habilita «Sin divisibilidad». La base de R-023 queda separada del divisor de jugada hasta decidir formalmente la relación con `n`. No cambian schema v6, historial, score, reglas, K ni persistencia. Selector `n`, `n≠5`, multirronda, replay y multiplayer remoto siguen pendientes.

@@ -12,7 +12,16 @@ import {
 import { validateBoardState } from "./BoardValidator.js";
 import { parseSequentialId } from "./SequentialIds.js";
 
-const SCORING_DIVISOR = 5;
+export const PLAY_SCORING_POLICY = Object.freeze({
+  enabled: true,
+  policyType: "DIVISIBLE",
+  divisor: 5,
+});
+
+// La relación futura entre el divisor de jugada y la bonificación no está
+// decidida. Mantener esta base separada evita que una variante futura cambie
+// silenciosamente R-023.
+const FINAL_BONUS_ROUNDING_BASE = 5;
 
 const SCORING_TERM_REASONS = Object.freeze({
   OPEN_ORDINARY_SIDE: "OPEN_ORDINARY_SIDE",
@@ -106,8 +115,8 @@ export function calculateMoveScore(openEndsSum) {
     "openEndsSum debe ser un entero no negativo.",
     { openEndsSum },
   );
-  return openEndsSum % SCORING_DIVISOR === 0
-    ? openEndsSum / SCORING_DIVISOR
+  return openEndsSum % PLAY_SCORING_POLICY.divisor === 0
+    ? openEndsSum / PLAY_SCORING_POLICY.divisor
     : 0;
 }
 
@@ -119,7 +128,9 @@ export function calculateFinalBonus(remainingPips) {
     "remainingPips debe ser un entero no negativo.",
     { remainingPips },
   );
-  const quotient = Math.floor(remainingPips / SCORING_DIVISOR);
-  const remainder = remainingPips % SCORING_DIVISOR;
+  const quotient = Math.floor(
+    remainingPips / FINAL_BONUS_ROUNDING_BASE,
+  );
+  const remainder = remainingPips % FINAL_BONUS_ROUNDING_BASE;
   return remainder <= 2 ? quotient : quotient + 1;
 }

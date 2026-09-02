@@ -12,11 +12,11 @@ const LAYOUT_GEOMETRY = Object.freeze({
     orbit: Object.freeze({ rx: 218, ry: 218 }),
   }),
   [GRAPH_SCENE_LAYOUTS.WIDE]: Object.freeze({
-    width: 1320,
-    height: 400,
-    center: Object.freeze({ x: 660, y: 200 }),
-    radii: Object.freeze({ x: 510, y: 80 }),
-    orbit: Object.freeze({ rx: 460, ry: 64 }),
+    width: 1160,
+    height: 500,
+    center: Object.freeze({ x: 580, y: 250 }),
+    radii: Object.freeze({ x: 430, y: 140 }),
+    orbit: Object.freeze({ rx: 390, ry: 118 }),
   }),
 });
 const VERTEX_RADIUS = 35;
@@ -240,6 +240,7 @@ export function createGraphScene(
     inspectedStructureId = null,
     inspectedPlacementId = null,
     layout = GRAPH_SCENE_LAYOUTS.COMPACT,
+    scoringResolution = null,
   } = {},
 ) {
   const geometry = LAYOUT_GEOMETRY[layout];
@@ -253,12 +254,34 @@ export function createGraphScene(
     ]),
   );
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
+  const scoringPortIds = new Set(
+    (scoringResolution?.terms ?? [])
+      .filter((term) => term.portId !== null)
+      .map((term) => `${term.placementId}:${term.portId}`),
+  );
+  const scoringDoublePlacementIds = new Set(
+    (scoringResolution?.terms ?? [])
+      .filter((term) => term.isDouble)
+      .map((term) => term.placementId),
+  );
+  const scoringValues = new Set(
+    (scoringResolution?.terms ?? [])
+      .filter((term) => term.isContributing)
+      .map((term) => term.value),
+  );
   const hasSelection = selectedDominoId !== null;
   const topologyByPlacementId = new Map(
     view.topology.placements.map((placement) => [
       placement.placementId,
       placement,
     ]),
+  );
+  const openFamilyIds = new Set(
+    view.openEndsByValue.flatMap((group) =>
+      group.targets
+        .map((target) => target.topology.familyId)
+        .filter((familyId) => familyId != null)
+    ),
   );
   const inspection = createTopologyInspection(
     view,
@@ -306,6 +329,10 @@ export function createGraphScene(
           isTopologyHighlighted,
           isTopologyDimmed:
             inspection !== null && !isTopologyHighlighted,
+          isScoringTerm: scoringPortIds.has(target.id),
+          isFamilyClosed:
+            view.roundStatus.phase === "finished" &&
+            target.topology.region === "branch",
         },
       );
       openTargets.push(projectedTarget);
@@ -335,6 +362,11 @@ export function createGraphScene(
         inspection !== null &&
         edgeStructureId !== inspection.structureId &&
         edge.placementId !== inspection.rootPlacementId,
+      isScoringTerm: scoringDoublePlacementIds.has(edge.placementId),
+      isFamilyClosed:
+        topology.branchFamily !== null &&
+        (view.roundStatus.phase === "finished" ||
+          !openFamilyIds.has(topology.branchFamily.id)),
     };
     if (edge.isLoop) {
       loops.push(
@@ -373,6 +405,7 @@ export function createGraphScene(
       ...positions.get(vertex.value),
       legalTargetIds: legalTargetIdsByValue.get(vertex.value) ?? [],
       isCompatible: legalTargetIdsByValue.has(vertex.value),
+      isScoringTerm: scoringValues.has(vertex.value),
     })),
     edges,
     loops,

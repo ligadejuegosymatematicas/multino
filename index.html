@@ -70,7 +70,7 @@
             <h2>Marcador</h2>
             <div id="score-panel" class="score-panel"></div>
           </article>
-          <article class="overview-card">
+          <article id="scoring-card" class="overview-card">
             <h2>Suma abierta</h2>
             <div id="scoring-panel" class="scoring-panel" aria-live="polite"></div>
           </article>
@@ -101,15 +101,25 @@
             <p id="game-message" class="game-message" aria-live="assertive"></p>
           </section>
 
-          <section class="hand-panel" aria-labelledby="hand-heading">
-            <div class="panel-heading hand-heading-row">
+          <section id="hand-panel" class="hand-panel" aria-label="Mano del jugador actual">
+            <div id="hand-privacy" class="hand-privacy" hidden>
               <div>
-                <p class="section-kicker">Jugador actual</p>
-                <h2 id="hand-heading">Tu mano</h2>
+                <p class="section-kicker">Siguiente turno</p>
+                <h2 id="hand-privacy-title">Turno del siguiente jugador</h2>
+                <p id="hand-privacy-instruction">Entrega el dispositivo antes de revelar la mano.</p>
               </div>
-              <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+              <button id="reveal-hand-action" type="button" class="primary-action">Mostrar mi mano</button>
             </div>
-            <div id="hand-root" class="hand-grid"></div>
+            <div id="hand-content">
+              <div class="panel-heading hand-heading-row">
+                <div>
+                  <p class="section-kicker">Jugador actual</p>
+                  <h2 id="hand-heading">Tu mano</h2>
+                </div>
+                <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+              </div>
+              <div id="hand-root" class="hand-grid"></div>
+            </div>
           </section>
 
           <aside class="round-sidebar" aria-label="Información local">

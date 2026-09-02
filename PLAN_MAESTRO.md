@@ -127,6 +127,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 10 — Escala, capas y mano de juego: COMPLETADO.** Adapta la geometría del Grafo a panel ancho o compacto, amplía escenas tradicionales holgadas sin reducir el mínimo legible, termina conectores en las caras de las fichas y fija su capa por debajo del dominó. La mano usa mini-fichas de puntos, omite el rótulo de destino único y acerca tablero/mano en ambos tamaños. No cambia motor, schema, persistencia, K ni selección reglamentaria.
 
+**Bloque 11 — Presentación de puntuación y privacidad local: COMPLETADO.** Añade un contrato puro de presentación para términos, S, divisor y resolución de la última jugada; ambos renderers muestran una secuencia breve y compartida sin leer colitas como sustituto de `scoringTerms`. Entre turnos se oculta la siguiente mano hasta una revelación explícita, y el cierre prioriza ganador final/empate. La política activa continúa siendo exclusivamente múltiplos de 5; no cambia schema, persistencia ni reglas.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

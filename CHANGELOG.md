@@ -101,6 +101,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Cámara tradicional ampliable hasta `1.35×` en estados holgados, límites mínimos reducidos al contenido real y conectores recortados exactamente entre caras físicas.
 - Capas explícitas de mesa (`conexiones < fichas < extremos < controles`) y cuadrícula más tenue para impedir que segmentos auxiliares tapen las fichas.
 - Mano convertida en mini-fichas de puntos compartidos con la mesa, con menor altura y badges solo para dos o más destinos; mensajes redundantes de selección, vista e inicio retirados.
+- Proyección pura `scoringPresentation` con política divisible, divisor, términos explicables, expresión, S y resolución auditada de la última jugada, sin duplicar reglas en los renderers.
+- Secuencia visual breve `términos → S → divisibilidad → puntos` en ambos modos, con fuentes de S resaltadas y soporte de movimiento reducido.
+- Barrera local entre turnos para entregar el dispositivo y revelar explícitamente solo la mano del jugador actual, sin modificar el snapshot.
+- Resultado terminal reorganizado para priorizar ganador por puntaje o empate, seguido de vencedor tradicional y bonificación como explicación.
+- Grafo ancho menos achatado, sockets tradicionales más próximos a la cara y ajuste final de mesa completa; familias cerradas pierden metadata redundante en reposo.
 
 ### Decidido
 

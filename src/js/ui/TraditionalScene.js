@@ -6,6 +6,7 @@ const MIN_WIDTH = 260;
 const MIN_HEIGHT = 220;
 const TABLE_PADDING = 44;
 export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
+export const TRADITIONAL_FINAL_MIN_SCALE = 0.18;
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
@@ -119,7 +120,7 @@ function pointAtTileFace(tile, face) {
   }
 }
 
-function pointOutsideTile(tile, face, distance = 18) {
+function pointOutsideTile(tile, face, distance = 8) {
   switch (face.side) {
     case "left":
       return { x: tile.x - tile.width / 2 - distance, y: tile.y };
@@ -172,10 +173,21 @@ export function createTraditionalScene(
     selectedDominoId = null,
     legalTargets = [],
     isFinished = view.roundStatus.phase === "finished",
+    scoringResolution = null,
   } = {},
 ) {
   const hasSelection = selectedDominoId !== null;
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
+  const scoringPortIds = new Set(
+    (scoringResolution?.terms ?? [])
+      .filter((term) => term.portId !== null)
+      .map((term) => `${term.placementId}:${term.portId}`),
+  );
+  const scoringDoublePlacementIds = new Set(
+    (scoringResolution?.terms ?? [])
+      .filter((term) => term.isDouble)
+      .map((term) => term.placementId),
+  );
   const mainCount = view.table.mainLine.tiles.length;
   const maxUpDepth = Math.max(
     0,
@@ -329,6 +341,13 @@ export function createTraditionalScene(
       compatibleCountByValue.get(target.value) ?? 0,
     );
   });
+
+  for (const tile of tileByPlacementId.values()) {
+    tile.isScoringTerm = scoringDoublePlacementIds.has(tile.placementId);
+  }
+  for (const target of openTargets) {
+    target.isScoringTerm = scoringPortIds.has(target.id);
+  }
 
   return {
     width,

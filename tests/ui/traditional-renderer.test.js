@@ -14,6 +14,7 @@ import {
 import {
   calculateTraditionalFitScale,
   createTraditionalScene,
+  TRADITIONAL_FINAL_MIN_SCALE,
   TRADITIONAL_MIN_READABLE_SCALE,
 } from "../../src/js/ui/TraditionalScene.js";
 import { InteractionController } from "../../src/js/ui/InteractionController.js";
@@ -380,7 +381,10 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     state,
     getLegalPlays(state, state.currentPlayerId)[0],
   );
-  const scene = createTraditionalScene(projectTraditionalView(terminal));
+  const view = projectTraditionalView(terminal);
+  const scene = createTraditionalScene(view, {
+    scoringResolution: view.scoringPresentation.latestResolution,
+  });
   const markup = renderTraditionalTableMarkup(scene);
 
   assert.equal(scene.isFinished, true);
@@ -390,6 +394,9 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     markup.match(/class="traditional-target [^"]+"[^>]+ disabled/g)?.length,
     scene.openTargets.length,
   );
+  assert.match(markup, />Ver mesa completa<\/button>/);
+  assert.ok(scene.tiles.some((tile) => tile.isScoringTerm));
+  assert.match(markup, /traditional-domino [^"]*is-scoring-term/);
 });
 
 test("renderer, responsive y accesibilidad no dependen del board ni de overflow global", async () => {
@@ -445,4 +452,14 @@ test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo leg
     }),
     TRADITIONAL_MIN_READABLE_SCALE,
   );
+  const finalFit = calculateTraditionalFitScale({
+    contentWidth: 1600,
+    contentHeight: 900,
+    viewportWidth: 390,
+    viewportHeight: 430,
+    minScale: TRADITIONAL_FINAL_MIN_SCALE,
+  });
+  assert.equal(finalFit, 0.221);
+  assert.ok(finalFit < TRADITIONAL_MIN_READABLE_SCALE);
+  assert.ok(finalFit >= TRADITIONAL_FINAL_MIN_SCALE);
 });

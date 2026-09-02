@@ -115,6 +115,14 @@
   filter: drop-shadow(0 0 5px rgb(107 92 145 / 0.32));
 }
 
+.graph-edge.is-scoring-term .graph-edge__line,
+.graph-loop.is-scoring-term .graph-loop__shape,
+.open-target.is-scoring-term .open-target__curve,
+.open-target.is-scoring-term .open-target__end,
+.graph-vertex.is-scoring-term .graph-vertex__circle {
+  animation: scoring-source-highlight 1.75s ease-out;
+}
+
 .graph-family-root {
   --family-accent: #6f657d;
   --family-soft: #f3f0f7;
@@ -433,6 +441,15 @@
   50% { opacity: 1; }
 }
 
+@keyframes scoring-source-highlight {
+  0%, 100% { filter: none; }
+  25%, 72% {
+    stroke: var(--amber);
+    stroke-width: 9;
+    filter: drop-shadow(0 0 7px rgb(182 107 24 / 0.52));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .open-target.is-legal {
     animation: none;
@@ -450,6 +467,15 @@
   .graph-loop,
   .graph-family-root {
     transition: none;
+  }
+
+  .graph-edge.is-scoring-term .graph-edge__line,
+  .graph-loop.is-scoring-term .graph-loop__shape,
+  .open-target.is-scoring-term .open-target__curve,
+  .open-target.is-scoring-term .open-target__end,
+  .graph-vertex.is-scoring-term .graph-vertex__circle {
+    animation: none;
+    stroke: var(--amber);
   }
 }
 

@@ -61,6 +61,15 @@ const changeConfigButton = document.querySelector("#change-config-action");
 const sessionBadge = document.querySelector("#session-badge");
 const playFeedback = document.querySelector("#play-feedback");
 const appShell = document.querySelector(".app-shell");
+const handPanel = document.querySelector("#hand-panel");
+const handContent = document.querySelector("#hand-content");
+const handPrivacy = document.querySelector("#hand-privacy");
+const handPrivacyTitle = document.querySelector("#hand-privacy-title");
+const handPrivacyInstruction = document.querySelector(
+  "#hand-privacy-instruction",
+);
+const revealHandButton = document.querySelector("#reveal-hand-action");
+const scoringCard = document.querySelector("#scoring-card");
 let sessionController;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
@@ -80,7 +89,7 @@ function scheduleFeedbackHide(feedback) {
   feedbackHideTimer = window.setTimeout(() => {
     renderGameFeedback(playFeedback, null);
     feedbackHideTimer = null;
-  }, 1800);
+  }, 2100);
 }
 
 function runIntent(intent, successMessage) {
@@ -131,7 +140,11 @@ function renderRound(presentation, mode, feedback) {
     button.setAttribute("aria-pressed", String(isActive));
   }
 
-  renderer.render(presentation, {
+  const visualPresentation = {
+    ...presentation,
+    scoringResolution: feedback?.scoring ?? null,
+  };
+  renderer.render(visualPresentation, {
     onTarget: (target) =>
       runIntent(() => sessionController.submitTarget(target), ""),
     onStart: (target) =>
@@ -158,13 +171,26 @@ function renderRound(presentation, mode, feedback) {
       ),
     onMessage: setMessage,
   });
-  renderHand(document.querySelector("#hand-root"), presentation, {
-    onSelect: (dominoId) =>
-      runIntent(
-        () => sessionController.selectDomino(dominoId),
-        "",
-      ),
-  });
+  const handIsVisible = presentation.handPrivacy.isRevealed &&
+    !presentation.isFinished;
+  handPanel.hidden = presentation.isFinished;
+  handContent.hidden = !handIsVisible;
+  handPrivacy.hidden = handIsVisible || presentation.isFinished;
+  handPrivacyTitle.textContent =
+    `Turno de ${presentation.handPrivacy.displayName}`;
+  handPrivacyInstruction.textContent =
+    `Entrega el dispositivo a ${presentation.handPrivacy.displayName}.`;
+  if (handIsVisible) {
+    renderHand(document.querySelector("#hand-root"), presentation, {
+      onSelect: (dominoId) =>
+        runIntent(
+          () => sessionController.selectDomino(dominoId),
+          "",
+        ),
+    });
+  } else {
+    document.querySelector("#hand-root").replaceChildren();
+  }
   renderTurnPanel(
     document.querySelector("#turn-panel"),
     presentation.view,
@@ -183,6 +209,7 @@ function renderRound(presentation, mode, feedback) {
     document.querySelector("#scoring-panel"),
     presentation.view,
   );
+  scoringCard.hidden = !presentation.view.scoringPresentation.enabled;
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,
@@ -194,6 +221,8 @@ function renderRound(presentation, mode, feedback) {
   const selectedCount = presentation.selectedLegalTargets.length;
   document.querySelector("#selection-hint").textContent = presentation.isFinished
     ? `La ronda terminó. ${mode === BOARD_VIEW_MODES.GRAPH ? "El grafo" : "La mesa"} permanece visible.`
+    : !presentation.handPrivacy.isRevealed
+      ? `Entrega el dispositivo a ${presentation.handPrivacy.displayName} y muestra su mano.`
     : presentation.selectedDominoId === null
       ? "Selecciona una ficha jugable para destacar sus extremos compatibles."
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
@@ -234,6 +263,10 @@ sessionController = new LocalGameSessionController({
   participants: participantConfig,
   onChange: renderSession,
 });
+
+revealHandButton.addEventListener("click", () =>
+  runIntent(() => sessionController.revealCurrentHand(), ""),
+);
 
 passButton.addEventListener("click", () =>
   runIntent(() => sessionController.pass(), "Pase registrado."),

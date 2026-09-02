@@ -5,6 +5,7 @@ import test from "node:test";
 import { projectGraphView } from "../../src/js/game/index.js";
 import { getGameFeedback } from "../../src/js/ui/GameFeedback.js";
 import { renderPipsMarkup } from "../../src/js/ui/DominoPips.js";
+import { getRoundResultPresentation } from "../../src/js/ui/ScorePanel.js";
 import {
   createBoardScenario,
   playDomino,
@@ -32,11 +33,26 @@ test("el feedback puntuable deriva equipo y puntos de la acción aceptada", () =
     topology: {
       placements: [{ placementId: "placement-1", region: "main", depth: null }],
     },
+    scoringPresentation: {
+      latestResolution: {
+        sequence: 1,
+        placementId: "placement-1",
+        terms: [],
+        expression: "5 + 5",
+        sum: 10,
+        divisor: 5,
+        isDivisible: true,
+        quotient: 2,
+        scoreAwarded: 2,
+      },
+    },
   });
 
   assert.equal(feedback.sequence, 1);
   assert.equal(feedback.scoreAwarded, 2);
   assert.match(feedback.message, /^\+2 puntos para /);
+  assert.equal(feedback.scoring.expression, "5 + 5");
+  assert.equal(feedback.scoring.quotient, 2);
   assert.equal(feedback.openedBranchFamily, null);
 });
 
@@ -101,9 +117,60 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.doesNotMatch(html, /Nueva partida independiente|Prototipo/);
   assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(mainSource, /lastFeedbackSequence/);
-  assert.match(mainSource, /window\.setTimeout[\s\S]+?1800/);
+  assert.match(mainSource, /window\.setTimeout[\s\S]+?2100/);
+  assert.match(mainSource, /handPanel\.hidden\s*=\s*presentation\.isFinished/);
   assert.doesNotMatch(mainSource, /state\.board|applyTurnAction|calculateMoveScore/);
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
+});
+
+test("el resultado prioriza ganador final y deja vencedor tradicional como explicación", () => {
+  const presentation = getRoundResultPresentation({
+    participants: {
+      teams: [
+        { teamId: "A", displayName: "Órbita", score: 9 },
+        { teamId: "B", displayName: "Vector", score: 5 },
+      ],
+    },
+    roundStatus: {
+      roundResult: {
+        reason: "EMPTY_HAND",
+        traditionalWinnerTeamId: "B",
+        finalBonus: 1,
+        winnerTeamId: "A",
+        isTie: false,
+      },
+    },
+  });
+
+  assert.equal(presentation.headline, "ÓRBITA GANA");
+  assert.equal(presentation.scoreLine, "9 – 5");
+  assert.equal(presentation.traditionalWinner, "Vector");
+  assert.equal(presentation.finalBonus, 1);
+});
+
+test("el empate final se presenta sin inventar ganador", () => {
+  const presentation = getRoundResultPresentation({
+    participants: {
+      teams: [
+        { teamId: "A", displayName: "Órbita", score: 7 },
+        { teamId: "B", displayName: "Vector", score: 7 },
+      ],
+    },
+    roundStatus: {
+      roundResult: {
+        reason: "BLOCKED",
+        traditionalWinnerTeamId: null,
+        finalBonus: 0,
+        winnerTeamId: null,
+        isTie: true,
+      },
+    },
+  });
+
+  assert.equal(presentation.headline, "EMPATE FINAL");
+  assert.equal(presentation.scoreLine, "7 – 7");
+  assert.equal(presentation.winnerTeamId, null);
+  assert.equal(presentation.traditionalWinner, "ninguno");
 });
 
 test("la mano reutiliza puntos de dominó y omite el texto redundante de un destino", async () => {

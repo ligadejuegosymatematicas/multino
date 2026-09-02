@@ -164,6 +164,22 @@
   font-size: 0.82rem;
 }
 
+.scoring-detail {
+  width: max-content;
+  max-width: 100%;
+  font-size: 0.72rem;
+}
+
+.scoring-detail summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.scoring-detail span {
+  display: block;
+  margin-block-start: 0.18rem;
+}
+
 .turn-panel.is-turn-feedback strong {
   animation: turn-arrival 700ms ease-out;
 }
@@ -314,12 +330,14 @@
 .play-feedback {
   position: absolute;
   z-index: 12;
-  inset: 4.1rem auto auto 50%;
+  inset: 4rem auto auto 50%;
+  display: grid;
+  width: min(27rem, calc(100% - 2rem));
   max-width: calc(100% - 2rem);
   margin: 0;
   padding: 0.45rem 0.8rem;
   border: 1px solid #d7b779;
-  border-radius: 999px;
+  border-radius: 0.9rem;
   color: #70410b;
   background: rgb(255 247 228 / 0.96);
   box-shadow: 0 0.35rem 1rem rgb(80 54 19 / 0.16);
@@ -328,7 +346,57 @@
   text-align: center;
   pointer-events: none;
   transform: translateX(-50%);
-  animation: play-feedback-arrival 1.5s ease-out both;
+  animation: play-feedback-arrival 2s ease-out both;
+}
+
+.scoring-feedback {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.scoring-feedback__expression,
+.scoring-feedback__sum,
+.scoring-feedback__divisibility,
+.scoring-feedback__outcome {
+  display: block;
+  opacity: 0;
+  animation: scoring-step 1.85s ease-out both;
+}
+
+.scoring-feedback__expression {
+  animation-delay: 80ms;
+  font-size: 0.78rem;
+}
+
+.scoring-feedback__sum {
+  animation-delay: 260ms;
+  font-size: 1.15rem;
+}
+
+.scoring-feedback__divisibility {
+  animation-delay: 480ms;
+  color: #60451f;
+  font-size: 0.76rem;
+}
+
+.scoring-feedback__outcome {
+  animation-delay: 700ms;
+  margin-block-start: 0.08rem;
+  font-size: 1.05rem;
+}
+
+.scoring-feedback__outcome.is-award {
+  color: #7b4207;
+}
+
+.scoring-feedback__outcome.is-no-award {
+  color: var(--muted);
+}
+
+.branch-feedback {
+  margin-block-start: 0.22rem;
+  color: #514567;
+  font-size: 0.72rem;
 }
 
 .play-feedback.is-branch-feedback:not(.is-score-feedback) {
@@ -392,6 +460,31 @@
   box-shadow: 0 0.55rem 1.8rem rgb(70 54 97 / 0.09);
 }
 
+.round-result__headline {
+  color: #3f315d;
+  font-size: clamp(1.2rem, 3vw, 1.65rem) !important;
+  letter-spacing: 0.03em !important;
+}
+
+.round-result__score {
+  display: block;
+  margin-block-start: 0.3rem;
+  color: var(--ink);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1;
+}
+
+.round-result__teams {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.round-result__explanation {
+  margin-block-start: 0.65rem;
+  padding-block-start: 0.45rem;
+  border-block-start: 1px solid #ded6e9;
+}
+
 .round-result p {
   margin-block: 0.5rem;
   font-size: 0.86rem;
@@ -399,6 +492,38 @@
 
 .hand-heading-row {
   margin-block-end: 0.3rem;
+}
+
+.hand-privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.8rem, 4vw, 2rem);
+  min-height: 4.6rem;
+  text-align: left;
+}
+
+.hand-privacy h2,
+.hand-privacy p {
+  margin: 0;
+}
+
+.hand-privacy h2 {
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.hand-privacy p:not(.section-kicker) {
+  margin-block-start: 0.18rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.hand-privacy[hidden],
+.hand-panel[hidden],
+#hand-content[hidden] {
+  display: none;
 }
 
 .hand-grid {
@@ -563,12 +688,29 @@
   100% { opacity: 0; transform: translate(-50%, -0.2rem) scale(0.98); }
 }
 
+@keyframes scoring-step {
+  0%, 8% { opacity: 0; transform: translateY(0.25rem); }
+  22%, 86% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-0.08rem); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .turn-panel.is-turn-feedback strong,
   .score-team.is-score-feedback,
   .score-team__delta,
-  .play-feedback {
+  .play-feedback,
+  .scoring-feedback__expression,
+  .scoring-feedback__sum,
+  .scoring-feedback__divisibility,
+  .scoring-feedback__outcome {
     animation: none;
+  }
+
+  .scoring-feedback__expression,
+  .scoring-feedback__sum,
+  .scoring-feedback__divisibility,
+  .scoring-feedback__outcome {
+    opacity: 1;
   }
 }
 
@@ -669,7 +811,12 @@
   }
 
   .play-feedback {
-    inset-block-start: 3.7rem;
+    inset-block-start: 4.3rem;
     font-size: 0.74rem;
+  }
+
+  .hand-privacy {
+    justify-content: space-between;
+    min-height: 4.2rem;
   }
 }

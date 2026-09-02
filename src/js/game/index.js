@@ -50,6 +50,7 @@ export {
   calculateMoveScore,
   calculateOpenEndsSum,
   getScoringTerms,
+  PLAY_SCORING_POLICY,
   PLAY_SCORING_READY,
   SCORING_READY,
 } from "./engine/Scoring.js";
@@ -74,6 +75,11 @@ export {
   getLegalTargetsForDomino,
 } from "./projections/LegalPlayProjection.js";
 export { getScoringProjection } from "./projections/ScoringProjection.js";
+export {
+  createScoringPresentation,
+  getScoringPresentation,
+  SCORING_PRESENTATION_POLICY_TYPES,
+} from "./projections/ScoringPresentation.js";
 export { getLatestActionProjection } from "./projections/ActionProjection.js";
 export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
 export { projectRoundView } from "./projections/RoundViewProjection.js";

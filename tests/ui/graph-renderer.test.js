@@ -153,10 +153,33 @@ test("el encuadre ancho expande el grafo sin alterar sus siete valores", () => {
     Math.min(...wide.vertices.map(({ x }) => x));
 
   assert.equal(wide.layout, "wide");
-  assert.equal(wide.viewBox, "0 0 1320 400");
+  assert.equal(wide.viewBox, "0 0 1160 500");
   assert.equal(wide.vertices.length, 7);
-  assert.ok(wideSpan > compactSpan * 1.8);
+  assert.ok(wideSpan > compactSpan * 1.7);
   assert.match(renderGraphSvgMarkup(wide), /<ellipse class="graph-orbit"/);
+});
+
+test("el feedback destaca solo términos reales de S en el grafo", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "5-5" });
+  state = applyTurnAction(
+    state,
+    getLegalPlays(state, state.currentPlayerId).find(
+      (action) => action.dominoId === "5-5",
+    ),
+  );
+  const view = projectGraphView(state);
+  const scene = createGraphScene(view, {
+    scoringResolution: view.scoringPresentation.latestResolution,
+  });
+  const markup = renderGraphSvgMarkup(scene);
+
+  assert.equal(scene.loops[0].isScoringTerm, true);
+  assert.equal(
+    scene.vertices.find((vertex) => vertex.value === 5).isScoringTerm,
+    true,
+  );
+  assert.match(markup, /graph-loop is-main is-special-double is-scoring-term/);
+  assert.match(markup, /graph-vertex [^"]*is-scoring-term/);
 });
 
 test("una ficha ordinaria produce una arista identificable sin etiqueta redundante", () => {
@@ -304,6 +327,28 @@ test("la raíz y ambos brazos comparten familia sin repetir letras en fichas int
   assert.equal(markup.match(/class="graph-family-root__code"/g)?.length, 1);
   assert.doesNotMatch(markup, /graph-structure-marker/);
   assert.match(markup, /Ramificación A/);
+});
+
+test("una familia cerrada pierde letras redundantes pero conserva inspección", () => {
+  const view = structuredClone(projectGraphView(createTopologyScenario()));
+  view.roundStatus.phase = "finished";
+  view.legalPlays = [];
+  const restMarkup = renderGraphSvgMarkup(createGraphScene(view));
+  const inspectedMarkup = renderGraphSvgMarkup(createGraphScene(view, {
+    inspectedStructureId: "branch-family:placement-1",
+    inspectedPlacementId: "placement-3",
+  }));
+
+  assert.doesNotMatch(restMarkup, /class="graph-family-root /);
+  assert.doesNotMatch(
+    restMarkup,
+    /class="open-target__structure-code"[^>]*>A<\/text>/,
+  );
+  assert.match(inspectedMarkup, /class="graph-family-root /);
+  assert.match(
+    inspectedMarkup,
+    /class="open-target__structure-code"[^>]*>A<\/text>/,
+  );
 });
 
 test("sin ficha seleccionada todos los extremos permanecen visibles y codificados", async () => {

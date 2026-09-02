@@ -133,7 +133,9 @@ Esta separación es necesaria porque destinos legales y términos de S no son un
 - un chancho con una conexión aporta `2N`, aunque visualmente tenga otro número de puertos disponibles;
 - un chancho especial con dos o más conexiones puede conservar destinos laterales y aportar 0.
 
-La proyección puede enlazar fuentes de puntuación y objetivos mediante IDs de colocación/puerto, agrupar el aporte del chancho y destacar visualmente qué elementos explican el total. El contrato detallado se estudia en [`modo-grafo.md`](modo-grafo.md).
+`getScoringPresentation` enlaza esas fuentes mediante IDs de colocación/puerto y entrega `enabled`, `policyType`, `divisor`, términos visuales, expresión, suma y, cuando la última acción reglamentaria fue una jugada, su resolución (`isDivisible`, `quotient`, `scoreAwarded`). Los chanchos conservan un único término agrupado `2×N` mientras aportan `2N`; después de la segunda conexión conservan un término de aporte 0 aunque todavía tengan puertos jugables. Por eso los renderers destacan S desde esta proyección y nunca desde `openEndTargets`.
+
+La forma `enabled: false` está definida solo como contrato de presentación futuro: oculta S y no produce resolución. No activa ni implementa la variante «Sin divisibilidad». La política vigente exportada por el motor continúa siendo `DIVISIBLE` con divisor 5. La base de redondeo de la bonificación final permanece separada deliberadamente, porque aún no está decidida su relación con un divisor `n` futuro.
 
 ## Cierre e implementación de S
 

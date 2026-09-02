@@ -126,6 +126,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/game-presentation.test.js`: verifica el orden de capas, la cuadrícula secundaria, mini-fichas con puntos compartidos, ausencia del rótulo visible de destino único y eliminación de mensajes de vista redundantes.
 - La revisión manual cubre 1366×768 y 390×844 a 100%, estado temprano y estado de 22 fichas; ambos modos evitan overflow horizontal de página y Tradicional conserva pan interno en densidad alta.
 
+### Fase 2, Bloque 11 — presentación de puntuación y privacidad local completados
+
+- `tests/projections/scoring-presentation.test.js`: política/divisor únicos, término agrupado de chancho, jugada múltiplo/no múltiplo, puerto libre con aporte 0 y contrato futuro deshabilitado sin activar una variante;
+- `tests/ui/game-presentation.test.js`: feedback puntuable desde la proyección, jerarquía terminal con ganador final prioritario y empate explícito;
+- `tests/ui/graph-renderer.test.js` y `tests/ui/traditional-renderer.test.js`: resaltado de fuentes reales de S, geometría ancha menos plana, sockets integrados y ajuste final de mesa completa;
+- `tests/ui/local-game-session-controller.test.js`: barrera de privacidad, revelación inmutable, ocultamiento en el cambio de turno/renderer y limpieza al volver a jugar;
+- los renderers no codifican el divisor ni derivan S desde objetivos abiertos; `prefers-reduced-motion` conserva la información sin pulsos.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

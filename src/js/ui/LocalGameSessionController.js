@@ -70,6 +70,7 @@ export class LocalGameSessionController {
     };
     this.roundController = null;
     this.roundSerial = 0;
+    this.handRevealedForPlayerId = null;
     this.viewModeController = new ViewModeController({
       initialMode: this.config.initialViewMode,
       onChange: () => this.#emitChange(),
@@ -81,11 +82,12 @@ export class LocalGameSessionController {
   }
 
   getPresentation() {
+    const round = this.roundController?.getPresentation() ?? null;
     return {
       screen: this.screen,
       config: { ...this.config },
       viewMode: this.viewModeController.getMode(),
-      round: this.roundController?.getPresentation() ?? null,
+      round: round === null ? null : this.#protectRoundPresentation(round),
     };
   }
 
@@ -122,6 +124,7 @@ export class LocalGameSessionController {
     this.#requireFinishedRound();
     this.config.initialViewMode = this.viewModeController.getMode();
     this.roundController = null;
+    this.handRevealedForPlayerId = null;
     this.screen = LOCAL_GAME_SCREENS.CONFIGURATION;
     this.#emitChange();
   }
@@ -131,7 +134,19 @@ export class LocalGameSessionController {
     return this.viewModeController.setMode(mode);
   }
 
+  revealCurrentHand() {
+    const round = this.#requireRound();
+    const state = round.getState();
+    if (state.phase === "finished") {
+      throw new Error("La ronda ya terminó.");
+    }
+    this.handRevealedForPlayerId = state.currentPlayerId;
+    this.#emitChange();
+    return state.currentPlayerId;
+  }
+
   selectDomino(dominoId) {
+    this.#requireRevealedHand();
     return this.#requireRound().selectDomino(dominoId);
   }
 
@@ -148,10 +163,12 @@ export class LocalGameSessionController {
   }
 
   submitTarget(target) {
+    this.#requireRevealedHand();
     return this.#requireRound().submitTarget(target);
   }
 
   pass() {
+    this.#requireRevealedHand();
     return this.#requireRound().pass();
   }
 
@@ -169,12 +186,13 @@ export class LocalGameSessionController {
     });
     const controllerOptions = {
       initialState,
-      onChange: () => this.#emitChange(),
+      onChange: () => this.#handleRoundChange(),
     };
     if (this.requestAction !== undefined) {
       controllerOptions.requestAction = this.requestAction;
     }
     this.roundController = new InteractionController(controllerOptions);
+    this.handRevealedForPlayerId = null;
     this.screen = LOCAL_GAME_SCREENS.ROUND;
     this.roundController.start();
     return initialState;
@@ -202,6 +220,56 @@ export class LocalGameSessionController {
       throw new Error("La partida todavía no ha terminado.");
     }
     return round;
+  }
+
+  #requireRevealedHand() {
+    const state = this.#requireRound().getState();
+    if (this.handRevealedForPlayerId !== state.currentPlayerId) {
+      throw new Error("Muestra la mano del jugador actual antes de actuar.");
+    }
+  }
+
+  #handleRoundChange() {
+    const state = this.roundController?.getState();
+    if (
+      state &&
+      (state.phase === "finished" ||
+        this.handRevealedForPlayerId !== state.currentPlayerId)
+    ) {
+      this.handRevealedForPlayerId = null;
+    }
+    this.#emitChange();
+  }
+
+  #protectRoundPresentation(round) {
+    const state = this.roundController.getState();
+    const isFinished = state.phase === "finished";
+    const isRevealed =
+      !isFinished && this.handRevealedForPlayerId === state.currentPlayerId;
+    const current = round.view.participants.players.find(
+      (player) => player.playerId === state.currentPlayerId,
+    );
+    const protectView = (view) => isRevealed
+      ? view
+      : {
+          ...view,
+          hand: [],
+          legalPlays: [],
+        };
+
+    return {
+      ...round,
+      view: protectView(round.view),
+      traditionalView: protectView(round.traditionalView),
+      selectedDominoId: isRevealed ? round.selectedDominoId : null,
+      selectedLegalTargets: isRevealed ? round.selectedLegalTargets : [],
+      canPass: isRevealed ? round.canPass : false,
+      handPrivacy: {
+        isRevealed,
+        playerId: state.currentPlayerId,
+        displayName: current?.displayName ?? state.currentPlayerId,
+      },
+    };
   }
 
   #emitChange() {

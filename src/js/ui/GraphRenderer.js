@@ -20,6 +20,7 @@ function getTopologyClasses(edge) {
     edge.isTopologyHighlighted ? "is-topology-highlighted" : "",
     edge.isTopologyRoot ? "is-topology-root" : "",
     edge.isTopologyDimmed ? "is-topology-dimmed" : "",
+    edge.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
 }
 
@@ -39,6 +40,9 @@ function describeRootedBranches(topology) {
 function renderFamilyRootMarker(edge) {
   const family = edge.topology.branchFamily;
   if (!family) {
+    return "";
+  }
+  if (edge.isFamilyClosed && !edge.isTopologyRoot) {
     return "";
   }
   const familyTone = family.familyIndex % 4;
@@ -85,16 +89,21 @@ function renderOpenTarget(target, hasSelection) {
     target.topology.branchState === "STARTED" ? "is-started-arm" : "",
     target.isTopologyHighlighted ? "is-topology-highlighted" : "",
     target.isTopologyDimmed ? "is-topology-dimmed" : "",
+    target.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
   const optionMarkup = target.optionIndex === null
     ? ""
     : `<text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.optionIndex}</text>`;
+  const structureCodeMarkup =
+    target.isFamilyClosed && !target.isTopologyHighlighted
+      ? ""
+      : `<text class="open-target__structure-code" x="${target.endX}" y="${target.endY}">${escapeAttribute(target.topology.structureCode)}</text>`;
   return `
     <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-family-id="${escapeAttribute(target.topology.familyId ?? "")}" data-arm-index="${escapeAttribute(target.topology.armIndex ?? "")}" data-branch-state="${escapeAttribute(target.topology.branchState ?? "")}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="0" aria-disabled="false" aria-label="${escapeAttribute(target.accessibleLabel)}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
       <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="10"></circle>
-      <text class="open-target__structure-code" x="${target.endX}" y="${target.endY}">${escapeAttribute(target.topology.structureCode)}</text>
+      ${structureCodeMarkup}
       ${optionMarkup}
     </g>`;
 }
@@ -112,7 +121,7 @@ function renderVertex(vertex, hasSelection) {
       ? `, ${count} destinos compatibles; elija una curva`
       : "";
   return `
-    <g class="graph-vertex ${stateClass}" data-vertex-value="${vertex.value}" role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
+    <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}" role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
       <circle class="graph-vertex__touch" cx="${vertex.x}" cy="${vertex.y}" r="43"></circle>
       <circle class="graph-vertex__circle" cx="${vertex.x}" cy="${vertex.y}" r="35"></circle>
       <text class="graph-vertex__value" x="${vertex.x}" y="${vertex.y}">${vertex.value}</text>
@@ -221,6 +230,7 @@ export class GraphRenderer {
       layout: this.container.clientWidth >= 720
         ? GRAPH_SCENE_LAYOUTS.WIDE
         : GRAPH_SCENE_LAYOUTS.COMPACT,
+      scoringResolution: presentation.scoringResolution ?? null,
     });
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
