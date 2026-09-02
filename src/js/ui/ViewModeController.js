@@ -7,7 +7,10 @@ const VALID_MODES = new Set(Object.values(BOARD_VIEW_MODES));
 
 /** Preferencia efímera de UI; no recibe ni modifica el snapshot. */
 export class ViewModeController {
-  constructor({ initialMode = BOARD_VIEW_MODES.GRAPH, onChange = () => {} } = {}) {
+  constructor({
+    initialMode = BOARD_VIEW_MODES.TRADITIONAL,
+    onChange = () => {},
+  } = {}) {
     if (!VALID_MODES.has(initialMode)) {
       throw new TypeError(`Modo visual desconocido: ${String(initialMode)}.`);
     }

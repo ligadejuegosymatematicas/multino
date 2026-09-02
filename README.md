@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: GraphRenderer SVG y TraditionalRenderer con orientación física derivada de puertos reales, extremos tipo socket y una cámara ajustable/desplazable. La interfaz explica brevemente cada puntuación como términos → S → divisibilidad → puntos y protege la mano siguiente con una barrera local de entrega del dispositivo. Una pantalla inicial permite elegir `K=0…7` y la vista de arranque; tras el cierre puede iniciarse otra partida independiente sin conservar score ni historial. Múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de dos vistas jugables sobre el mismo estado: TraditionalRenderer como entrada principal y GraphRenderer SVG como vista analítica disponible mediante el conmutador. La mesa orienta fichas desde puertos reales, mantiene conectores y targets fuera de sus interiores y ofrece una cámara ajustable/desplazable. La interfaz explica después de cada jugada la secuencia términos → S → divisibilidad → puntos y protege la mano siguiente con una barrera local. Una pantalla inicial permite elegir `K=0…7` y la vista de arranque; tras el cierre puede iniciarse otra partida independiente sin conservar score ni historial. Múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
 
 ## Documentos de autoridad
 
@@ -73,6 +73,7 @@ La fachada `src/js/game/index.js` expone:
 - `calculateMoveScore(openEndsSum)` para la política vigente de múltiplos de 5;
 - `calculateRemainingPipsByTeam(state)` y `calculateFinalBonus(a)` para explicar el cierre;
 - `getValueGraphProjection`, `getBoardTopologyProjection`, `getTraditionalBoardProjection`, agrupaciones de extremos y proyecciones de legalidad/S para preparar vistas;
+- `getStrategicTargetProjections` para anticipar puramente el resultado exacto de cada destino legal; la experiencia estándar no muestra su puntuación antes de jugar;
 - `projectRoundView`, `projectGraphView` y `projectTraditionalView` como fachadas puras compartidas o específicas de renderer;
 - `validateRoundState(state)` para snapshots reglamentarios activos o terminados;
 - `applyPlay(state, action)` para una transición topológica inmutable de bajo nivel;

@@ -106,6 +106,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Barrera local entre turnos para entregar el dispositivo y revelar explícitamente solo la mano del jugador actual, sin modificar el snapshot.
 - Resultado terminal reorganizado para priorizar ganador por puntaje o empate, seguido de vencedor tradicional y bonificación como explicación.
 - Grafo ancho menos achatado, sockets tradicionales más próximos a la cara y ajuste final de mesa completa; familias cerradas pierden metadata redundante en reposo.
+- Proyección pura `getStrategicTargetProjections` para auditar por target el resultado exacto de `applyTurnAction`: S, puntos, extremos resultantes y apertura lateral, sin mutar el snapshot.
+- Margen geométrico y capas reforzadas en la mesa tradicional: conexiones, hit areas y puentes de socket quedan fuera del interior de las fichas.
+- Modo Tradicional adoptado como vista inicial; Grafo permanece disponible como vista analítica y enfatiza extremos sobre metadata cerrada.
+- La selección normal no anticipa S ni puntos; la explicación reglamentaria continúa únicamente después de la jugada aceptada.
 
 ### Decidido
 
@@ -121,7 +125,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Fisher–Yates no mutante con fuente de aleatoriedad inyectable; el algoritmo es técnico, no normativo.
 - Reparto técnico circular de la secuencia mezclada y creación atómica `setup → playing` sin evento histórico artificial.
 - DEC-019 a DEC-024: distinguir ambos grafos, renderers intercambiables, extremos derivados dirigibles, configuración separada de vista, Round/Match pospuesto y política de puntuación aislada.
-- Modo Grafo previsto como representación predeterminada, con Modo Tradicional disponible sobre el mismo snapshot.
+- Modo Grafo inicialmente previsto como representación predeterminada; DEC-046 sustituye esa preferencia y adopta Tradicional como entrada, conservando ambos sobre el mismo snapshot.
 - DEC-025 a DEC-028 resuelven ARQ-PEND-001 a 005: acción discriminada, puertos neutrales, IDs derivados y consultas separadas.
 - DEC-029 a DEC-031 separan transición reglamentaria y topológica, formalizan `turnNumber`/estado terminal y fijan la consulta de acciones disponibles.
 - DEC-032 y DEC-033 fijan los términos de S, la auditoría compacta de puntuación y el schema v5.

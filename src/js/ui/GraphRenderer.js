@@ -20,6 +20,7 @@ function getTopologyClasses(edge) {
     edge.isTopologyHighlighted ? "is-topology-highlighted" : "",
     edge.isTopologyRoot ? "is-topology-root" : "",
     edge.isTopologyDimmed ? "is-topology-dimmed" : "",
+    edge.isFamilyClosed ? "is-family-closed" : "",
     edge.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
 }

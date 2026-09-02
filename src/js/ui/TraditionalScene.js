@@ -5,6 +5,9 @@ const TILE_SHORT = 38;
 const MIN_WIDTH = 260;
 const MIN_HEIGHT = 220;
 const TABLE_PADDING = 44;
+export const TRADITIONAL_CONNECTION_CLEARANCE = 2;
+export const TRADITIONAL_TARGET_CENTER_DISTANCE = 20;
+export const TRADITIONAL_TARGET_HIT_SIZE = 32;
 export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
 export const TRADITIONAL_FINAL_MIN_SCALE = 0.18;
 
@@ -87,8 +90,16 @@ function createConnection(
       `La conexión visual ${id} enfrenta ${firstFace.value} con ${secondFace.value}.`,
     );
   }
-  const firstPoint = pointAtTileFace(first, firstFace);
-  const secondPoint = pointAtTileFace(second, secondFace);
+  const firstPoint = pointOutsideTile(
+    first,
+    firstFace,
+    TRADITIONAL_CONNECTION_CLEARANCE,
+  );
+  const secondPoint = pointOutsideTile(
+    second,
+    secondFace,
+    TRADITIONAL_CONNECTION_CLEARANCE,
+  );
   return {
     id,
     region,
@@ -105,22 +116,7 @@ function createConnection(
   };
 }
 
-function pointAtTileFace(tile, face) {
-  switch (face.side) {
-    case "left":
-      return { x: tile.x - tile.width / 2, y: tile.y };
-    case "right":
-      return { x: tile.x + tile.width / 2, y: tile.y };
-    case "top":
-      return { x: tile.x, y: tile.y - tile.height / 2 };
-    case "bottom":
-      return { x: tile.x, y: tile.y + tile.height / 2 };
-    default:
-      throw new TypeError(`Cara tradicional desconocida: ${face.side}.`);
-  }
-}
-
-function pointOutsideTile(tile, face, distance = 8) {
+function pointOutsideTile(tile, face, distance) {
   switch (face.side) {
     case "left":
       return { x: tile.x - tile.width / 2 - distance, y: tile.y };
@@ -300,7 +296,11 @@ export function createTraditionalScene(
       const face = target.mainLineEnd === "start"
         ? tile.physicalStart
         : tile.physicalEnd;
-      const point = pointOutsideTile(tile, face);
+      const point = pointOutsideTile(
+        tile,
+        face,
+        TRADITIONAL_TARGET_CENTER_DISTANCE,
+      );
       return createTargetScene(
         target,
         point.x,
@@ -328,7 +328,11 @@ export function createTraditionalScene(
           ...arm.origin,
           side: direction < 0 ? "top" : "bottom",
         };
-    const point = pointOutsideTile(anchor, face);
+    const point = pointOutsideTile(
+      anchor,
+      face,
+      TRADITIONAL_TARGET_CENTER_DISTANCE,
+    );
     return createTargetScene(
       target,
       point.x,

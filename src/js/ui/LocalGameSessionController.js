@@ -40,7 +40,7 @@ export class LocalGameSessionController {
     requestAction,
     onChange = () => {},
     initialK = 7,
-    initialViewMode = BOARD_VIEW_MODES.GRAPH,
+    initialViewMode = BOARD_VIEW_MODES.TRADITIONAL,
   } = {}) {
     if (!participants || typeof participants !== "object") {
       throw new TypeError("participants debe describir la mesa local.");

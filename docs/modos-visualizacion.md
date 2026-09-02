@@ -8,8 +8,8 @@ Este documento describe la arquitectura de presentación implementada y sus exte
 
 La partida debe poder representarse al menos de estas dos formas:
 
-- **Modo Grafo:** vista predeterminada prevista, centrada en los valores `0` a `6`, las fichas jugadas como aristas o lazos y los extremos abiertos individualizados.
-- **Modo Tradicional:** mesa, fichas físicas, mano, línea principal y ramificaciones.
+- **Modo Tradicional:** vista inicial de juego, con mesa, fichas físicas, mano, línea principal y ramificaciones.
+- **Modo Grafo:** vista secundaria analítica, centrada en los valores `0` a `6`, las fichas jugadas como aristas o lazos y los extremos abiertos individualizados.
 
 Ambas vistas reciben el mismo snapshot lógico y deben permitir alternar durante una partida sin aplicar ninguna acción de dominio:
 
@@ -60,7 +60,7 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 }
 ```
 
-`projectRoundView(state, playerId)` compone la información compartida. `projectGraphView` añade valores, aristas y topología; `projectTraditionalView` añade una mesa lógica con línea principal y familias de dos brazos. `getValueGraphProjection`, `getTraditionalBoardProjection`, `groupOpenEndsByValue`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. Cada renderer solo decide geometría, estilo, foco y desplazamiento.
+`projectRoundView(state, playerId)` compone la información compartida. `projectGraphView` añade valores, aristas y topología; `projectTraditionalView` añade una mesa lógica con línea principal y familias de dos brazos. `getValueGraphProjection`, `getTraditionalBoardProjection`, `groupOpenEndsByValue`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. `getStrategicTargetProjections` anticipa por target exacto las consecuencias de aplicar una acción reglamentaria, pero no se consulta desde la presentación normal para no revelar S ni puntos futuros. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. Cada renderer solo decide geometría, estilo, foco y desplazamiento.
 
 ## Responsabilidades comunes
 
@@ -89,7 +89,7 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 
 ## Modos funcionales y conmutador
 
-La página abre una ronda local en GraphRenderer y ofrece un conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La mitad orientada hacia su predecesora proviene del puerto real de conexión: el brazo superior invierte el orden visual raíz→terminal y el inferior lo conserva. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
+La configuración propone TraditionalRenderer como vista inicial y conserva el conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La mitad orientada hacia su predecesora proviene del puerto real de conexión: el brazo superior invierte el orden visual raíz→terminal y el inferior lo conserva. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
 
 En Tradicional, la geometría comunica la estructura: no se muestran permanentemente `P/A`, familias, K ni IDs. Los extremos libres son sockets próximos a la mitad abierta; la selección resalta compatibles y solo numera opciones concretas repetidas. Una cámara local ajusta y centra el contenido sin cruzar un tamaño mínimo legible; si la mesa sigue siendo mayor, se recorre dentro de su viewport mediante tacto o arrastre, sin desplazar horizontalmente la página.
 

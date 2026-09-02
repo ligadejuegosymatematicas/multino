@@ -45,11 +45,11 @@
             <legend>Vista inicial</legend>
             <div class="setup-choice" role="group" aria-label="Vista inicial del tablero">
               <label>
-                <input type="radio" name="initial-view-mode" value="graph" checked>
+                <input type="radio" name="initial-view-mode" value="graph">
                 <span>Grafo</span>
               </label>
               <label>
-                <input type="radio" name="initial-view-mode" value="traditional">
+                <input type="radio" name="initial-view-mode" value="traditional" checked>
                 <span>Tradicional</span>
               </label>
             </div>
@@ -81,14 +81,14 @@
             <div class="panel-heading">
               <div>
                 <p class="section-kicker">Tablero</p>
-                <h2 id="board-heading">Grafo de valores</h2>
+                <h2 id="board-heading">Mesa tradicional</h2>
               </div>
               <div class="board-controls">
                 <div class="view-switch" role="group" aria-label="Representación del tablero">
-                  <button type="button" class="view-switch__button is-active" data-view-mode="graph" aria-pressed="true">Grafo</button>
-                  <button type="button" class="view-switch__button" data-view-mode="traditional" aria-pressed="false">Tradicional</button>
+                  <button type="button" class="view-switch__button" data-view-mode="graph" aria-pressed="false">Grafo</button>
+                  <button type="button" class="view-switch__button is-active" data-view-mode="traditional" aria-pressed="true">Tradicional</button>
                 </div>
-                <p id="graph-legend" class="graph-legend">
+                <p id="graph-legend" class="graph-legend" hidden>
                   <span class="legend-main"></span> principal
                   <span class="legend-branch"></span> ramificación
                   <span class="legend-structure-code">P/A</span> extremos
@@ -97,7 +97,7 @@
             </div>
             <p id="selection-hint" class="selection-hint"></p>
             <p id="play-feedback" class="play-feedback" aria-live="polite" hidden></p>
-            <div id="board-root" class="graph-root" data-view-mode="graph"></div>
+            <div id="board-root" class="graph-root is-traditional-view" data-view-mode="traditional"></div>
             <p id="game-message" class="game-message" aria-live="assertive"></p>
           </section>
 

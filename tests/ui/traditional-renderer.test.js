@@ -14,8 +14,11 @@ import {
 import {
   calculateTraditionalFitScale,
   createTraditionalScene,
+  TRADITIONAL_CONNECTION_CLEARANCE,
   TRADITIONAL_FINAL_MIN_SCALE,
   TRADITIONAL_MIN_READABLE_SCALE,
+  TRADITIONAL_TARGET_CENTER_DISTANCE,
+  TRADITIONAL_TARGET_HIT_SIZE,
 } from "../../src/js/ui/TraditionalScene.js";
 import { InteractionController } from "../../src/js/ui/InteractionController.js";
 import {
@@ -32,6 +35,37 @@ import { createExitTurnState } from "../fixtures/turn-scenarios.js";
 function targetAt(placementId, portId) {
   return (target) =>
     target.placementId === placementId && target.portId === portId;
+}
+
+function pointOutsideFace(tile, side, distance) {
+  switch (side) {
+    case "left":
+      return { x: tile.x - tile.width / 2 - distance, y: tile.y };
+    case "right":
+      return { x: tile.x + tile.width / 2 + distance, y: tile.y };
+    case "top":
+      return { x: tile.x, y: tile.y - tile.height / 2 - distance };
+    case "bottom":
+      return { x: tile.x, y: tile.y + tile.height / 2 + distance };
+    default:
+      throw new Error(`Cara inesperada: ${side}`);
+  }
+}
+
+function rectanglesOverlap(first, second) {
+  return first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top;
+}
+
+function tileBounds(tile) {
+  return {
+    left: tile.x - tile.width / 2,
+    right: tile.x + tile.width / 2,
+    top: tile.y - tile.height / 2,
+    bottom: tile.y + tile.height / 2,
+  };
 }
 
 function createTraditionalScenario() {
@@ -108,30 +142,23 @@ test("cada unión física enfrenta el valor exacto de su conexión lógica", () 
 
   assert.ok(scene.connections.length >= 9);
   const tiles = new Map(scene.tiles.map((tile) => [tile.placementId, tile]));
-  const facePoint = (tile, side) => {
-    switch (side) {
-      case "left": return { x: tile.x - tile.width / 2, y: tile.y };
-      case "right": return { x: tile.x + tile.width / 2, y: tile.y };
-      case "top": return { x: tile.x, y: tile.y - tile.height / 2 };
-      case "bottom": return { x: tile.x, y: tile.y + tile.height / 2 };
-      default: throw new Error(`Cara inesperada: ${side}`);
-    }
-  };
   for (const connection of scene.connections) {
     assert.equal(connection.firstFace.value, connection.value);
     assert.equal(connection.secondFace.value, connection.value);
     assert.deepEqual(
       { x: connection.x1, y: connection.y1 },
-      facePoint(
+      pointOutsideFace(
         tiles.get(connection.firstPlacementId),
         connection.firstFace.side,
+        TRADITIONAL_CONNECTION_CLEARANCE,
       ),
     );
     assert.deepEqual(
       { x: connection.x2, y: connection.y2 },
-      facePoint(
+      pointOutsideFace(
         tiles.get(connection.secondPlacementId),
         connection.secondFace.side,
+        TRADITIONAL_CONNECTION_CLEARANCE,
       ),
     );
   }
@@ -150,6 +177,56 @@ test("cada unión física enfrenta el valor exacto de su conexión lógica", () 
   for (const id of ["connection-8", "connection-9"]) {
     assert.equal(connections.get(id).firstFace.side, "bottom");
     assert.equal(connections.get(id).secondFace.side, "top");
+  }
+});
+
+test("conectores, hit areas y puentes quedan fuera del interior de las fichas", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createOrientationScenario()),
+  );
+  const tiles = new Map(scene.tiles.map((tile) => [tile.placementId, tile]));
+  const strokeHalf = 2;
+
+  for (const connection of scene.connections) {
+    const bounds = connection.orientation === "horizontal"
+      ? {
+          left: Math.min(connection.x1, connection.x2),
+          right: Math.max(connection.x1, connection.x2),
+          top: connection.y1 - strokeHalf,
+          bottom: connection.y1 + strokeHalf,
+        }
+      : {
+          left: connection.x1 - strokeHalf,
+          right: connection.x1 + strokeHalf,
+          top: Math.min(connection.y1, connection.y2),
+          bottom: Math.max(connection.y1, connection.y2),
+        };
+    for (const placementId of [
+      connection.firstPlacementId,
+      connection.secondPlacementId,
+    ]) {
+      assert.equal(
+        rectanglesOverlap(bounds, tileBounds(tiles.get(placementId))),
+        false,
+        `${connection.id} invade ${placementId}`,
+      );
+    }
+  }
+
+  const hitHalf = TRADITIONAL_TARGET_HIT_SIZE / 2;
+  assert.ok(TRADITIONAL_TARGET_CENTER_DISTANCE > hitHalf);
+  for (const target of scene.openTargets) {
+    const hitBounds = {
+      left: target.x - hitHalf,
+      right: target.x + hitHalf,
+      top: target.y - hitHalf,
+      bottom: target.y + hitHalf,
+    };
+    assert.equal(
+      rectanglesOverlap(hitBounds, tileBounds(tiles.get(target.placementId))),
+      false,
+      `${target.id} invade su ficha de anclaje`,
+    );
   }
 });
 
@@ -283,6 +360,10 @@ test("la selección destaca solo extremos legales y conserva targets concretos",
       portId: target.portId,
     })),
   );
+  assert.doesNotMatch(
+    renderTraditionalTableMarkup(scene),
+    />\s*S\s*=|>\s*\+\d+\s+puntos|>\s*no puntúa/i,
+  );
 });
 
 test("los números de opción aparecen solo para targets compatibles repetidos", () => {
@@ -366,10 +447,11 @@ test("el conmutador cambia solo preferencia visual y conserva selección y snaps
     onChange: (mode) => modes.push(mode),
   });
 
-  switcher.setMode(BOARD_VIEW_MODES.TRADITIONAL);
+  assert.equal(switcher.getMode(), BOARD_VIEW_MODES.TRADITIONAL);
   switcher.setMode(BOARD_VIEW_MODES.GRAPH);
+  switcher.setMode(BOARD_VIEW_MODES.TRADITIONAL);
 
-  assert.deepEqual(modes, ["traditional", "graph"]);
+  assert.deepEqual(modes, ["graph", "traditional"]);
   assert.equal(controller.getPresentation().selectedDominoId, "6-6");
   assert.deepEqual(controller.getState(), before);
   assert.deepEqual(state, before);

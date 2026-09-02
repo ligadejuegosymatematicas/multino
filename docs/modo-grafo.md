@@ -2,7 +2,7 @@
 
 ## Propósito y alcance
 
-El Modo Grafo es la representación predeterminada del juego aprobado, no una regla nueva. Este documento fija el modelo matemático de la vista, describe el primer renderer funcional y mantiene separadas las decisiones todavía abiertas de refinamiento.
+El Modo Grafo es la representación analítica/matemática secundaria del juego, no una regla nueva. TraditionalRenderer es actualmente la entrada predeterminada; el conmutador conserva el grafo completo para inspeccionar valores, estructuras y extremos. Este documento fija el modelo matemático de la vista, describe el renderer funcional y mantiene separadas las decisiones todavía abiertas de refinamiento.
 
 ## Modelo matemático exacto
 

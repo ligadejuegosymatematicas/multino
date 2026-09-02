@@ -134,6 +134,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/local-game-session-controller.test.js`: barrera de privacidad, revelación inmutable, ocultamiento en el cambio de turno/renderer y limpieza al volver a jugar;
 - los renderers no codifican el divisor ni derivan S desde objetivos abiertos; `prefers-reduced-motion` conserva la información sin pulsos.
 
+### Fase 2, Bloque 12 — legibilidad estratégica y prioridad tradicional completadas
+
+- `tests/projections/strategic-target-projection.test.js`: simulación pura por target mediante la transición reglamentaria, correspondencia exacta de S/puntos, targets repetidos, principal/brazos, términos agrupados e inmutabilidad;
+- `tests/ui/traditional-renderer.test.js`: margen geométrico de conexiones, hit areas y puentes respecto del interior de cada ficha, además de selección exacta sin revelar puntuación futura;
+- `tests/ui/graph-renderer.test.js`: extremos protagonistas, familias terminales atenuadas e inexistencia de adelantos de S/puntos en la selección normal;
+- `tests/ui/local-game-session-controller.test.js`: Tradicional como preferencia inicial y Grafo disponible sin mutar K ni snapshot.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

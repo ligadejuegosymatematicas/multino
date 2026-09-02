@@ -387,7 +387,7 @@ test("sin ficha seleccionada todos los extremos permanecen visibles y codificado
   assert.match(markup, /is-branch-target family-tone-0 is-started-arm/);
   assert.match(markup, /is-branch-target family-tone-0 is-potential-arm/);
   assert.match(markup, /<circle class="open-target__end"[^>]+r="10"/);
-  assert.match(boardCss, /\.open-target \{[\s\S]+?opacity:\s*0\.92/);
+  assert.match(boardCss, /\.open-target \{[\s\S]+?opacity:\s*1/);
   assert.match(
     boardCss,
     /\.open-target\.is-neutral \.open-target__end[\s\S]+?drop-shadow/,
@@ -423,6 +423,10 @@ test("al seleccionar ficha los compatibles dominan y muestran opción individual
   assert.match(markup, /open-target is-legal is-branch-target/);
   assert.match(markup, /open-target is-incompatible/);
   assert.match(markup, /class="open-target__option-index"/);
+  assert.doesNotMatch(
+    markup,
+    />\s*S\s*=|>\s*\+\d+\s+puntos|>\s*no puntúa/i,
+  );
   assert.match(
     boardCss,
     /\.open-target\.is-incompatible \{[\s\S]+?opacity:\s*0\.12/,

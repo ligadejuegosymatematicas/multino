@@ -81,6 +81,9 @@ export {
   SCORING_PRESENTATION_POLICY_TYPES,
 } from "./projections/ScoringPresentation.js";
 export { getLatestActionProjection } from "./projections/ActionProjection.js";
+export {
+  getStrategicTargetProjections,
+} from "./projections/StrategicTargetProjection.js";
 export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
 export { projectRoundView } from "./projections/RoundViewProjection.js";
 export { projectGraphView } from "./projections/GraphViewProjection.js";

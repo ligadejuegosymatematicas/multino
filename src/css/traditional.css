@@ -214,7 +214,7 @@
 
 .traditional-target {
   position: absolute;
-  z-index: 20;
+  z-index: 5;
   left: var(--target-x);
   top: var(--target-y);
   display: grid;
@@ -231,18 +231,20 @@
 
 .traditional-target::before {
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   width: 0.65rem;
   border-top: 3px solid currentColor;
   content: "";
 }
 
 .traditional-target.points-left::before {
-  inset: 50% auto auto 100%;
+  inset: 50% auto auto calc(50% + 0.46rem);
+  transform: translateY(-50%);
 }
 
 .traditional-target.points-right::before {
-  inset: 50% 100% auto auto;
+  inset: 50% calc(50% + 0.46rem) auto auto;
+  transform: translateY(-50%);
 }
 
 .traditional-target.points-up::before,
@@ -254,11 +256,13 @@
 }
 
 .traditional-target.points-up::before {
-  inset: 100% auto auto 50%;
+  inset: calc(50% + 0.46rem) auto auto 50%;
+  transform: translateX(-50%);
 }
 
 .traditional-target.points-down::before {
-  inset: auto auto 100% 50%;
+  inset: auto auto calc(50% + 0.46rem) 50%;
+  transform: translateX(-50%);
 }
 
 .traditional-target.is-potential {
@@ -266,6 +270,8 @@
 }
 
 .traditional-target__socket {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 0.92rem;
   height: 0.92rem;
@@ -286,6 +292,7 @@
 
 .traditional-target__option {
   position: absolute;
+  z-index: 2;
   inset: -0.35rem -0.35rem auto auto;
   display: grid;
   width: 1.15rem;

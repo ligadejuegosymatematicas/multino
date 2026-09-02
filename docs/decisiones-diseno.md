@@ -232,7 +232,7 @@ Las decisiones se numeran y no se reescriben silenciosamente. Si una decisión c
 
 ## DEC-020 — Renderers intercambiables y Modo Grafo predeterminado
 
-**Estado:** Aceptada como decisión de producto, revisable mediante prototipos.
+**Estado:** Sustituida parcialmente por DEC-046: se conserva la intercambiabilidad, no la vista inicial.
 
 **Decisión:** Prever GraphRenderer y TraditionalRenderer sobre el mismo snapshot. GraphRenderer será la vista inicial predeterminada, con cambio de vista puramente representacional.
 
@@ -622,7 +622,7 @@ La cámara tradicional calcula sobre límites más próximos al contenido y nunc
 
 **Decisión:** Mantener dos geometrías descartables del Grafo: una compacta para teléfono y otra ancha para paneles de al menos 720 px. Ambas conservan los mismos siete valores, aristas, lazos y targets; solo cambian `viewBox`, centro y radios. En la mesa tradicional, reducir el lienzo mínimo artificial y permitir ampliación hasta `1.35×` cuando el contenido real cabe, sin rebajar el mínimo legible de estados densos.
 
-Cada conector tradicional termina en el punto exacto de la cara física de ambas fichas y la superficie aísla las capas en el orden conexión, ficha, extremo y control. Mesa y mano comparten una única serialización de puntos. La mano representa cada opción como mini-ficha táctil; solo muestra cantidad cuando existen dos o más destinos y conserva toda la información en el nombre accesible.
+Cada conector tradicional se orienta desde la cara física de ambas fichas y la superficie aísla las capas; DEC-046 añade separación geométrica explícita fuera de esas caras. Mesa y mano comparten una única serialización de puntos. La mano representa cada opción como mini-ficha táctil; solo muestra cantidad cuando existen dos o más destinos y conserva toda la información en el nombre accesible.
 
 **Motivo:** A 100% el Grafo casi cuadrado desaprovechaba paneles anchos, la cámara reservaba vacío alrededor de mesas tempranas y los conectores podían atravesar visualmente el cuerpo de una ficha. La mano basada en tarjetas competía con el tablero y repetía información obvia.
 
@@ -639,3 +639,15 @@ Cada conector tradicional termina en el punto exacto de la cara física de ambas
 **Motivo:** La puntuación reglamentaria funcionaba pero no se percibía como momento central, y una partida local compartida revelaba automáticamente la mano siguiente. Una proyección común evita que cada renderer replique reglas o codifique el divisor. La barrera local resuelve privacidad básica sin convertirla en networking ni persistencia.
 
 **Consecuencias:** La política activa sigue siendo exclusivamente `DIVISIBLE/5`; `enabled: false` solo define cómo callar la presentación futura y no habilita «Sin divisibilidad». La base de R-023 queda separada del divisor de jugada hasta decidir formalmente la relación con `n`. No cambian schema v6, historial, score, reglas, K ni persistencia. Selector `n`, `n≠5`, multirronda, replay y multiplayer remoto siguen pendientes.
+
+## DEC-046 — Tradicional como entrada y anticipación estratégica no asistida
+
+**Estado:** Aceptada. Sustituye la preferencia inicial de DEC-020 sin alterar la intercambiabilidad de DEC-040.
+
+**Decisión:** Usar TraditionalRenderer como vista inicial de juego y conservar GraphRenderer como vista secundaria analítica. Los extremos tradicionales se separan físicamente del interior de las fichas: conexiones y hit areas incorporan margen geométrico y los puentes de socket se pintan bajo las fichas.
+
+Exponer `getStrategicTargetProjections(state, playerId, dominoId)` como consulta pura bajo demanda. Para cada jugada legal aplica la transición inmutable `applyTurnAction` sin alterar el snapshot recibido y deriva target exacto, estructura continuada, apertura lateral, términos/S/puntos reales, extremos posteriores y delta de extremos. La experiencia estándar no llama esta consulta ni muestra puntuación futura; solo destaca destinos legales y conserva la explicación de puntuación después de jugar. La proyección queda reservada para una ayuda optativa, aprendizaje o inspección futura que deberá autorizarse expresamente.
+
+**Motivo:** Las pruebas humanas favorecen la mesa tradicional para reconocer el estado jugable. Adelantar `S` y puntos de cada alternativa reduciría el desafío matemático; disponer del contrato puro permite explorar asistencia futura sin incrustar reglas en renderers.
+
+**Consecuencias:** No cambian motor, reglas, schema v6, persistencia, puntuación ni targets. El Grafo mantiene siete valores, aristas/lazos y extremos protagonistas, pero las familias cerradas pierden prominencia fuera de inspección. Replay, IA, recomendación, multirronda y variantes continúan fuera de alcance.

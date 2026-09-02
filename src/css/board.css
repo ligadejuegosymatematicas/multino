@@ -62,7 +62,13 @@
 .graph-edge,
 .graph-loop {
   cursor: pointer;
+  opacity: 0.78;
   transition: opacity 160ms ease;
+}
+
+.graph-edge.is-main,
+.graph-loop.is-main {
+  opacity: 0.92;
 }
 
 .graph-edge.is-branch .graph-edge__line,
@@ -127,6 +133,7 @@
   --family-accent: #6f657d;
   --family-soft: #f3f0f7;
   cursor: pointer;
+  opacity: 0.62;
   transition: opacity 160ms ease;
 }
 
@@ -155,6 +162,11 @@
   stroke-width: 4;
 }
 
+.graph-family-root.is-inspected,
+.graph-family-root:focus-visible {
+  opacity: 1;
+}
+
 .graph-family-root.is-dimmed {
   opacity: 0.14;
 }
@@ -162,6 +174,11 @@
 .graph-edge.is-topology-dimmed,
 .graph-loop.is-topology-dimmed {
   opacity: 0.14;
+}
+
+.graph-edge.is-family-closed:not(.is-topology-highlighted),
+.graph-loop.is-family-closed:not(.is-topology-highlighted) {
+  opacity: 0.3;
 }
 
 .graph-edge.is-topology-highlighted .graph-edge__line,
@@ -183,7 +200,7 @@
 
 .open-target {
   color: #607874;
-  opacity: 0.92;
+  opacity: 1;
   transition: opacity 140ms ease;
 }
 

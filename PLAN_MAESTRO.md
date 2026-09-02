@@ -129,6 +129,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 11 — Presentación de puntuación y privacidad local: COMPLETADO.** Añade un contrato puro de presentación para términos, S, divisor y resolución de la última jugada; ambos renderers muestran una secuencia breve y compartida sin leer colitas como sustituto de `scoringTerms`. Entre turnos se oculta la siguiente mano hasta una revelación explícita, y el cierre prioriza ganador final/empate. La política activa continúa siendo exclusivamente múltiplos de 5; no cambia schema, persistencia ni reglas.
 
+**Bloque 12 — Legibilidad estratégica y prioridad tradicional: COMPLETADO.** Corrige conectores/targets para que ningún segmento invada fichas, adopta Tradicional como vista inicial y mantiene Grafo como vista analítica. Añade una proyección pura por target con resultado exacto de motor, pero la UX estándar no revela S ni puntos antes de ejecutar la jugada. El feedback posterior conserva términos → S → divisibilidad → puntos.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
@@ -143,7 +145,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - Resolver orientación y geometría visual.
 - Adaptar automáticamente el trazado al espacio disponible.
 - Mantener la separación entre modelo lógico y coordenadas.
-- Implementar GraphRenderer sobre siete vértices como vista predeterminada.
+- Mantener GraphRenderer sobre siete vértices como vista analítica disponible.
 - Implementar TraditionalRenderer sobre el mismo snapshot.
 - Permitir alternancia de vista sin acción de dominio.
 - Representar extremos repetidos con identidad individual y solución híbrida adaptable.

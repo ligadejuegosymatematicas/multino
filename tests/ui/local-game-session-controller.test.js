@@ -51,8 +51,8 @@ test("la aplicación inicia en configuración sin crear ni repartir una ronda", 
 
   assert.deepEqual(presentations.at(-1), {
     screen: LOCAL_GAME_SCREENS.CONFIGURATION,
-    config: { K: 7, initialViewMode: BOARD_VIEW_MODES.GRAPH },
-    viewMode: BOARD_VIEW_MODES.GRAPH,
+    config: { K: 7, initialViewMode: BOARD_VIEW_MODES.TRADITIONAL },
+    viewMode: BOARD_VIEW_MODES.TRADITIONAL,
     round: null,
   });
   assert.equal(session.getRoundState(), null);
@@ -85,7 +85,9 @@ for (const K of [0, 1, 7]) {
 }
 
 test("la vista inicial puede ser Grafo o Tradicional y luego cambia sin tocar K", () => {
-  const graphSession = createSession();
+  const graphSession = createSession({
+    initialViewMode: BOARD_VIEW_MODES.GRAPH,
+  });
   graphSession.startNewGame();
   assert.equal(graphSession.getPresentation().viewMode, BOARD_VIEW_MODES.GRAPH);
 
@@ -247,8 +249,8 @@ test("la UI expone configuración simple y acciones terminales sin divisor edita
   assert.match(html, /id="setup-k"/);
   assert.match(html, /value="0"/);
   assert.match(html, /value="7" selected/);
-  assert.match(html, /name="initial-view-mode" value="graph" checked/);
-  assert.match(html, /name="initial-view-mode" value="traditional"/);
+  assert.match(html, /name="initial-view-mode" value="graph">/);
+  assert.match(html, /name="initial-view-mode" value="traditional" checked/);
   assert.match(html, /Puntuación: múltiplos de 5/);
   assert.match(html, /id="play-again-action"/);
   assert.match(html, /id="change-config-action"/);

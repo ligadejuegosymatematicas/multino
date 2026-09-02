@@ -49,10 +49,20 @@ function renderTile(tile) {
 }
 
 function renderConnection(connection) {
-  const left = Math.min(connection.x1, connection.x2);
-  const top = Math.min(connection.y1, connection.y2);
-  const width = Math.max(Math.abs(connection.x2 - connection.x1), 4);
-  const height = Math.max(Math.abs(connection.y2 - connection.y1), 4);
+  const thickness = 4;
+  const isHorizontal = connection.orientation === "horizontal";
+  const left = isHorizontal
+    ? Math.min(connection.x1, connection.x2)
+    : connection.x1 - thickness / 2;
+  const top = isHorizontal
+    ? connection.y1 - thickness / 2
+    : Math.min(connection.y1, connection.y2);
+  const width = isHorizontal
+    ? Math.abs(connection.x2 - connection.x1)
+    : thickness;
+  const height = isHorizontal
+    ? thickness
+    : Math.abs(connection.y2 - connection.y1);
   return `<span class="traditional-connection is-${connection.orientation} is-${connection.region}" style="--connection-left:${left}px;--connection-top:${top}px;--connection-width:${width}px;--connection-height:${height}px" data-connection-id="${escapeAttribute(connection.id)}" data-connection-value="${connection.value}" aria-hidden="true"></span>`;
 }
 
