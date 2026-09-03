@@ -88,6 +88,10 @@ export { getBoardTopologyProjection } from "./projections/TopologyProjection.js"
 export { projectRoundView } from "./projections/RoundViewProjection.js";
 export { projectGraphView } from "./projections/GraphViewProjection.js";
 export {
+  getPortGraphProjection,
+  projectPortView,
+} from "./projections/PortGraphProjection.js";
+export {
   getTraditionalBoardProjection,
   projectTraditionalView,
 } from "./projections/TraditionalViewProjection.js";

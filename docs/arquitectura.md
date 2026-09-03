@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. Las Fases 0 y 1 cerraron contratos y motor; la Fase 2 mantiene proyecciones puras separadas de las geometrías de Grafo y Tradicional.
+La arquitectura busca que una misma implementación de reglas pueda usarse en tests, una interfaz local, herramientas de replay y, más adelante, un servidor autoritativo. Las Fases 0 y 1 cerraron contratos y motor; la Fase 2 mantiene proyecciones puras separadas de las geometrías de Tradicional, Puertos y Grafo.
 
 ## Capas y dirección de dependencias
 
@@ -26,14 +26,15 @@ modelo de estado + tablero lógico
 
 La dirección importante es hacia el dominio. El motor nunca importa módulos de `ui/`, ni conoce `document`, `window`, HTML, CSS, animaciones, píxeles o coordenadas. La UI puede importar la API pública del motor y representar snapshots, pero no escribir directamente en ellos.
 
-## Dos grafos, una frontera explícita
+## Tablero, incidencias y grafo de valores
 
 “Grafo” puede referirse a dos estructuras distintas:
 
 - el **grafo lógico del tablero**, formado por colocaciones, puertos y conexiones y usado por el motor;
+- el **grafo de incidencias de Puertos**, proyección intermedia con siete macro-nodos, puertos canónicos e identidad de continuidad;
 - el **grafo de valores**, formado por los vértices `0–6` y las fichas como aristas/lazos, usado por GraphRenderer.
 
-El grafo de valores es una proyección: no reemplaza ni simplifica el estado normativo. En particular, necesita una superposición de extremos individualizados para recuperar destinos que el colapso por valor no distingue.
+Ninguna de las dos proyecciones visuales reemplaza el estado normativo. El grafo de valores necesita una superposición de extremos individualizados para recuperar destinos que el colapso por valor no distingue. Puertos conserva qué incidencias se emparejan mediante puentes internos, pero sigue dependiendo del board para ser construido y nunca valida acciones por sí mismo.
 
 ## Arquitectura de renderers
 
@@ -44,15 +45,15 @@ El grafo de valores es una proyección: no reemplaza ni simplifica el estado nor
                             │
                    proyecciones puras
                             │
-                ┌───────────┴───────────┐
-                │                       │
-                ▼                       ▼
-          GraphRenderer         TraditionalRenderer
+          ┌─────────────────┬─────────────────┐
+          │                 │                 │
+          ▼                 ▼                 ▼
+TraditionalRenderer    PortRenderer      GraphRenderer
 ```
 
-TraditionalRenderer es la vista inicial de juego. GraphRenderer permanece disponible como lectura analítica/matemática del mismo snapshot. Alternar entre ambos mediante `ViewModeController` solo cambia una preferencia efímera de UI; nunca `config`, `board`, `history`, `score` ni turno.
+TraditionalRenderer es la vista inicial de juego. GraphRenderer permanece disponible como lectura analítica/matemática y PortRenderer como experimento de incidencias del mismo snapshot. Alternar mediante `ViewModeController` solo cambia una preferencia efímera de UI; nunca `config`, `board`, `history`, `score` ni turno.
 
-`projectRoundView` concentra mano, legalidad, puntuación, participantes, turno y resultado compartidos. Incluye `scoringPresentation`, una proyección descartable que expone política, divisor, términos, expresión, S y la resolución de la última jugada puntuada; la UI no aplica `%`, división ni reglas de chanchos. `getStrategicTargetProjections` simula mediante `applyTurnAction` cada target legal de una ficha y deriva puntuación, extremos resultantes y apertura lateral sin mutar el snapshot. Es una API bajo demanda para ayudas futuras: los renderers normales no revelan ese resultado antes de jugar. `projectGraphView` añade grafo de valores/topología visual; `projectTraditionalView` añade `getTraditionalBoardProjection`, que ordena la línea y cada brazo con sus puertos. `TraditionalScene` asigna esos puertos a caras físicas, verifica el valor enfrentado y deja un margen real entre fichas, conexiones y hit areas. `GraphScene` elige una geometría compacta o ancha según el panel. Geometría, hit areas, cámara, capas, rotaciones y trazados pertenecen exclusivamente a estas escenas/renderers. Véanse [`modos-visualizacion.md`](modos-visualizacion.md) y [`modo-grafo.md`](modo-grafo.md).
+`projectRoundView` concentra mano, legalidad, puntuación, participantes, turno y resultado compartidos. Incluye `scoringPresentation`, una proyección descartable que expone política, divisor, términos, expresión, S y la resolución de la última jugada puntuada; la UI no aplica `%`, división ni reglas de chanchos. `getStrategicTargetProjections` simula mediante `applyTurnAction` cada target legal de una ficha y deriva puntuación, extremos resultantes y apertura lateral sin mutar el snapshot. Es una API bajo demanda para ayudas futuras: los renderers normales no revelan ese resultado antes de jugar. `projectGraphView` añade grafo de valores/topología visual; `projectPortView` añade siete macro-nodos, puertos ordinarios, hilos, puentes y hubs; `projectTraditionalView` añade `getTraditionalBoardProjection`, que ordena la línea y cada brazo con sus puertos. `TraditionalScene` asigna esos puertos a caras físicas, `PortScene` distribuye incidencias dentro de un heptágono estable y `GraphScene` elige una geometría compacta o ancha. Geometría, hit areas, cámara, capas, rotaciones y trazados pertenecen exclusivamente a estas escenas/renderers. Véanse [`modos-visualizacion.md`](modos-visualizacion.md), [`modo-puertos.md`](modo-puertos.md) y [`modo-grafo.md`](modo-grafo.md).
 
 ## Responsabilidades
 
@@ -87,7 +88,7 @@ primitiva topológica `applyPlay`
 
 ### `src/js/game/projections/`
 
-Contiene transformaciones puras y descartables sobre snapshots validados. Depende de consultas del motor; el motor no depende de esta capa. `ValueGraphProjection` crea los siete vértices y aristas/lazos, `OpenEndProjection` agrupa destinos, `LegalPlayProjection` organiza acciones por ficha, `ScoringProjection` explica S y `GraphViewProjection` compone un resumen opcional.
+Contiene transformaciones puras y descartables sobre snapshots validados. Depende de consultas del motor; el motor no depende de esta capa. `ValueGraphProjection` crea los siete vértices y aristas/lazos, `PortGraphProjection` conserva incidencias y continuidad dentro de esos siete valores, `OpenEndProjection` agrupa destinos, `LegalPlayProjection` organiza acciones por ficha, `ScoringProjection` explica S y las fachadas de vista componen cada renderer.
 
 La capa no persiste estado, no valida legalidad por una ruta propia y no contiene coordenadas, DOM, Canvas, SVG ni animaciones. El grafo de valores jamás se usa como entrada de `applyTurnAction`, `getLegalPlays` o validadores del tablero.
 
@@ -105,7 +106,7 @@ Es la fachada pública del dominio y sus proyecciones. La UI y futuros adaptador
 
 ### `src/js/ui/`
 
-Contiene `GraphScene`/`GraphRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `GameFeedback`, `InteractionController`, `ViewModeController` y `LocalGameSessionController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. `GameFeedback` presenta la resolución ya proyectada como términos → S → divisibilidad → puntos y reconoce aperturas de rama desde la topología, sin recalcular reglas. El controlador de vista solo conserva `graph | traditional`. El coordinador local muestra configuración, llama a `createMatch`, reemplaza íntegramente el controlador/snapshot al iniciar otra partida independiente y mantiene la revelación de mano como privacidad efímera; no es un MatchState. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera, privacidad de mano, secuencia de feedback y foco pertenecen aquí.
+Contiene `GraphScene`/`GraphRenderer`, `PortScene`/`PortRenderer`, `TraditionalScene`/`TraditionalRenderer`, renderers de paneles, `GameFeedback`, `InteractionController`, `ViewModeController` y `LocalGameSessionController`. Las escenas transforman proyecciones en geometría descartable sin leer `board`; el controlador de interacción selecciona una acción canónica de `getAvailableActions` y conserva selección/inspección efímeras. `GameFeedback` presenta la resolución ya proyectada como términos → S → divisibilidad → puntos y reconoce aperturas de rama desde la topología, sin recalcular reglas. El controlador de vista solo conserva `graph | ports | traditional`. El coordinador local muestra configuración, llama a `createMatch`, reemplaza íntegramente el controlador/snapshot al iniciar otra partida independiente y mantiene la revelación de mano como privacidad efímera; no es un MatchState. Coordenadas, ángulos, escala mínima, scroll/pan, estilos, selección efímera, privacidad de mano, secuencia de feedback y foco pertenecen aquí.
 
 ### `src/js/utils/`
 

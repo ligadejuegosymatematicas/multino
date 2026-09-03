@@ -141,6 +141,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/graph-renderer.test.js`: extremos protagonistas, familias terminales atenuadas e inexistencia de adelantos de S/puntos en la selección normal;
 - `tests/ui/local-game-session-controller.test.js`: Tradicional como preferencia inicial y Grafo disponible sin mutar K ni snapshot.
 
+### Fase 2, Bloque 13 — vista experimental Puertos completada
+
+- `tests/projections/port-graph-projection.test.js`: siete macro-nodos, 42 puertos deterministas, hilos, puentes, fixture de doce fichas con visitas repetidas, extremos exactos, dobles ordinarios/especiales y ramas;
+- `tests/ui/port-renderer.test.js`: geometrías compacta/ancha, SVG separado de reglas, hubs, targets repetidos, inspección de principal/rama/macro-nodo, terminalidad y ausencia de IDs técnicos visibles;
+- `tests/ui/interaction-controller.test.js` y `tests/ui/local-game-session-controller.test.js`: proyección integrada, privacidad y conmutación Tradicional ↔ Puertos ↔ Grafo sin mutar snapshot;
+- revisión manual en 1366×768 y 390×844: siete valores únicos, extremos visibles, foco por rama/nodo, feedback compartido, estado terminal, sin overflow ni errores de consola;
+- limitación honesta: una mesa casi completa con varios recorridos cruzados no se sigue globalmente de un vistazo en 390 px; la inspección local es necesaria y el prototipo no reduce los nodos a una escala ilegible.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

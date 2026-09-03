@@ -84,12 +84,18 @@ for (const K of [0, 1, 7]) {
   });
 }
 
-test("la vista inicial puede ser Grafo o Tradicional y luego cambia sin tocar K", () => {
+test("la vista inicial puede ser Grafo, Puertos o Tradicional y cambia sin tocar K", () => {
   const graphSession = createSession({
     initialViewMode: BOARD_VIEW_MODES.GRAPH,
   });
   graphSession.startNewGame();
   assert.equal(graphSession.getPresentation().viewMode, BOARD_VIEW_MODES.GRAPH);
+
+  const portSession = createSession({
+    initialViewMode: BOARD_VIEW_MODES.PORTS,
+  });
+  portSession.startNewGame();
+  assert.equal(portSession.getPresentation().viewMode, BOARD_VIEW_MODES.PORTS);
 
   const traditionalSession = createSession({
     initialK: 1,
@@ -102,6 +108,8 @@ test("la vista inicial puede ser Grafo o Tradicional y luego cambia sin tocar K"
     traditionalSession.getPresentation().viewMode,
     BOARD_VIEW_MODES.TRADITIONAL,
   );
+  traditionalSession.setViewMode(BOARD_VIEW_MODES.PORTS);
+  assert.equal(traditionalSession.getPresentation().viewMode, BOARD_VIEW_MODES.PORTS);
   traditionalSession.setViewMode(BOARD_VIEW_MODES.GRAPH);
   assert.equal(traditionalSession.getPresentation().viewMode, BOARD_VIEW_MODES.GRAPH);
   assert.equal(traditionalSession.getPresentation().config.K, 1);
@@ -139,17 +147,19 @@ test("la barrera local oculta la mano entre turnos sin modificar el snapshot", (
   assert.notEqual(session.getRoundState().currentPlayerId, initial.currentPlayerId);
 });
 
-test("cambiar renderer conserva la privacidad y no vuelve a revelar una mano", () => {
+test("cambiar Tradicional ↔ Puertos ↔ Grafo conserva privacidad y snapshot", () => {
   const session = createSession();
   session.startNewGame();
   const before = structuredClone(session.getRoundState());
 
   session.setViewMode(BOARD_VIEW_MODES.TRADITIONAL);
+  session.setViewMode(BOARD_VIEW_MODES.PORTS);
   session.setViewMode(BOARD_VIEW_MODES.GRAPH);
 
   const presentation = session.getPresentation();
   assert.equal(presentation.round.handPrivacy.isRevealed, false);
   assert.deepEqual(presentation.round.view.hand, []);
+  assert.deepEqual(presentation.round.portView.hand, []);
   assert.deepEqual(presentation.round.traditionalView.hand, []);
   assert.deepEqual(session.getRoundState(), before);
 });
@@ -251,6 +261,8 @@ test("la UI expone configuración simple y acciones terminales sin divisor edita
   assert.match(html, /value="7" selected/);
   assert.match(html, /name="initial-view-mode" value="graph">/);
   assert.match(html, /name="initial-view-mode" value="traditional" checked/);
+  assert.match(html, /name="initial-view-mode" value="ports">/);
+  assert.match(html, /data-view-mode="ports"/);
   assert.match(html, /Puntuación: múltiplos de 5/);
   assert.match(html, /id="play-again-action"/);
   assert.match(html, /id="change-config-action"/);

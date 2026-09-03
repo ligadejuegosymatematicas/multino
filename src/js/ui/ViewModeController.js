@@ -1,5 +1,6 @@
 export const BOARD_VIEW_MODES = Object.freeze({
   GRAPH: "graph",
+  PORTS: "ports",
   TRADITIONAL: "traditional",
 });
 

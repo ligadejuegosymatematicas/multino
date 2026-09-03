@@ -651,3 +651,15 @@ Exponer `getStrategicTargetProjections(state, playerId, dominoId)` como consulta
 **Motivo:** Las pruebas humanas favorecen la mesa tradicional para reconocer el estado jugable. Adelantar `S` y puntos de cada alternativa reduciría el desafío matemático; disponer del contrato puro permite explorar asistencia futura sin incrustar reglas en renderers.
 
 **Consecuencias:** No cambian motor, reglas, schema v6, persistencia, puntuación ni targets. El Grafo mantiene siete valores, aristas/lazos y extremos protagonistas, pero las familias cerradas pierden prominencia fuera de inspección. Replay, IA, recomendación, multirronda y variantes continúan fuera de alcance.
+
+## DEC-047 — Puertos como grafo experimental de incidencias
+
+**Estado:** Aceptada como prototipo experimental; no sustituye Tradicional ni Grafo.
+
+**Decisión:** Mantener exactamente siete macro-nodos `B_0…B_6`. Cada `B_n` contiene seis puertos ordinarios deterministas `p(n→m)`, uno por cada `m ≠ n`. Una ficha no doble colocada es un hilo exterior entre `p(n→m)` y `p(m→n)`. Cada conexión reglamentaria se proyecta como un puente interior entre las dos incidencias que continúan por el mismo valor. Un doble no consume esos puertos: es un hub interno de dos sockets si es ordinario o cuatro si es especial.
+
+`PortGraphProjection` deriva todo desde placements, conexiones, línea principal, ramas, puertos y chanchos especiales del board vigente. `PortScene` añade únicamente geometría heptagonal y `PortRenderer` serializa SVG e interacción. Los extremos son exactamente los de `getOpenEndTargets`; un puerto canónico potencial no es un destino. Toda acción conserva el target canónico `placementId + portId`.
+
+**Motivo:** El grafo simple identifica qué fichas existen pero colapsa dos visitas distintas al mismo valor. Alternar hilo exterior → puente interior permite seguir la continuidad real sin duplicar los valores ni reconstruir una mesa física.
+
+**Consecuencias:** La vista se añade al conmutador `Tradicional | Puertos | Grafo` como preferencia local. No cambia snapshot v6, schema, motor, persistencia, reglas, scoring, bonus ni K. En escritorio la representación intermedia permite inspeccionar recorridos con claridad; en 390 px un estado casi completo con muchos cruces requiere foco por rama o apertura local del macro-nodo. No se oculta esa limitación reduciendo el heptágono a una escala ilegible.

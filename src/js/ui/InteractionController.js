@@ -3,6 +3,7 @@ import {
   getAvailableActions,
   getLegalTargetsForDomino,
   projectGraphView,
+  projectPortView,
   projectTraditionalView,
 } from "../game/index.js";
 
@@ -56,6 +57,10 @@ export class InteractionController {
 
     return {
       view,
+      portView: projectPortView(
+        this.state,
+        this.state.currentPlayerId,
+      ),
       traditionalView: projectTraditionalView(
         this.state,
         this.state.currentPlayerId,

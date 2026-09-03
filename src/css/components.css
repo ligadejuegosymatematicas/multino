@@ -74,7 +74,7 @@
 
 .setup-choice {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.55rem;
 }
 
@@ -98,6 +98,13 @@
   background: var(--surface-soft);
   font-weight: 800;
   cursor: pointer;
+}
+
+.setup-choice small {
+  display: block;
+  color: inherit;
+  font-size: 0.58rem;
+  font-weight: 700;
 }
 
 .setup-choice input:checked + span {
@@ -316,6 +323,12 @@
   color: #514567;
   background: #f7f4fb;
   font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.legend-port-stitch {
+  color: #294f4b;
+  font-size: 1rem;
   font-weight: 900;
 }
 

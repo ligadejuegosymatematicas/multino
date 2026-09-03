@@ -131,6 +131,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 12 — Legibilidad estratégica y prioridad tradicional: COMPLETADO.** Corrige conectores/targets para que ningún segmento invada fichas, adopta Tradicional como vista inicial y mantiene Grafo como vista analítica. Añade una proyección pura por target con resultado exacto de motor, pero la UX estándar no revela S ni puntos antes de ejecutar la jugada. El feedback posterior conserva términos → S → divisibilidad → puntos.
 
+**Bloque 13 — Vista experimental Puertos: COMPLETADO.** Añade una tercera representación con siete macro-nodos fijos, seis incidencias canónicas por valor, hilos exteriores para fichas no dobles, puentes interiores para conexiones y hubs de dos o cuatro sockets para chanchos. Las ramas reutilizan los mismos siete valores y los targets conservan `placementId + portId`; proyección, geometría, foco local y renderer son descartables y no cambian snapshot, motor ni schema.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.
@@ -146,6 +148,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - Adaptar automáticamente el trazado al espacio disponible.
 - Mantener la separación entre modelo lógico y coordenadas.
 - Mantener GraphRenderer sobre siete vértices como vista analítica disponible.
+- Mantener PortRenderer como prototipo intermedio de valores e incidencias, sin convertirlo en autoridad reglamentaria.
 - Implementar TraditionalRenderer sobre el mismo snapshot.
 - Permitir alternancia de vista sin acción de dominio.
 - Representar extremos repetidos con identidad individual y solución híbrida adaptable.
@@ -156,7 +159,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - Cambiar de renderer no requiere modificar reglas.
 - Las coordenadas y rotaciones no aparecen en el estado normativo.
 - Se verifican tableros representativos y redimensionamiento.
-- Ambos renderers producen selecciones equivalentes para el mismo conjunto de jugadas legales.
+- Los tres renderers producen selecciones equivalentes para el mismo conjunto de jugadas legales.
 - El Modo Grafo soporta hasta ocho extremos del mismo valor sin perder accesibilidad ni selección individual.
 
 ## Fase 3 — Juego local 2 vs 2

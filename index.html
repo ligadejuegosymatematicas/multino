@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Dominó múltiplo de 5 jugable en modos Grafo y Tradicional.">
+    <meta name="description" content="Dominó múltiplo de 5 jugable en modos Tradicional, Puertos y Grafo.">
     <title>Dominó múltiplo de 5</title>
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
     <link rel="stylesheet" href="./src/css/board.css">
     <link rel="stylesheet" href="./src/css/traditional.css">
+    <link rel="stylesheet" href="./src/css/ports.css">
     <link rel="stylesheet" href="./src/css/components.css">
   </head>
   <body>
@@ -52,6 +53,10 @@
                 <input type="radio" name="initial-view-mode" value="traditional" checked>
                 <span>Tradicional</span>
               </label>
+              <label>
+                <input type="radio" name="initial-view-mode" value="ports">
+                <span>Puertos <small>experimental</small></span>
+              </label>
             </div>
           </fieldset>
 
@@ -85,13 +90,19 @@
               </div>
               <div class="board-controls">
                 <div class="view-switch" role="group" aria-label="Representación del tablero">
-                  <button type="button" class="view-switch__button" data-view-mode="graph" aria-pressed="false">Grafo</button>
                   <button type="button" class="view-switch__button is-active" data-view-mode="traditional" aria-pressed="true">Tradicional</button>
+                  <button type="button" class="view-switch__button" data-view-mode="ports" aria-pressed="false">Puertos</button>
+                  <button type="button" class="view-switch__button" data-view-mode="graph" aria-pressed="false">Grafo</button>
                 </div>
                 <p id="graph-legend" class="graph-legend" hidden>
                   <span class="legend-main"></span> principal
                   <span class="legend-branch"></span> ramificación
                   <span class="legend-structure-code">P/A</span> extremos
+                </p>
+                <p id="port-legend" class="graph-legend" hidden>
+                  <span class="legend-main"></span> hilo = ficha
+                  <span class="legend-branch"></span> rama
+                  <span class="legend-port-stitch">↔</span> continuidad interior
                 </p>
               </div>
             </div>

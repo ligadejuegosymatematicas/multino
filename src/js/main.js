@@ -1,5 +1,6 @@
 import {
   GraphRenderer,
+  PortRenderer,
   TraditionalRenderer,
 } from "./ui/BoardRenderer.js";
 import { renderHand } from "./ui/HandRenderer.js";
@@ -42,11 +43,13 @@ const participantConfig = {
 
 const boardRoot = document.querySelector("#board-root");
 const graphRenderer = new GraphRenderer(boardRoot);
+const portRenderer = new PortRenderer(boardRoot);
 const traditionalRenderer = new TraditionalRenderer(boardRoot);
 const passButton = document.querySelector("#pass-action");
 const message = document.querySelector("#game-message");
 const boardHeading = document.querySelector("#board-heading");
 const graphLegend = document.querySelector("#graph-legend");
+const portLegend = document.querySelector("#port-legend");
 const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
 const setupScreen = document.querySelector("#setup-screen");
 const gameScreen = document.querySelector("#game-screen");
@@ -124,16 +127,25 @@ function inspectStructure(structureId) {
 function renderRound(presentation, mode, feedback) {
   const renderer = mode === BOARD_VIEW_MODES.GRAPH
     ? graphRenderer
-    : traditionalRenderer;
+    : mode === BOARD_VIEW_MODES.PORTS
+      ? portRenderer
+      : traditionalRenderer;
   boardRoot.dataset.viewMode = mode;
   boardRoot.classList.toggle(
     "is-traditional-view",
     mode === BOARD_VIEW_MODES.TRADITIONAL,
   );
+  boardRoot.classList.toggle(
+    "is-ports-view",
+    mode === BOARD_VIEW_MODES.PORTS,
+  );
   boardHeading.textContent = mode === BOARD_VIEW_MODES.GRAPH
     ? "Grafo de valores"
-    : "Mesa tradicional";
+    : mode === BOARD_VIEW_MODES.PORTS
+      ? "Puertos e incidencias"
+      : "Mesa tradicional";
   graphLegend.hidden = mode !== BOARD_VIEW_MODES.GRAPH;
+  portLegend.hidden = mode !== BOARD_VIEW_MODES.PORTS;
   for (const button of modeButtons) {
     const isActive = button.dataset.viewMode === mode;
     button.classList.toggle("is-active", isActive);
@@ -220,7 +232,7 @@ function renderRound(presentation, mode, feedback) {
   roundActions.hidden = !presentation.isFinished;
   const selectedCount = presentation.selectedLegalTargets.length;
   document.querySelector("#selection-hint").textContent = presentation.isFinished
-    ? `La ronda terminó. ${mode === BOARD_VIEW_MODES.GRAPH ? "El grafo" : "La mesa"} permanece visible.`
+    ? `La ronda terminó. ${mode === BOARD_VIEW_MODES.TRADITIONAL ? "La mesa" : "La representación"} permanece visible.`
     : !presentation.handPrivacy.isRevealed
       ? `Entrega el dispositivo a ${presentation.handPrivacy.displayName} y muestra su mano.`
     : presentation.selectedDominoId === null
@@ -243,7 +255,7 @@ function renderSession(session) {
   }
   sessionBadge.textContent = isConfiguring
     ? "Múltiplos de 5"
-    : `K=${session.config.K} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : "Tradicional"}`;
+    : `K=${session.config.K} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : session.viewMode === BOARD_VIEW_MODES.PORTS ? "Puertos" : "Tradicional"}`;
   if (!isConfiguring) {
     const nextFeedback = getGameFeedback(session.round.view);
     const feedback = nextFeedback?.sequence !== lastFeedbackSequence

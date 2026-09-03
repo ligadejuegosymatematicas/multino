@@ -260,6 +260,7 @@ export class LocalGameSessionController {
     return {
       ...round,
       view: protectView(round.view),
+      portView: protectView(round.portView),
       traditionalView: protectView(round.traditionalView),
       selectedDominoId: isRevealed ? round.selectedDominoId : null,
       selectedLegalTargets: isRevealed ? round.selectedLegalTargets : [],

@@ -92,13 +92,14 @@ test("PASS no inventa puntos ni un mensaje estructural", () => {
 });
 
 test("la jerarquía compacta prioriza tablero y mano sin overflow global", async () => {
-  const [html, layoutCss, componentsCss, boardCss, traditionalCss, mainSource] =
+  const [html, layoutCss, componentsCss, boardCss, traditionalCss, portsCss, mainSource] =
     await Promise.all([
       readFile(new URL("../../index.html", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/layout.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/components.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/board.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/traditional.css", import.meta.url), "utf8"),
+      readFile(new URL("../../src/css/ports.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/js/main.js", import.meta.url), "utf8"),
     ]);
 
@@ -113,6 +114,9 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.match(traditionalCss, /\.traditional-domino \{[\s\S]+?z-index:\s*10/);
   assert.match(traditionalCss, /\.traditional-target \{[\s\S]+?z-index:\s*5/);
   assert.match(traditionalCss, /\.traditional-table__canvas \{[\s\S]+?margin-inline:\s*auto/);
+  assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*transparent/);
+  assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);
   assert.doesNotMatch(traditionalCss, /rgb\(255 255 255 \/ 0\.24\)/);
   assert.match(html, /De las demás manos solo se muestra la cantidad/);
   assert.doesNotMatch(html, /Nueva partida independiente|Prototipo/);

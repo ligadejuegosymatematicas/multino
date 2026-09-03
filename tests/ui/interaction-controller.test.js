@@ -215,6 +215,7 @@ test("una transición terminal deshabilita selección, targets y PASS", () => {
 
   assert.equal(presentation.isFinished, true);
   assert.equal(presentation.view.roundStatus.phase, "finished");
+  assert.equal(presentation.portView.roundStatus.phase, "finished");
   assert.deepEqual(presentation.view.legalPlays, []);
   assert.deepEqual(presentation.selectedLegalTargets, []);
   assert.equal(presentation.canPass, false);

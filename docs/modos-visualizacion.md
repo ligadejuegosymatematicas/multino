@@ -4,11 +4,12 @@
 
 Este documento describe la arquitectura de presentación implementada y sus extensiones futuras. No modifica `REGLAS.md` ni añade modalidades reglamentarias.
 
-## Un estado, dos vistas
+## Un estado, tres vistas
 
-La partida debe poder representarse al menos de estas dos formas:
+La partida puede representarse de estas tres formas:
 
 - **Modo Tradicional:** vista inicial de juego, con mesa, fichas físicas, mano, línea principal y ramificaciones.
+- **Modo Puertos:** prototipo experimental intermedio que conserva siete valores y separa sus incidencias mediante puertos, hilos y puentes internos.
 - **Modo Grafo:** vista secundaria analítica, centrada en los valores `0` a `6`, las fichas jugadas como aristas o lazos y los extremos abiertos individualizados.
 
 Ambas vistas reciben el mismo snapshot lógico y deben permitir alternar durante una partida sin aplicar ninguna acción de dominio:
@@ -20,10 +21,10 @@ Ambas vistas reciben el mismo snapshot lógico y deben permitir alternar durante
                       │
               proyección de vista
                       │
-            ┌─────────┴─────────┐
-            │                   │
-            ▼                   ▼
-      GraphRenderer      TraditionalRenderer
+       ┌──────────────┬──────────────┐
+       │              │              │
+       ▼              ▼              ▼
+TraditionalRenderer PortRenderer GraphRenderer
 ```
 
 Cambiar de renderer no baraja, reparte, juega, pasa, puntúa ni modifica el turno. La preferencia visual pertenece a UI o configuración local del usuario, no a `config` reglamentaria ni al snapshot v6.
@@ -60,7 +61,7 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 }
 ```
 
-`projectRoundView(state, playerId)` compone la información compartida. `projectGraphView` añade valores, aristas y topología; `projectTraditionalView` añade una mesa lógica con línea principal y familias de dos brazos. `getValueGraphProjection`, `getTraditionalBoardProjection`, `groupOpenEndsByValue`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. `getStrategicTargetProjections` anticipa por target exacto las consecuencias de aplicar una acción reglamentaria, pero no se consulta desde la presentación normal para no revelar S ni puntos futuros. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. Cada renderer solo decide geometría, estilo, foco y desplazamiento.
+`projectRoundView(state, playerId)` compone la información compartida. `projectGraphView` añade valores, aristas y topología; `projectPortView` añade macro-nodos, incidencias, puentes y hubs; `projectTraditionalView` añade una mesa lógica con línea principal y familias de dos brazos. `getValueGraphProjection`, `getPortGraphProjection`, `getTraditionalBoardProjection`, `groupOpenEndsByValue`, `getLegalTargetsForDomino` y `getScoringProjection` permiten consumir solo una parte. `getStrategicTargetProjections` anticipa por target exacto las consecuencias de aplicar una acción reglamentaria, pero no se consulta desde la presentación normal para no revelar S ni puntos futuros. Todos los objetos son derivados y descartables; no se añaden al snapshot. El motor sigue siendo la autoridad sobre extremos, legalidad, S y puntuación. Cada renderer solo decide geometría, estilo, foco y desplazamiento.
 
 ## Responsabilidades comunes
 
@@ -89,7 +90,9 @@ Los renderers no deben recorrer estructuras internas de forma distinta ni reinte
 
 ## Modos funcionales y conmutador
 
-La configuración propone TraditionalRenderer como vista inicial y conserva el conmutador `Grafo | Tradicional`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La mitad orientada hacia su predecesora proviene del puerto real de conexión: el brazo superior invierte el orden visual raíz→terminal y el inferior lo conserva. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
+La configuración propone TraditionalRenderer como vista inicial y conserva el conmutador `Tradicional | Puertos | Grafo`. El TraditionalRenderer usa una línea principal predominantemente horizontal y coloca los brazos `branch:1`/`branch:2` por encima/debajo de cada raíz especial. La mitad orientada hacia su predecesora proviene del puerto real de conexión: el brazo superior invierte el orden visual raíz→terminal y el inferior lo conserva. La selección de ficha se conserva al alternar; la vista se reconstruye desde las proyecciones del mismo snapshot y no emite una acción de dominio.
+
+Puertos ocupa una posición conceptual intermedia: agrupa todas las apariciones del valor `n` dentro del único macro-nodo `B_n`, pero no colapsa qué incidencias continúan. Cada ficha no doble es un hilo entre puertos canónicos y cada conexión es una costura interior. Los dobles son hubs internos. La vista conserva targets exactos y participa del mismo feedback posterior de puntuación; no calcula S desde hilos o extremos. Su contrato completo está en [`modo-puertos.md`](modo-puertos.md).
 
 En Tradicional, la geometría comunica la estructura: no se muestran permanentemente `P/A`, familias, K ni IDs. Los extremos libres son sockets próximos a la mitad abierta; la selección resalta compatibles y solo numera opciones concretas repetidas. Una cámara local ajusta y centra el contenido sin cruzar un tamaño mínimo legible; si la mesa sigue siendo mayor, se recorre dentro de su viewport mediante tacto o arrastre, sin desplazar horizontalmente la página.
 
@@ -109,4 +112,4 @@ Conviene conservar la última preferencia de vista como ajuste local del usuario
 
 ## No implementado
 
-Permanecen pendientes acabado premium, giros físicos de cadenas largas, zoom gestual, gestión avanzada de densidad, replay, animaciones complejas y controles definitivos. Ambos renderers actuales son deliberadamente prototipos funcionales.
+Permanecen pendientes acabado premium, giros físicos de cadenas largas, zoom gestual, gestión avanzada de densidad, replay, animaciones complejas y controles definitivos. Los tres renderers actuales son deliberadamente funcionales; Puertos conserva además su etiqueta experimental porque la densidad móvil requiere inspección local.

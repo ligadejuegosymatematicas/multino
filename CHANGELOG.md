@@ -110,6 +110,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Margen geométrico y capas reforzadas en la mesa tradicional: conexiones, hit areas y puentes de socket quedan fuera del interior de las fichas.
 - Modo Tradicional adoptado como vista inicial; Grafo permanece disponible como vista analítica y enfatiza extremos sobre metadata cerrada.
 - La selección normal no anticipa S ni puntos; la explicación reglamentaria continúa únicamente después de la jugada aceptada.
+- Vista experimental Puertos con exactamente siete macro-nodos, seis incidencias ordinarias canónicas por valor y geometría heptagonal estable.
+- Proyección pura `getPortGraphProjection`/`projectPortView`: fichas no dobles como hilos exteriores, conexiones como puentes interiores y chanchos como hubs de dos o cuatro sockets.
+- Continuidad de línea y ramas reconstruible sin duplicar valores, incluidos pasos repetidos por un mismo valor y ambos brazos de un chancho especial.
+- Targets abiertos exactos, selección individual `placementId + portId`, inspección de rama/principal y detalle local accesible de macro-nodos densos.
+- Conmutador Tradicional ↔ Puertos ↔ Grafo sin mutar snapshot ni repetir feedback; responsive sin overflow global y limitación móvil densa documentada.
 
 ### Decidido
 
@@ -134,6 +139,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-036 fija SVG, geometría heptagonal descartable y el controlador como única frontera entre intención visual y transición reglamentaria.
 - DEC-040 materializa la reconstrucción tradicional como proyección descartable y mantiene la selección de renderer fuera del snapshot.
 - DEC-042 mantiene la repetición de partidas como coordinación local efímera y aplaza la separación formal RoundState/MatchState.
+- DEC-047 introduce Puertos como proyección experimental intermedia entre la mesa topológica y el grafo simple, sin autoridad reglamentaria ni estado persistido.
 
 ### Cambiado
 
