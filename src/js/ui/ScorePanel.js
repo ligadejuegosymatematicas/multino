@@ -114,5 +114,8 @@ export function renderRoundResult(container, view) {
   const explanation = document.createElement("div");
   explanation.className = "round-result__explanation";
   explanation.append(reason, traditional, bonus);
-  container.append(title, score, scoreTeams, explanation);
+  const analysis = document.createElement("p");
+  analysis.className = "round-result__analysis";
+  analysis.textContent = "Explora la mesa en Tradicional, Puertos o Grafo.";
+  container.append(title, score, scoreTeams, explanation, analysis);
 }

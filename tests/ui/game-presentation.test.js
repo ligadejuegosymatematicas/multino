@@ -91,8 +91,8 @@ test("PASS no inventa puntos ni un mensaje estructural", () => {
   assert.equal(feedback.message, "");
 });
 
-test("la jerarquía compacta prioriza tablero y mano sin overflow global", async () => {
-  const [html, layoutCss, componentsCss, boardCss, traditionalCss, portsCss, mainSource] =
+test("la jerarquía game-first compacta chrome y acerca tablero y mano", async () => {
+  const [html, layoutCss, componentsCss, boardCss, traditionalCss, portsCss, mainSource, turnSource] =
     await Promise.all([
       readFile(new URL("../../index.html", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/layout.css", import.meta.url), "utf8"),
@@ -101,13 +101,14 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
       readFile(new URL("../../src/css/traditional.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/ports.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/js/main.js", import.meta.url), "utf8"),
+      readFile(new URL("../../src/js/ui/TurnIndicator.js", import.meta.url), "utf8"),
     ]);
 
   assert.match(layoutCss, /grid-template-areas:\s*\n\s*"board"\s*\n\s*"hand"\s*\n\s*"sidebar"/);
   assert.match(componentsCss, /\.player-counts \{[\s\S]+?display:\s*flex/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?repeat\(7/);
   assert.match(componentsCss, /@media \(max-width: 36rem\)[\s\S]+?repeat\(4/);
-  assert.match(boardCss, /height:\s*clamp\(20rem, 44vh, 26rem\)/);
+  assert.match(boardCss, /height:\s*clamp\(20rem, 48vh, 27rem\)/);
   assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
   assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
   assert.match(traditionalCss, /\.traditional-connection \{[\s\S]+?z-index:\s*1/);
@@ -118,12 +119,20 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);
   assert.doesNotMatch(traditionalCss, /rgb\(255 255 255 \/ 0\.24\)/);
-  assert.match(html, /De las demás manos solo se muestra la cantidad/);
+  assert.doesNotMatch(html, /De las demás manos solo se muestra la cantidad/);
+  assert.doesNotMatch(html, />Suma abierta<|>Marcador<|>Siguiente turno</);
+  assert.match(html, /id="selection-hint"[^>]+hidden/);
+  assert.match(html, /id="pass-action"[^>]+hidden/);
+  assert.match(layoutCss, /grid-template-columns:\s*1\.15fr 1\.4fr 0\.65fr/);
+  assert.match(componentsCss, /\.graph-stage > \.panel-heading[\s\S]+?justify-content:\s*flex-end/);
   assert.doesNotMatch(html, /Nueva partida independiente|Prototipo/);
   assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(mainSource, /lastFeedbackSequence/);
   assert.match(mainSource, /window\.setTimeout[\s\S]+?2100/);
   assert.match(mainSource, /handPanel\.hidden\s*=\s*presentation\.isFinished/);
+  assert.match(mainSource, /passButton\.hidden\s*=\s*!presentation\.canPass/);
+  assert.doesNotMatch(turnSource, /Acción \$\{/);
+  assert.match(turnSource, /consecutivePasses > 0/);
   assert.doesNotMatch(mainSource, /state\.board|applyTurnAction|calculateMoveScore/);
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
 });

@@ -17,7 +17,7 @@ PortScene (jerarquía y geometría descartables)
 PortRenderer (SVG e intención del usuario)
 ```
 
-La segunda iteración mantiene íntegro ese modelo y cambia la presentación: ya no intenta mostrar las 42 incidencias, todos los hilos y todos los puentes con el mismo peso. La vista usa revelado progresivo para que siga siendo un juego antes que un diagrama exhaustivo.
+La tercera iteración mantiene íntegro ese modelo y separa explícitamente juego y análisis. En un turno normal no serializa los 42 puertos potenciales ni la estructura completa: una tapa central deja protagonismo a los siete valores, los extremos reales y la decisión inmediata. Hilos, puentes, hubs e incidencias siguen completos en la escena y reaparecen bajo demanda.
 
 ## Definición implementada
 
@@ -66,6 +66,25 @@ Los hilos ya no son cuerdas rectas que cruzan el centro. Cada ficha usa una curv
 
 Los macro-nodos usan capas de medallón, aro e interior para admitir posteriormente una materialidad más rica sin cambiar la escena. Los dobles se integran como mecanismos: dos brazos en un ordinario y cuatro en un especial, con los brazos laterales segmentados. No aparecen rótulos técnicos ni se duplica el valor.
 
+## Gramática game-first v3
+
+La tapa central es una capa descartable del renderer, no parte de `PortGraphProjection`. Organiza cuatro niveles de revelado:
+
+- **Jugar:** es el estado inicial. Permanecen los siete medallones y una cola corta por cada `openEndTarget` real. Los hilos y puentes completos no se incluyen en el SVG; tampoco se dibujan los 42 puertos potenciales.
+- **Decidir:** seleccionar una ficha conserva la tapa, resalta solo sus targets legales exactos y numera únicamente opciones que necesitan desambiguación. No anticipa S ni puntos.
+- **Seguir recorrido:** tocar un extremo, hilo local o incidencia dibuja por encima de la tapa únicamente los hilos y puentes del recorrido pertinente. El resto no queda como maraña atenuada: se omite.
+- **Ver estructura:** una acción central restaura la representación completa de v2, con todos los hilos, puentes, incidencias utilizadas, hubs y ramas. La misma acción devuelve a Jugar.
+
+Cada cola nace en la incidencia propietaria y termina en un ojal táctil separado. Principal conserva trazo continuo y rama, segmentado; dos extremos del mismo valor siguen siendo dos controles distintos con su propio `placementId + portId`. Los puertos potenciales solo aparecen en Ver estructura o al abrir el saco.
+
+«Abrir el saco» sigue siendo el detalle local del valor, pero evita notación `p(n→m)`: las seis posiciones estables se rotulan solo con el otro valor. Usado, abierto y potencial se distinguen por estado visual; el hub de doble queda integrado. Hay una única acción visible de cierre, más `Escape` por teclado.
+
+Durante el feedback posterior a `PLAY_DOMINO`, la tapa funciona como superficie de explicación: recibe de `scoringPresentation` la expresión, S, divisor y resultado. No reconstruye términos desde colas y no duplica el panel general. Al concluir la secuencia efímera vuelve a su contenido de juego; con `enabled: false` no mostraría ninguna explicación de divisibilidad.
+
+### Comparación v2/v3
+
+V3 gana calma visual, targets reconocibles y un flujo de decisión utilizable sin estudiar el diagrama completo. Pierde en reposo la panorámica ambiental de por dónde discurren todos los recorridos. Esa pérdida es deliberada y reversible: Seguir recorrido recupera una estructura aislada y Ver estructura recupera v2 íntegro. La tapa resultó útil siempre que las colas abiertas no se ocultaran con ella; por eso los extremos quedan fuera y por encima de su borde.
+
 ## Diagnóstico cuantitativo y K
 
 La medición previa al rediseño separó el problema basal de la amplificación causada por K. En posiciones completas sin prioridad visual había 21 hilos no dobles y hasta 35 cruces rectos incluso con `K=0`; por tanto, las ramas no eran la causa única. Los 42 puertos potenciales, puentes, hubs y targets elevaban una posición completa a alrededor de 120–136 marcas simultáneas.
@@ -99,8 +118,12 @@ Las geometrías compacta y ancha conservan un heptágono reconocible, carriles a
 
 En 390×844 los siete nodos conservan aproximadamente 48 px de caja visual en un estado denso y no existe overflow horizontal de página. Los ojales exactos próximos a un hub especial no siempre son cómodos como selección global: «abrir el saco» es la interacción recomendada para separarlos. Un recorrido inspeccionado se puede seguir, pero una posición `K=5/7` casi completa no se entiende globalmente de una sola mirada. Esta limitación sigue siendo honesta: Puertos v2 es jugable en teléfono para decisiones locales, no una vista panorámica exhaustiva de todos los recorridos simultáneos.
 
+Con la interfaz game-first, en 390×844 el comienzo del tablero pasó aproximadamente de `y=310` a `y=131`, una reducción de 179 px (58 %) en información previa; el comienzo de la mano pasó de `y=726` a `y=506`. Cabecera, turno/marcador/S y selector caben antes del tablero sin overflow horizontal. La tapa cerrada hace cómoda la decisión local incluso en K alto, pero no vuelve comprensible de una mirada una estructura completa K=5/7: para eso continúan siendo necesarias la inspección o la vista analítica.
+
 ## Comparación
 
 - frente a Tradicional, Puertos conserva mejor las visitas repetidas a un valor y los mecanismos de dobles, pero exige aprender hilo ↔ puente y usar foco en densidad alta;
 - frente a Grafo, aporta información distintiva suficiente: identifica qué entrada continúa con qué salida y representa dobles como hubs explícitos; a cambio es visualmente más complejo;
-- Tradicional sigue siendo la vista más inmediata para jugar; Puertos v2 puede ser jugable y analítica a la vez, sobre todo con `K≤3`; Grafo sigue siendo la lectura matemática más simple de valores/aristas, aunque su papel a largo plazo deberá compararse con Puertos en más pruebas humanas.
+- Tradicional sigue siendo la vista físicamente más inmediata; Puertos v3 ya compite como interfaz de decisión exacta, especialmente cuando hay varios targets del mismo valor, y desplaza su complejidad topológica a demanda; Grafo conserva la lectura matemática más simple de valores/aristas. `K=2/3` sigue siendo una recomendación de experiencia, nunca una cota: el motor y la configuración conservan `K=0…7`.
+
+Una visualización postpartida por pisos o carriles de ramas queda registrada como posibilidad futura. No forma parte de v3 ni se persiste en el snapshot.

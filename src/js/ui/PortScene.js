@@ -124,6 +124,22 @@ function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
 }
 
+function openTargetTail(node, endpoint, topology) {
+  const angle = Math.atan2(endpoint.y - node.y, endpoint.x - node.x);
+  const end = pointAt(node, angle, NODE_RADIUS + 27);
+  const middle = {
+    x: (endpoint.x + end.x) / 2,
+    y: (endpoint.y + end.y) / 2,
+  };
+  const branchBend = topology.region === "branch" ? 4 : 0;
+  const control = pointAt(middle, angle + Math.PI / 2, branchBend);
+  return {
+    anchor: { x: endpoint.x, y: endpoint.y },
+    terminal: end,
+    tailPath: quadraticPath(endpoint, control, end),
+  };
+}
+
 function inspectionState({
   structureId,
   familyId,
@@ -170,10 +186,10 @@ function createNodeInspector(node, bridges, hubs) {
     bridges: bridges.map((bridge) => ({
       connectionId: bridge.connectionId,
       firstLabel: bridge.first.kind === "ordinary-port"
-        ? `${bridge.value}→${bridge.first.otherValue}`
+        ? `ojal ${bridge.first.otherValue}`
         : describeDoubleSocket(bridge.first.boardPortId),
       secondLabel: bridge.second.kind === "ordinary-port"
-        ? `${bridge.value}→${bridge.second.otherValue}`
+        ? `ojal ${bridge.second.otherValue}`
         : describeDoubleSocket(bridge.second.boardPortId),
       region: bridge.region,
     })),
@@ -355,6 +371,7 @@ export function createPortScene(
     inspectedPlacementId = null,
     inspectedRouteId = null,
     expandedNodeValue = null,
+    showStructure = false,
     layout = PORT_SCENE_LAYOUTS.COMPACT,
     scoringResolution = null,
   } = {},
@@ -558,9 +575,16 @@ export function createPortScene(
     const family = target.topology.familyId
       ? familyById.get(target.topology.familyId)
       : null;
+    const endpoint = endpointPositions.get(target.endpoint.id);
+    const tail = openTargetTail(
+      nodePositions.get(target.value),
+      endpoint,
+      target.topology,
+    );
     return {
       ...target,
-      ...endpointPositions.get(target.endpoint.id),
+      ...tail.terminal,
+      ...tail,
       isLegal,
       isIncompatible: hasSelection && !isLegal,
       optionIndex,
@@ -612,12 +636,21 @@ export function createPortScene(
       rx: geometry.radii.x,
       ry: geometry.radii.y,
     },
-    visualState: expandedNode ? "node-focus" : inspectionActive
-      ? "inspection"
+    visualState: expandedNode ? "node-focus" : showStructure
+      ? "structure"
+      : inspectionActive
+        ? "route"
       : hasSelection
         ? "decision"
-        : "rest",
+        : "play",
     hasSelection,
+    showStructure,
+    cover: {
+      cx: geometry.center.x,
+      cy: geometry.center.y,
+      radius: layout === PORT_SCENE_LAYOUTS.WIDE ? 154 : 140,
+    },
+    scoringResolution,
     selectedDominoId,
     inspectedStructureId,
     inspectedPlacementId,

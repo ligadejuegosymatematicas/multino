@@ -135,6 +135,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 14 — Puertos v2, revelado progresivo y carriles anulares: COMPLETADO.** Sustituye hilos rectos de igual peso por curvas Bézier anulares, jerarquiza reposo/decisión/inspección, permite seguir principal o un brazo exacto y materializa «abrir el saco» como lente SVG de seis incidencias, puentes, hub y targets. Documenta `K=2/3` como recomendación de experiencia sin limitar el soporte reglamentario `K=0…7` ni cambiar el valor predeterminado.
 
+**Bloque 15 — Puertos v3 game-first y tapa central: COMPLETADO.** La posición normal conserva siete valores y extremos exactos, pero omite hilos/puentes completos y 42 puertos potenciales. Seguir recorrido revela solo la estructura elegida; Ver estructura recupera v2; abrir el saco mantiene detalle local. La tapa aloja feedback reglamentario y la UI común se compacta para acercar tablero y mano, sin cambiar proyección matemática, snapshot, motor ni K.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

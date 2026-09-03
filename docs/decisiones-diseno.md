@@ -675,3 +675,15 @@ Exponer `getStrategicTargetProjections(state, playerId, dominoId)` como consulta
 **Motivo:** En Puertos v1, 21 hilos no dobles podían producir 35 cruces rectos aun con K=0 y los 42 puertos potenciales competían con extremos y nodos. K alto amplificaba el problema, pero no era su causa. El enrutado anular y el revelado progresivo reducen cruces perceptivos e información simultánea sin perder continuidad.
 
 **Consecuencias:** El motor sigue admitiendo `K=0…7`. Las pruebas de estrés favorecen `K=2` o `K=3` como recomendación inicial de experiencia, no como límite ni cambio de default. En 390 px la decisión local y el foco de nodo son utilizables; una posición casi completa con `K=5/7` sigue requiriendo inspección y no ofrece una panorámica exhaustiva. Snapshot v6, schema, reglas, scoring, bonus, persistencia, privacidad y flujo de turno permanecen intactos.
+
+## DEC-049 — Puertos game-first con tapa central
+
+**Estado:** Aceptada para la tercera iteración experimental.
+
+**Decisión:** Mantener intacta la proyección de incidencias y usar una tapa central exclusivamente visual para separar cuatro niveles: Jugar, Decidir, Seguir recorrido y Ver estructura. Jugar no serializa hilos/puentes completos ni los 42 puertos potenciales; conserva los siete valores y una cola táctil por cada target reglamentario real. Seguir recorrido dibuja únicamente la estructura seleccionada sobre la tapa. Ver estructura recupera toda la representación v2. Abrir el saco muestra las seis incidencias con el otro valor como rótulo y un único control visible de cierre.
+
+La misma tapa aloja el feedback efímero de `scoringPresentation`, sin reconstruir S ni duplicar puntos. La interfaz común concentra turno, marcador y S en una banda compacta; oculta acción, cero pases, títulos explicativos, instrucciones redundantes y PASS cuando no es legal. La privacidad entre turnos, la terminalidad y el conmutador de tres vistas conservan sus contratos.
+
+**Motivo:** Aunque v2 resolvía recorridos y densidad local, seguía mostrando información estructural solo porque estaba disponible matemáticamente. Las pruebas móviles situaban el tablero cerca de `y=310`; v3 lo acerca a `y=131` y deja visibles los extremos que el jugador necesita para actuar.
+
+**Consecuencias:** La posición normal es mucho más tranquila y exacta para elegir targets, a cambio de perder la panorámica completa hasta solicitarla. Tradicional continúa siendo la lectura física más inmediata; Puertos gana un papel distintivo para decisiones por incidencia; Grafo conserva el resumen matemático. No cambian snapshot v6, schema, motor, reglas, scoring, bonus, K, persistencia, privacidad ni flujo de turno. Una presentación postpartida por pisos de ramas se documenta como estudio futuro, no como implementación.

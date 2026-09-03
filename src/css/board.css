@@ -12,12 +12,12 @@
 .graph-stage {
   position: relative;
   min-width: 0;
-  padding: clamp(0.6rem, 1.5vw, 0.9rem);
+  padding: clamp(0.35rem, 1vw, 0.55rem);
 }
 
 .graph-root {
   position: relative;
-  height: clamp(20rem, 44vh, 26rem);
+  height: clamp(20rem, 48vh, 27rem);
   overflow: hidden;
   border: 1px solid #dbe3e1;
   border-radius: 0.85rem;

@@ -1,5 +1,5 @@
 .graph-root.is-ports-view {
-  height: clamp(24rem, 56vh, 30rem);
+  height: clamp(22rem, 52vh, 28rem);
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 45%, rgb(255 248 225 / 0.5), transparent 34%),
@@ -20,6 +20,97 @@
   stroke: rgb(89 62 36 / 0.14);
   stroke-width: 1.5;
   stroke-dasharray: 2 14;
+}
+
+.port-cover {
+  cursor: pointer;
+}
+
+.port-cover__shadow {
+  fill: rgb(49 29 14 / 0.2);
+  filter: blur(5px);
+}
+
+.port-cover__rim {
+  fill: #745533;
+  stroke: #49301b;
+  stroke-width: 4;
+}
+
+.port-cover__body {
+  fill: #d7bd91;
+  stroke: #a1845b;
+  stroke-width: 2;
+}
+
+.port-cover__title,
+.port-cover__action,
+.port-cover__expression,
+.port-cover__sum,
+.port-cover__division,
+.port-cover__outcome {
+  fill: #382718;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.port-cover__title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.port-cover__action {
+  fill: #654b2d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.port-cover.is-structure-control .port-cover__title {
+  font-size: 14px;
+}
+
+.port-cover.is-structure-control .port-cover__action {
+  font-size: 10px;
+}
+
+.port-cover:focus-visible .port-cover__rim {
+  stroke: var(--focus);
+  stroke-width: 7;
+}
+
+.port-cover__scoring {
+  animation: port-cover-score 1.95s ease-out both;
+}
+
+.port-cover__expression {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.port-cover__sum {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.port-cover__division {
+  fill: #684c2c;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.port-cover__outcome {
+  fill: #62594e;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.port-cover__outcome.is-award {
+  fill: #86500e;
+  font-size: 18px;
 }
 
 .port-thread,
@@ -134,11 +225,11 @@
   opacity: 0.055;
 }
 
-.port-graph.is-inspection .port-thread.is-topology-dimmed,
-.port-graph.is-inspection .port-bridge.is-topology-dimmed,
-.port-graph.is-inspection .port-double-hub.is-topology-dimmed,
-.port-graph.is-inspection .port-open-target.is-topology-dimmed,
-.port-graph.is-inspection .port-incidence-wrap:has(.is-topology-dimmed) {
+.port-graph.is-route .port-thread.is-topology-dimmed,
+.port-graph.is-route .port-bridge.is-topology-dimmed,
+.port-graph.is-route .port-double-hub.is-topology-dimmed,
+.port-graph.is-route .port-open-target.is-topology-dimmed,
+.port-graph.is-route .port-incidence-wrap:has(.is-topology-dimmed) {
   opacity: 0.045;
 }
 
@@ -305,6 +396,20 @@
   opacity: 1;
 }
 
+.port-open-target__tail {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 1px rgb(75 43 15 / 0.25));
+  vector-effect: non-scaling-stroke;
+}
+
+.port-open-target.is-branch .port-open-target__tail {
+  stroke-width: 5;
+  stroke-dasharray: 5 4;
+}
+
 .port-open-target__hit {
   fill: none;
   stroke: transparent;
@@ -344,6 +449,14 @@
 .port-open-target.is-legal .port-open-target__halo {
   fill: rgb(255 225 112 / 0.62);
   stroke-width: 5;
+}
+
+.port-open-target.is-legal .port-open-target__tail {
+  stroke-width: 8;
+}
+
+.port-open-target.is-incompatible {
+  opacity: 0.075;
 }
 
 .port-open-target.is-legal .port-open-target__eyelet {
@@ -400,7 +513,6 @@
 }
 
 .port-node-focus__title,
-.port-node-focus__hint,
 .port-focus__port-label {
   fill: #3d2b1d;
   text-anchor: middle;
@@ -410,18 +522,12 @@
 
 .port-node-focus__title {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 850;
 }
 
-.port-node-focus__hint {
-  fill: #735c43;
-  font-size: 10px;
-  font-weight: 700;
-}
-
 .port-focus__port-label {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 850;
 }
 
@@ -456,8 +562,7 @@
   stroke-width: 5;
 }
 
-.port-node-inspector,
-.port-route-status {
+.port-node-inspector {
   position: absolute;
   z-index: 45;
   display: flex;
@@ -477,16 +582,6 @@
   max-height: 42%;
   overflow: auto;
   padding: 0.65rem 0.75rem;
-}
-
-.port-route-status {
-  inset: 0.6rem auto auto 50%;
-  align-items: center;
-  width: max-content;
-  max-width: calc(100% - 1.2rem);
-  padding: 0.45rem 0.55rem 0.45rem 0.75rem;
-  transform: translateX(-50%);
-  font-size: 0.76rem;
 }
 
 .port-node-inspector h3,
@@ -536,24 +631,6 @@
   font-weight: 750;
 }
 
-.port-node-inspector button,
-.port-route-status button {
-  min-height: 2rem;
-  padding: 0.3rem 0.62rem;
-  border: 1px solid #8a6b45;
-  border-radius: 999px;
-  color: #4b3520;
-  background: #ffffff;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.port-node-inspector button:focus-visible,
-.port-route-status button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-
 @keyframes port-target-pulse {
   0%, 100% { opacity: 0.72; }
   50% { opacity: 1; }
@@ -562,6 +639,12 @@
 @keyframes port-target-breathe {
   0%, 100% { transform: scale(0.96); transform-origin: center; }
   50% { transform: scale(1.04); transform-origin: center; }
+}
+
+@keyframes port-cover-score {
+  0% { opacity: 0; transform: translateY(8px) scale(0.96); transform-origin: center; }
+  16%, 82% { opacity: 1; transform: translateY(0) scale(1); transform-origin: center; }
+  100% { opacity: 0; transform: translateY(-4px) scale(0.99); transform-origin: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -576,14 +659,15 @@
   .port-open-target.is-neutral .port-open-target__halo,
   .port-open-target.is-legal,
   .port-open-target.is-scoring-term .port-open-target__halo,
-  .port-double-hub.is-scoring-term .port-double-hub__rim {
+  .port-double-hub.is-scoring-term .port-double-hub__rim,
+  .port-cover__scoring {
     animation: none;
   }
 }
 
 @media (max-width: 36rem) {
   .graph-root.is-ports-view {
-    height: clamp(22rem, 48vh, 25rem);
+    height: clamp(20.5rem, 43vh, 23rem);
   }
 
   .port-node-inspector {
@@ -594,17 +678,6 @@
 
   .port-node-inspector details {
     display: none;
-  }
-
-  .port-route-status {
-    inset-block-start: 0.35rem;
-    max-width: calc(100% - 0.8rem);
-  }
-
-  .port-route-status span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .port-thread__hit,

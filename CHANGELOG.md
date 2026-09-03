@@ -120,6 +120,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Inspección exacta de principal o brazo lateral desde hilo, puente, puerto o extremo, con raíz correcta y atenuación agresiva de estructuras ajenas.
 - «Abrir el saco» convertido en una lente SVG interactiva con seis incidencias estables, puentes, hubs y targets separados; dobles ordinarios/especiales se muestran como mecanismos de dos/cuatro sockets.
 - Estudio K=0/1/2/3/5/7 documentado: el motor conserva todo el rango y se recomienda K=2 o K=3 únicamente como punto de partida de UX.
+- Tercera versión game-first de Puertos con tapa central: en reposo solo permanecen siete valores y colas para targets reales; hilos, puentes y 42 puertos potenciales pasan a revelado bajo demanda.
+- Estados explícitos Jugar, Decidir, Seguir recorrido y Ver estructura; la inspección dibuja solo el recorrido pertinente por encima de la tapa y la estructura completa restaura íntegramente v2.
+- «Abrir el saco» simplificado con rótulos del otro valor y un único cierre visible; feedback de `scoringPresentation` integrado temporalmente en la tapa sin duplicar S ni puntos.
+- Cabecera, handoff, selector, mano y cantidades compactados: en teléfono el tablero comienza aproximadamente 179 px antes, sin cambiar privacidad, snapshot ni flujo de turno.
+- DEC-049 formaliza la tapa como geometría descartable y conserva `K=0…7`; `K=2/3` continúa siendo solo recomendación de experiencia.
 
 ### Decidido
 

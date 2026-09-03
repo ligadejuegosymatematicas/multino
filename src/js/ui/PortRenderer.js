@@ -94,7 +94,7 @@ function renderIncidence(port, { focus = false } = {}) {
     ? ` data-route-id="${escapeAttribute(port.topology.structureId)}" role="button" tabindex="0" aria-label="Incidencia ${port.value} hacia ${port.otherValue}; ${escapeAttribute(routeLabel(port.topology))}; inspeccionar recorrido"`
     : ` aria-hidden="true"`;
   const label = focus
-    ? `<text class="port-focus__port-label" x="${port.label.x}" y="${port.label.y}">→${port.otherValue}</text>`
+    ? `<text class="port-focus__port-label" x="${port.label.x}" y="${port.label.y}">${port.otherValue}</text>`
     : "";
   return `
     <g class="port-incidence-wrap"${interaction}>
@@ -113,13 +113,16 @@ function renderNodeShell(node) {
     </g>`;
 }
 
-function renderNode(node, isExpanded, hasDoubleHub) {
+function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } = {}) {
   const playedCount = node.ordinaryPorts.filter((port) => port.state === "PLAYED").length;
+  const incidences = showIncidences
+    ? node.ordinaryPorts.map((port) => renderIncidence(port)).join("")
+    : "";
   return `
     <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded}" aria-label="Valor ${node.value}; ${playedCount} incidencias utilizadas; abrir el saco">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
       <text class="port-macro-node__value" x="${node.x}" y="${node.y - (hasDoubleHub ? 32 : 0)}">${node.value}</text>
-      <g class="port-incidences">${node.ordinaryPorts.map((port) => renderIncidence(port)).join("")}</g>
+      <g class="port-incidences">${incidences}</g>
     </g>`;
 }
 
@@ -133,8 +136,12 @@ function renderOpenTarget(target, hasSelection, { focus = false } = {}) {
     ? ""
     : `<text class="port-open-target__option" x="${target.x + (focus ? 18 : 14)}" y="${target.y - (focus ? 17 : 13)}">${target.optionIndex}</text>`;
   const structure = routeLabel(target.topology);
+  const tail = focus
+    ? ""
+    : `<path class="port-open-target__tail" d="${target.tailPath}"></path>`;
   return `
     <g class="port-open-target ${stateClass}${focus ? " is-focus-target" : ""} ${topologyClasses(target)}" data-target-id="${escapeAttribute(target.id)}" data-route-id="${escapeAttribute(target.topology.structureId)}" role="button" tabindex="0" aria-label="Extremo abierto de valor ${target.value}, ${escapeAttribute(structure)}${hasSelection ? target.isLegal ? "; compatible" : "; no compatible" : ""}">
+      ${tail}
       <circle class="port-open-target__hit" cx="${target.x}" cy="${target.y}" r="4"></circle>
       <circle class="port-open-target__halo" cx="${target.x}" cy="${target.y}" r="${focus ? 16 : 13}"></circle>
       <circle class="port-open-target__eyelet" cx="${target.x}" cy="${target.y}" r="${focus ? 9 : 7}"></circle>
@@ -156,8 +163,7 @@ function renderNodeFocus(focus, hasSelection) {
       <circle class="port-node-focus__backdrop" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius + 42}"></circle>
       <circle class="port-node-focus__rim" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius}"></circle>
       <circle class="port-node-focus__body" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius - 8}"></circle>
-      <text class="port-node-focus__title" x="${focus.center.x}" y="${focus.center.y - focus.radius + 27}">Valor ${focus.value}</text>
-      <text class="port-node-focus__hint" x="${focus.center.x}" y="${focus.center.y + focus.radius - 18}">Cada ojal conserva su incidencia</text>
+      <text class="port-node-focus__title" x="${focus.center.x}" y="${focus.center.y - focus.radius - 18}">Conexiones de ${focus.value}</text>
       <g class="port-node-focus__bridges">${focus.bridges.map((bridge) => renderBridge(bridge, { focus: true })).join("")}</g>
       <g class="port-node-focus__ports">${focus.ports.map(renderFocusPort).join("")}</g>
       <g class="port-node-focus__hubs">${focus.hubs.map((hub) => renderHub(hub, { focus: true })).join("")}</g>
@@ -184,50 +190,93 @@ export function renderPortNodeInspectorMarkup(inspector) {
   return `
     <aside class="port-node-inspector" data-port-node-inspector aria-label="Resumen del valor ${inspector.value}">
       <div>
-        <p class="port-node-inspector__kicker">Saco abierto</p>
-        <h3>Valor ${inspector.value}</h3>
-        <p>${inspector.playedPortCount} de 6 incidencias ordinarias utilizadas.</p>
+        <p class="port-node-inspector__kicker">Valor ${inspector.value}</p>
+        <h3>${inspector.playedPortCount} de 6 ojales utilizados</h3>
         ${hubs}
         <details>
           <summary>Ver ${inspector.bridges.length} continuidades</summary>
           <ul>${bridges}</ul>
         </details>
       </div>
-      <button type="button" data-close-port-node aria-label="Cerrar detalle del valor ${inspector.value}">Cerrar</button>
     </aside>`;
 }
 
-function renderRouteStatus(scene) {
-  if (scene.inspectedRouteId === null) {
+function renderCoverScoring(scoring, cover) {
+  if (!scoring) {
     return "";
   }
-  const source = scene.threads.find((thread) => thread.isTopologyHighlighted) ??
-    scene.openTargets.find((target) => target.isTopologyHighlighted);
-  const label = routeLabel(source?.topology);
-  const potential = source?.topology?.branchState === "POTENTIAL"
-    ? " · brazo potencial"
-    : "";
   return `
-    <div class="port-route-status" role="status">
-      <span><strong>Recorrido:</strong> ${escapeAttribute(label)}${potential}</span>
-      <button type="button" data-close-port-route>Salir</button>
-    </div>`;
+    <g class="port-cover__scoring" role="status" aria-label="${escapeAttribute(scoring.expression)} da S igual a ${scoring.sum}; ${scoring.scoreAwarded > 0 ? `${scoring.scoreAwarded} puntos` : "sin puntos"}">
+      <text class="port-cover__expression" x="${cover.cx}" y="${cover.cy - 30}">${escapeAttribute(scoring.expression)}</text>
+      <text class="port-cover__sum" x="${cover.cx}" y="${cover.cy + 4}">S = ${scoring.sum}</text>
+      <text class="port-cover__division" x="${cover.cx}" y="${cover.cy + 32}">${scoring.isDivisible ? `${scoring.sum} = ${scoring.divisor} × ${scoring.quotient}` : `${scoring.sum} no es múltiplo de ${scoring.divisor}`}</text>
+      <text class="port-cover__outcome${scoring.scoreAwarded > 0 ? " is-award" : ""}" x="${cover.cx}" y="${cover.cy + 62}">${scoring.scoreAwarded > 0 ? `+${scoring.scoreAwarded} puntos` : "Sin puntos"}</text>
+    </g>`;
+}
+
+function renderCover(scene) {
+  if (scene.nodeFocus) {
+    return "";
+  }
+  const isStructure = scene.showStructure;
+  const isRoute = scene.visualState === "route";
+  const source = isRoute
+    ? scene.threads.find((thread) => thread.isTopologyHighlighted) ??
+      scene.openTargets.find((target) => target.isTopologyHighlighted)
+    : null;
+  const title = isRoute
+    ? routeLabel(source?.topology)
+    : isStructure
+      ? "Estructura visible"
+      : "Puertos";
+  const action = isRoute || isStructure ? "Volver a jugar" : "Ver estructura";
+  const radius = isStructure ? 80 : scene.cover.radius;
+  return `
+    <g class="port-cover${isStructure ? " is-structure-control" : ""}${isRoute ? " is-route-cover" : ""}${scene.scoringResolution ? " is-scoring" : ""}" data-toggle-port-structure role="button" tabindex="0" aria-label="${escapeAttribute(action)}" aria-pressed="${isStructure}">
+      <circle class="port-cover__shadow" cx="${scene.cover.cx}" cy="${scene.cover.cy + 5}" r="${radius + 4}"></circle>
+      <circle class="port-cover__rim" cx="${scene.cover.cx}" cy="${scene.cover.cy}" r="${radius}"></circle>
+      <circle class="port-cover__body" cx="${scene.cover.cx}" cy="${scene.cover.cy}" r="${Math.max(radius - 10, 48)}"></circle>
+      ${renderCoverScoring(scene.scoringResolution, scene.cover) || `
+        <text class="port-cover__title" x="${scene.cover.cx}" y="${scene.cover.cy - 7}">${escapeAttribute(title)}</text>
+        <text class="port-cover__action" x="${scene.cover.cx}" y="${scene.cover.cy + 20}">${escapeAttribute(action)}</text>`}
+    </g>`;
 }
 
 /** Serialización SVG verificable sin DOM artificial. */
 export function renderPortSvgMarkup(scene) {
   const focusActive = scene.nodeFocus !== null;
+  const fullStructure = scene.showStructure;
+  const routeOnly = scene.visualState === "route";
+  const renderedThreads = fullStructure ? scene.threads : [];
+  const routeThreads = routeOnly
+    ? scene.threads.filter((thread) => thread.isTopologyHighlighted)
+    : [];
+  const renderedBridges = fullStructure
+    ? scene.bridges
+    : routeOnly
+      ? scene.bridges.filter((bridge) => bridge.isTopologyHighlighted)
+      : [];
+  const renderedHubs = fullStructure
+    ? scene.hubs
+    : routeOnly
+      ? scene.hubs.filter((hub) => hub.isTopologyHighlighted || hub.isTopologyRoot)
+      : scene.hubs.filter((hub) =>
+          hub.isLive || hub.isDecisionOwner || hub.isScoringTerm
+        );
+  const showIncidences = fullStructure || routeOnly;
   return `
     <svg class="port-graph is-${scene.visualState}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
       <title id="port-title">Vista experimental de Puertos</title>
       <desc id="port-description">Siete macro-nodos fijos. Los hilos son fichas; las costuras interiores muestran qué incidencias continúan. Activa un recorrido o abre un valor para verlo sin interferencias.</desc>
       <g class="port-scene-base">
         <ellipse class="port-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
-        <g class="port-threads">${scene.threads.map(renderThread).join("")}</g>
+        <g class="port-threads">${renderedThreads.map(renderThread).join("")}</g>
+        ${renderCover(scene)}
+        <g class="port-route-threads">${routeThreads.map(renderThread).join("")}</g>
         <g class="port-node-shells">${scene.nodes.map(renderNodeShell).join("")}</g>
-        <g class="port-bridges">${scene.bridges.map(renderBridge).join("")}</g>
-        <g class="port-nodes">${scene.nodes.map((node) => renderNode(node, node.value === scene.expandedNodeValue, scene.hubs.some((hub) => hub.value === node.value))).join("")}</g>
-        <g class="port-double-hubs">${scene.hubs.map(renderHub).join("")}</g>
+        <g class="port-bridges">${renderedBridges.map(renderBridge).join("")}</g>
+        <g class="port-nodes">${scene.nodes.map((node) => renderNode(node, node.value === scene.expandedNodeValue, scene.hubs.some((hub) => hub.value === node.value), { showIncidences })).join("")}</g>
+        <g class="port-double-hubs">${renderedHubs.map(renderHub).join("")}</g>
         <g class="port-open-targets">${focusActive ? "" : scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
       </g>
       ${renderNodeFocus(scene.nodeFocus, scene.hasSelection)}
@@ -260,6 +309,7 @@ export class PortRenderer {
     this.container = container;
     this.expandedNodeValue = null;
     this.inspectedRouteId = null;
+    this.structureVisible = false;
     this.lastBoardSignature = null;
   }
 
@@ -271,6 +321,7 @@ export class PortRenderer {
     ) {
       this.expandedNodeValue = null;
       this.inspectedRouteId = null;
+      this.structureVisible = false;
     }
     this.lastBoardSignature = currentSignature;
 
@@ -281,6 +332,7 @@ export class PortRenderer {
       inspectedPlacementId: presentation.inspectedPlacementId,
       inspectedRouteId: this.inspectedRouteId,
       expandedNodeValue: this.expandedNodeValue,
+      showStructure: this.structureVisible,
       layout: this.container.clientWidth >= 760
         ? PORT_SCENE_LAYOUTS.WIDE
         : PORT_SCENE_LAYOUTS.COMPACT,
@@ -289,16 +341,37 @@ export class PortRenderer {
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
       : "";
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderRouteStatus(scene)}${startMarkup}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${startMarkup}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
     const activateNode = (value) => {
       this.expandedNodeValue = this.expandedNodeValue === value ? null : value;
+      this.structureVisible = false;
+      this.inspectedRouteId = null;
       this.render(presentation, options);
     };
     const activateRoute = (routeId) => {
       this.inspectedRouteId = this.inspectedRouteId === routeId ? null : routeId;
       this.expandedNodeValue = null;
+      this.structureVisible = false;
+      this.render(presentation, options);
+    };
+    const clearRoute = () => {
+      if (presentation.inspectedStructureId !== null) {
+        options.onClearInspection?.();
+        return;
+      }
+      this.inspectedRouteId = null;
+      this.render(presentation, options);
+    };
+    const toggleStructure = () => {
+      if (scene.visualState === "route") {
+        clearRoute();
+        return;
+      }
+      this.structureVisible = !this.structureVisible;
+      this.expandedNodeValue = null;
+      this.inspectedRouteId = null;
       this.render(presentation, options);
     };
 
@@ -349,13 +422,10 @@ export class PortRenderer {
       element.addEventListener("click", close);
       activateOnKeyboard(element, close);
     }
-    this.container.querySelector("[data-close-port-route]")?.addEventListener(
-      "click",
-      () => {
-        this.inspectedRouteId = null;
-        this.render(presentation, options);
-      },
-    );
+    for (const element of this.container.querySelectorAll("[data-toggle-port-structure]")) {
+      element.addEventListener("click", toggleStructure);
+      activateOnKeyboard(element, toggleStructure);
+    }
     for (const element of this.container.querySelectorAll(
       ".port-graph, [data-port-node-inspector]",
     )) {
@@ -369,9 +439,20 @@ export class PortRenderer {
           this.render(presentation, options);
           return;
         }
+        if (presentation.inspectedStructureId !== null) {
+          event.preventDefault();
+          options.onClearInspection?.();
+          return;
+        }
         if (this.inspectedRouteId !== null) {
           event.preventDefault();
           this.inspectedRouteId = null;
+          this.render(presentation, options);
+          return;
+        }
+        if (this.structureVisible) {
+          event.preventDefault();
+          this.structureVisible = false;
           this.render(presentation, options);
         }
       });

@@ -48,8 +48,6 @@ const traditionalRenderer = new TraditionalRenderer(boardRoot);
 const passButton = document.querySelector("#pass-action");
 const message = document.querySelector("#game-message");
 const boardHeading = document.querySelector("#board-heading");
-const graphLegend = document.querySelector("#graph-legend");
-const portLegend = document.querySelector("#port-legend");
 const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
 const setupScreen = document.querySelector("#setup-screen");
 const gameScreen = document.querySelector("#game-screen");
@@ -68,9 +66,6 @@ const handPanel = document.querySelector("#hand-panel");
 const handContent = document.querySelector("#hand-content");
 const handPrivacy = document.querySelector("#hand-privacy");
 const handPrivacyTitle = document.querySelector("#hand-privacy-title");
-const handPrivacyInstruction = document.querySelector(
-  "#hand-privacy-instruction",
-);
 const revealHandButton = document.querySelector("#reveal-hand-action");
 const scoringCard = document.querySelector("#scoring-card");
 let sessionController;
@@ -90,7 +85,12 @@ function scheduleFeedbackHide(feedback) {
     return;
   }
   feedbackHideTimer = window.setTimeout(() => {
-    renderGameFeedback(playFeedback, null);
+    const session = sessionController?.getPresentation();
+    if (session?.round) {
+      renderRound(session.round, session.viewMode, null);
+    } else {
+      renderGameFeedback(playFeedback, null);
+    }
     feedbackHideTimer = null;
   }, 2100);
 }
@@ -144,8 +144,6 @@ function renderRound(presentation, mode, feedback) {
     : mode === BOARD_VIEW_MODES.PORTS
       ? "Puertos e incidencias"
       : "Mesa tradicional";
-  graphLegend.hidden = mode !== BOARD_VIEW_MODES.GRAPH;
-  portLegend.hidden = mode !== BOARD_VIEW_MODES.PORTS;
   for (const button of modeButtons) {
     const isActive = button.dataset.viewMode === mode;
     button.classList.toggle("is-active", isActive);
@@ -190,8 +188,6 @@ function renderRound(presentation, mode, feedback) {
   handPrivacy.hidden = handIsVisible || presentation.isFinished;
   handPrivacyTitle.textContent =
     `Turno de ${presentation.handPrivacy.displayName}`;
-  handPrivacyInstruction.textContent =
-    `Entrega el dispositivo a ${presentation.handPrivacy.displayName}.`;
   if (handIsVisible) {
     renderHand(document.querySelector("#hand-root"), presentation, {
       onSelect: (dominoId) =>
@@ -226,22 +222,32 @@ function renderRound(presentation, mode, feedback) {
     document.querySelector("#round-result"),
     presentation.view,
   );
-  renderGameFeedback(playFeedback, feedback);
+  const sharedFeedback = mode === BOARD_VIEW_MODES.PORTS && feedback?.scoring
+    ? feedback.openedBranchFamily
+      ? {
+          ...feedback,
+          scoring: null,
+          message: `${feedback.openedBranchFamily} abierta`,
+        }
+      : null
+    : feedback;
+  renderGameFeedback(playFeedback, sharedFeedback);
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
+  passButton.hidden = !presentation.canPass || presentation.isFinished;
   roundActions.hidden = !presentation.isFinished;
   const selectedCount = presentation.selectedLegalTargets.length;
-  document.querySelector("#selection-hint").textContent = presentation.isFinished
-    ? `La ronda terminó. ${mode === BOARD_VIEW_MODES.TRADITIONAL ? "La mesa" : "La representación"} permanece visible.`
-    : !presentation.handPrivacy.isRevealed
-      ? `Entrega el dispositivo a ${presentation.handPrivacy.displayName} y muestra su mano.`
-    : presentation.selectedDominoId === null
-      ? "Selecciona una ficha jugable para destacar sus extremos compatibles."
+  const selectionHint = document.querySelector("#selection-hint");
+  selectionHint.textContent = presentation.isFinished ||
+      !presentation.handPrivacy.isRevealed ||
+      presentation.selectedDominoId === null
+      ? ""
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
         ? "La ficha puede iniciar el tablero con la acción inferior."
         : selectedCount === 1
           ? "Un destino compatible; activa su extremo."
           : `${selectedCount} destinos compatibles; elige el extremo lógico concreto.`;
+  selectionHint.hidden = selectionHint.textContent === "";
 }
 
 function renderSession(session) {

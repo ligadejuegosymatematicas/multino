@@ -14,11 +14,15 @@ export function renderTurnPanel(container, view, { emphasize = false } = {}) {
   heading.textContent = view.roundStatus.phase === "finished"
     ? "Ronda cerrada"
     : `${current.displayName} · ${team.displayName}`;
-  const detail = document.createElement("span");
-  detail.textContent = view.roundStatus.phase === "finished"
-    ? `La acción ${view.turn.turnNumber} fue la última.`
-    : `Acción ${view.turn.turnNumber} · ${view.turn.consecutivePasses} pases consecutivos`;
-  container.append(heading, detail);
+  container.append(heading);
+  if (
+    view.roundStatus.phase !== "finished" &&
+    view.turn.consecutivePasses > 0
+  ) {
+    const detail = document.createElement("span");
+    detail.textContent = `${view.turn.consecutivePasses} ${view.turn.consecutivePasses === 1 ? "pase" : "pases"} seguidos`;
+    container.append(detail);
+  }
 }
 
 export function renderPlayerCounts(container, view) {

@@ -67,46 +67,30 @@
 
       <div id="game-screen" class="game-screen" hidden>
         <section class="round-overview" aria-label="Estado de la ronda">
-          <article class="overview-card">
-            <h2>Turno</h2>
+          <div class="overview-card overview-turn">
             <div id="turn-panel" class="turn-panel" aria-live="polite"></div>
-          </article>
-          <article class="overview-card">
-            <h2>Marcador</h2>
+          </div>
+          <div class="overview-card overview-score">
             <div id="score-panel" class="score-panel"></div>
-          </article>
-          <article id="scoring-card" class="overview-card">
-            <h2>Suma abierta</h2>
+          </div>
+          <div id="scoring-card" class="overview-card overview-scoring">
             <div id="scoring-panel" class="scoring-panel" aria-live="polite"></div>
-          </article>
+          </div>
         </section>
 
         <div class="play-layout">
           <section class="graph-stage" aria-labelledby="board-heading">
             <div class="panel-heading">
-              <div>
-                <p class="section-kicker">Tablero</p>
-                <h2 id="board-heading">Mesa tradicional</h2>
-              </div>
+              <h2 id="board-heading" class="visually-hidden">Mesa tradicional</h2>
               <div class="board-controls">
                 <div class="view-switch" role="group" aria-label="Representación del tablero">
                   <button type="button" class="view-switch__button is-active" data-view-mode="traditional" aria-pressed="true">Tradicional</button>
                   <button type="button" class="view-switch__button" data-view-mode="ports" aria-pressed="false">Puertos</button>
                   <button type="button" class="view-switch__button" data-view-mode="graph" aria-pressed="false">Grafo</button>
                 </div>
-                <p id="graph-legend" class="graph-legend" hidden>
-                  <span class="legend-main"></span> principal
-                  <span class="legend-branch"></span> ramificación
-                  <span class="legend-structure-code">P/A</span> extremos
-                </p>
-                <p id="port-legend" class="graph-legend" hidden>
-                  <span class="legend-main"></span> hilo = ficha
-                  <span class="legend-branch"></span> rama
-                  <span class="legend-port-stitch">↔</span> continuidad interior
-                </p>
               </div>
             </div>
-            <p id="selection-hint" class="selection-hint"></p>
+            <p id="selection-hint" class="selection-hint" hidden></p>
             <p id="play-feedback" class="play-feedback" aria-live="polite" hidden></p>
             <div id="board-root" class="graph-root is-traditional-view" data-view-mode="traditional"></div>
             <p id="game-message" class="game-message" aria-live="assertive"></p>
@@ -114,30 +98,21 @@
 
           <section id="hand-panel" class="hand-panel" aria-label="Mano del jugador actual">
             <div id="hand-privacy" class="hand-privacy" hidden>
-              <div>
-                <p class="section-kicker">Siguiente turno</p>
-                <h2 id="hand-privacy-title">Turno del siguiente jugador</h2>
-                <p id="hand-privacy-instruction">Entrega el dispositivo antes de revelar la mano.</p>
-              </div>
-              <button id="reveal-hand-action" type="button" class="primary-action">Mostrar mi mano</button>
+              <h2 id="hand-privacy-title">Turno del siguiente jugador</h2>
+              <button id="reveal-hand-action" type="button" class="primary-action">Mostrar mano</button>
             </div>
             <div id="hand-content">
               <div class="panel-heading hand-heading-row">
-                <div>
-                  <p class="section-kicker">Jugador actual</p>
-                  <h2 id="hand-heading">Tu mano</h2>
-                </div>
-                <button id="pass-action" type="button" class="pass-action" disabled>PASS</button>
+                <h2 id="hand-heading">Tu mano</h2>
+                <button id="pass-action" type="button" class="pass-action" disabled hidden>PASS</button>
               </div>
               <div id="hand-root" class="hand-grid"></div>
             </div>
           </section>
 
           <aside class="round-sidebar" aria-label="Información local">
-            <section class="side-card">
-              <h2>Fichas restantes</h2>
+            <section class="side-card counts-strip" aria-label="Fichas restantes">
               <ul id="player-counts" class="player-counts"></ul>
-              <p class="privacy-note">De las demás manos solo se muestra la cantidad.</p>
             </section>
             <section id="round-result" class="round-result" aria-live="polite" hidden></section>
             <section id="round-actions" class="round-actions" aria-label="Siguiente partida" hidden>

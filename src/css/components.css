@@ -129,7 +129,7 @@
 .side-card,
 .round-result,
 .hand-panel {
-  padding: 0.75rem;
+  padding: 0.55rem;
 }
 
 .overview-card {
@@ -155,13 +155,15 @@
 
 .turn-panel,
 .scoring-panel {
-  display: grid;
-  gap: 0.25rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
 }
 
 .turn-panel strong,
 .scoring-sum {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
 }
 
 .turn-panel span,
@@ -198,9 +200,9 @@
 }
 
 .score-panel {
-  display: grid;
+  display: flex;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .score-team {
@@ -209,7 +211,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
+  flex: 1 1 0;
+  padding: 0.22rem 0.4rem;
   border-radius: 0.55rem;
   background: var(--surface-soft);
 }
@@ -236,7 +239,7 @@
 
 .score-team strong {
   color: var(--teal-dark);
-  font-size: 1.35rem;
+  font-size: 1rem;
 }
 
 .panel-heading {
@@ -244,7 +247,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-block-end: 0.65rem;
+  margin-block-end: 0.25rem;
+}
+
+.graph-stage > .panel-heading {
+  min-height: 2rem;
+  justify-content: flex-end;
 }
 
 .board-controls {
@@ -255,15 +263,15 @@
 
 .view-switch {
   display: inline-flex;
-  padding: 0.2rem;
+  padding: 0.12rem;
   border: 1px solid #b8c8c4;
   border-radius: 999px;
   background: #f4f7f6;
 }
 
 .view-switch__button {
-  min-height: 2.25rem;
-  padding: 0.35rem 0.75rem;
+  min-height: 1.8rem;
+  padding: 0.24rem 0.58rem;
   border: 0;
   border-radius: 999px;
   color: var(--muted);
@@ -334,10 +342,14 @@
 
 .selection-hint,
 .game-message {
-  min-height: 1.3rem;
-  margin: 0 0 0.4rem;
+  min-height: 0;
+  margin: 0 0 0.25rem;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.selection-hint[hidden] {
+  display: none;
 }
 
 .play-feedback {
@@ -447,12 +459,16 @@
 }
 
 .player-counts li {
-  padding: 0.32rem 0.58rem;
+  padding: 0.22rem 0.5rem;
   border: 1px solid #d8e0de;
   border-radius: 999px;
   color: var(--muted);
   background: var(--surface-soft);
   font-size: 0.85rem;
+}
+
+.counts-strip {
+  padding: 0.35rem 0.45rem;
 }
 
 .player-counts li.is-current {
@@ -504,7 +520,7 @@
 }
 
 .hand-heading-row {
-  margin-block-end: 0.3rem;
+  margin-block-end: 0.15rem;
 }
 
 .hand-privacy {
@@ -512,7 +528,7 @@
   align-items: center;
   justify-content: center;
   gap: clamp(0.8rem, 4vw, 2rem);
-  min-height: 4.6rem;
+  min-height: 3.2rem;
   text-align: left;
 }
 
@@ -522,7 +538,7 @@
 }
 
 .hand-privacy h2 {
-  font-size: 1rem;
+  font-size: 0.92rem;
   letter-spacing: normal;
   text-transform: none;
 }
@@ -679,6 +695,10 @@
   cursor: not-allowed;
 }
 
+.pass-action[hidden] {
+  display: none;
+}
+
 @keyframes turn-arrival {
   0% { color: var(--amber); transform: translateY(-0.18rem); }
   100% { color: inherit; transform: translateY(0); }
@@ -750,21 +770,13 @@
 
   .overview-card {
     min-width: 0;
-    padding: 0.48rem 0.55rem;
-  }
-
-  .overview-card:nth-child(2) {
-    border-inline-end: 0;
-  }
-
-  .overview-card h2 {
-    font-size: 0.72rem;
+    padding: 0.34rem 0.42rem;
   }
 
   .turn-panel strong,
   .scoring-sum,
   .score-team strong {
-    font-size: 0.9rem;
+    font-size: 0.76rem;
   }
 
   .turn-panel span,
@@ -772,20 +784,24 @@
   .score-no-award,
   .score-award,
   .score-team span {
-    font-size: 0.66rem;
+    font-size: 0.58rem;
+  }
+
+  .scoring-detail {
+    display: none;
   }
 
   .score-panel {
-    grid-template-columns: 1fr;
-    gap: 0.2rem;
+    gap: 0.12rem;
   }
 
   .score-team {
-    padding: 0.2rem 0.35rem;
+    gap: 0.18rem;
+    padding: 0.16rem 0.25rem;
   }
 
   .panel-heading {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .board-controls {
@@ -808,7 +824,7 @@
   }
 
   .hand-panel {
-    padding: 0.5rem;
+    padding: 0.38rem;
   }
 
   .hand-heading-row {
@@ -816,7 +832,7 @@
   }
 
   .side-card {
-    padding: 0.6rem;
+    padding: 0.4rem;
   }
 
   .privacy-note {
@@ -830,6 +846,6 @@
 
   .hand-privacy {
     justify-content: space-between;
-    min-height: 4.2rem;
+    min-height: 3.1rem;
   }
 }

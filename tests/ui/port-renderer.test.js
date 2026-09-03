@@ -96,7 +96,9 @@ test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales
   assert.equal(scene.threads.length, 0);
   assert.equal(scene.bridges.length, 0);
   assert.equal(markup.match(/aria-label="Valor \d;/g)?.length, 7);
-  assert.equal(markup.match(/port-incidence is-potential/g)?.length, 42);
+  assert.equal(markup.match(/port-incidence is-potential/g)?.length ?? 0, 0);
+  assert.match(markup, /class="port-cover"[\s\S]*?aria-label="Ver estructura"/);
+  assert.equal(scene.visualState, "play");
 });
 
 test("hilos exteriores y costuras interiores se materializan por separado", () => {
@@ -105,12 +107,18 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   state = playDomino(state, "1-4", (target) => target.value === 1);
   const scene = createPortScene(projectPortView(state));
   const markup = renderPortSvgMarkup(scene);
+  const structureMarkup = renderPortSvgMarkup(createPortScene(
+    projectPortView(state),
+    { showStructure: true },
+  ));
 
   assert.equal(scene.threads.length, 2);
   assert.equal(scene.bridges.length, 1);
   assert.equal(scene.bridges[0].value, 1);
-  assert.match(markup, /class="port-thread is-main(?:\s|")/);
-  assert.match(markup, /class="port-bridge is-main(?:\s|")/);
+  assert.doesNotMatch(markup, /class="port-thread is-main(?:\s|")/);
+  assert.doesNotMatch(markup, /class="port-bridge is-main(?:\s|")/);
+  assert.match(structureMarkup, /class="port-thread is-main(?:\s|")/);
+  assert.match(structureMarkup, /class="port-bridge is-main(?:\s|")/);
   assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
   assert.doesNotMatch(markup, />\s*S\s*=|>\s*\+\d+\s+puntos/i);
 });
@@ -168,6 +176,10 @@ test("sin selección los extremos reales brillan y no aparecen opciones", () => 
     markup.match(/class="port-open-target is-neutral/g)?.length,
     scene.openTargets.length,
   );
+  assert.equal(
+    markup.match(/port-open-target__tail/g)?.length,
+    scene.openTargets.length,
+  );
   assert.doesNotMatch(markup, /port-open-target__option/);
 });
 
@@ -218,7 +230,7 @@ test("inspeccionar un brazo exacto no mezcla el otro brazo de la familia", () =>
     inspectedRouteId: "placement-1:branch:1",
   });
 
-  assert.equal(scene.visualState, "inspection");
+  assert.equal(scene.visualState, "route");
   assert.ok(
     scene.threads
       .filter((thread) => thread.topology.structureId === "placement-1:branch:1")
@@ -272,7 +284,7 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   assert.equal(scene.nodeFocus.ports.length, 6);
   assert.equal(scene.nodeFocus.value, 4);
   assert.equal(scene.visualState, "node-focus");
-  assert.match(inspector, /Saco abierto/);
+  assert.match(inspector, /3 de 6 ojales utilizados/);
   assert.match(inspector, /Chancho 4\|4: especial/);
   assert.match(inspector, /chancho · (principal|lateral)/);
   assert.doesNotMatch(inspector, /main:|branch:|side:/);
@@ -281,10 +293,12 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   const markup = renderPortSvgMarkup(scene);
   assert.match(markup, /role="dialog" aria-label="Detalle ampliado del valor 4"/);
   assert.equal(markup.match(/port-focus__port-label/g)?.length, 6);
-  assert.match(markup, /Cada ojal conserva su incidencia/);
+  assert.match(markup, /Conexiones de 4/);
+  assert.equal(markup.match(/data-close-port-node/g)?.length, 1);
+  assert.doesNotMatch(inspector, /data-close-port-node/);
 });
 
-test("reposo, decisión e inspección exponen jerarquías progresivas", () => {
+test("jugar, decisión, recorrido y estructura exponen revelado progresivo", () => {
   const state = createTwoArmScenario();
   const view = projectPortView(state);
   const rest = createPortScene(view);
@@ -296,13 +310,99 @@ test("reposo, decisión e inspección exponen jerarquías progresivas", () => {
   const inspection = createPortScene(view, {
     inspectedRouteId: "placement-1:branch:1",
   });
+  const structure = createPortScene(view, { showStructure: true });
 
-  assert.equal(rest.visualState, "rest");
+  assert.equal(rest.visualState, "play");
   assert.equal(decision.visualState, "decision");
-  assert.equal(inspection.visualState, "inspection");
+  assert.equal(inspection.visualState, "route");
+  assert.equal(structure.visualState, "structure");
   assert.ok(rest.threads.some((thread) => !thread.isLive));
   assert.ok(decision.openTargets.some((target) => target.isLegal));
   assert.match(renderPortSvgMarkup(decision), /port-graph is-decision/);
+  assert.equal(renderPortSvgMarkup(rest).match(/class="port-thread /g)?.length ?? 0, 0);
+  assert.equal(
+    renderPortSvgMarkup(inspection).match(/class="port-thread /g)?.length,
+    inspection.threads.filter((thread) => thread.isTopologyHighlighted).length,
+  );
+  assert.equal(
+    renderPortSvgMarkup(structure).match(/class="port-thread /g)?.length,
+    structure.threads.length,
+  );
+  assert.match(renderPortSvgMarkup(structure), /aria-label="Volver a jugar"/);
+});
+
+test("la tapa presenta scoring real y desaparece cuando no hay resolución", () => {
+  const view = projectPortView(createTwoArmScenario());
+  const contributingTarget = view.portGraph.openTargets[0];
+  const scoringResolution = {
+    terms: [{
+      placementId: contributingTarget.placementId,
+      portId: contributingTarget.portId,
+      isDouble: false,
+      contribution: contributingTarget.value,
+    }],
+    expression: "5 + 3 + 2",
+    sum: 10,
+    divisor: 5,
+    isDivisible: true,
+    quotient: 2,
+    scoreAwarded: 2,
+  };
+  const scoredMarkup = renderPortSvgMarkup(createPortScene(view, {
+    scoringResolution,
+  }));
+  const disabledMarkup = renderPortSvgMarkup(createPortScene(view));
+
+  assert.match(scoredMarkup, /port-cover__scoring/);
+  assert.match(scoredMarkup, />5 \+ 3 \+ 2</);
+  assert.match(scoredMarkup, />10 = 5 × 2</);
+  assert.match(scoredMarkup, />\+2 puntos</);
+  const scoredScene = createPortScene(view, { scoringResolution });
+  assert.equal(
+    scoredScene.openTargets.filter((target) => target.isScoringTerm).length,
+    1,
+  );
+  assert.doesNotMatch(disabledMarkup, /port-cover__scoring/);
+  assert.doesNotMatch(disabledMarkup, /múltiplo de/);
+});
+
+test("un especial con extremos libres mantiene scoring y targets separados", () => {
+  let state = createBoardScenario({ K: 7, firstDominoId: "5-5" });
+  state = playDomino(state, "5-5");
+  const view = projectPortView(state);
+  const scene = createPortScene(view, {
+    scoringResolution: {
+      terms: [{
+        placementId: "placement-1",
+        portId: null,
+        isDouble: true,
+        contribution: 0,
+      }],
+      expression: "0",
+      sum: 0,
+      divisor: 5,
+      isDivisible: true,
+      quotient: 0,
+      scoreAwarded: 0,
+    },
+  });
+
+  assert.equal(scene.openTargets.length, 4);
+  assert.equal(scene.openTargets.filter((target) => target.isScoringTerm).length, 0);
+  assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 1);
+});
+
+test("crear los cuatro niveles visuales no modifica el snapshot", () => {
+  const state = createTwoArmScenario();
+  const before = structuredClone(state);
+  const view = projectPortView(state);
+
+  createPortScene(view);
+  createPortScene(view, { showStructure: true });
+  createPortScene(view, { inspectedRouteId: "placement-1:branch:1" });
+  createPortScene(view, { expandedNodeValue: 4 });
+
+  assert.deepEqual(state, before);
 });
 
 test("el análisis de densidad separa información primaria y secundaria", () => {
@@ -351,6 +451,8 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-incidence\.is-potential[\s\S]*?opacity:\s*0\.1/);
   assert.match(css, /\.port-thread\.is-live[\s\S]*?opacity:\s*0\.72/);
   assert.match(css, /\.port-graph\.is-node-focus \.port-scene-base/);
+  assert.match(css, /\.port-open-target__tail/);
+  assert.match(css, /\.port-cover__scoring/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 

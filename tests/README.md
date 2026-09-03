@@ -157,6 +157,15 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - revisión manual en 1366×768 y 390×844 cubre reposo denso, selección, ruta principal/brazo, hub especial, apertura local, puntuación compartida y ausencia de overflow global;
 - se documenta `K=2/3` como recomendación de experiencia; los tests y el motor mantienen `K=0…7` sin cota nueva.
 
+### Fase 2, Bloque 15 — Puertos v3 game-first completado
+
+- `tests/ui/port-renderer.test.js`: tapa cerrada por defecto, ausencia de hilos/puentes completos y 42 puertos potenciales en Jugar, colas para targets reales, decisión exacta, recorrido aislado y restauración completa en Ver estructura;
+- la escena conserva toda la información matemática mientras el SVG aplica revelado progresivo; los cuatro niveles y el foco de nodo no mutan el snapshot;
+- abrir el saco mantiene seis incidencias y hubs ordinario/especial, oculta notación técnica y presenta un único cierre visible más `Escape`;
+- el feedback de la tapa usa exclusivamente `scoringPresentation`, distingue targets de términos y omite la explicación cuando el contrato está deshabilitado;
+- `tests/ui/game-presentation.test.js` cubre HUD móvil en una fila, eliminación de acción/cero pases, handoff compacto, PASS contextual y proximidad tablero → mano;
+- revisión visual en 1366×768 y 390×844 cubre Jugar, selección, recorrido, estructura, saco, scoring, privacidad, terminalidad y ausencia de overflow global.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.
