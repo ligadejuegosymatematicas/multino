@@ -114,7 +114,7 @@ test("la jerarquía compacta prioriza tablero y mano sin overflow global", async
   assert.match(traditionalCss, /\.traditional-domino \{[\s\S]+?z-index:\s*10/);
   assert.match(traditionalCss, /\.traditional-target \{[\s\S]+?z-index:\s*5/);
   assert.match(traditionalCss, /\.traditional-table__canvas \{[\s\S]+?margin-inline:\s*auto/);
-  assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*transparent/);
+  assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*none[\s\S]+?stroke-width:\s*32[\s\S]+?pointer-events:\s*stroke/);
   assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);
   assert.doesNotMatch(traditionalCss, /rgb\(255 255 255 \/ 0\.24\)/);

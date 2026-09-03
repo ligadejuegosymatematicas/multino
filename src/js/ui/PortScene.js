@@ -6,18 +6,20 @@ export const PORT_SCENE_LAYOUTS = Object.freeze({
 const GEOMETRY = Object.freeze({
   [PORT_SCENE_LAYOUTS.COMPACT]: Object.freeze({
     width: 720,
-    height: 620,
-    center: Object.freeze({ x: 360, y: 310 }),
-    radii: Object.freeze({ x: 238, y: 232 }),
+    height: 650,
+    center: Object.freeze({ x: 360, y: 325 }),
+    radii: Object.freeze({ x: 238, y: 230 }),
+    focusRadius: 190,
   }),
   [PORT_SCENE_LAYOUTS.WIDE]: Object.freeze({
-    width: 920,
-    height: 620,
-    center: Object.freeze({ x: 460, y: 310 }),
-    radii: Object.freeze({ x: 290, y: 238 }),
+    width: 1040,
+    height: 650,
+    center: Object.freeze({ x: 520, y: 325 }),
+    radii: Object.freeze({ x: 334, y: 258 }),
+    focusRadius: 190,
   }),
 });
-const NODE_RADIUS = 55;
+const NODE_RADIUS = 62;
 const FULL_TURN = Math.PI * 2;
 
 function round(value) {
@@ -31,21 +33,27 @@ function pointAt(origin, angle, distance) {
   };
 }
 
+function ellipsePoint(center, radii, angle, factor = 1) {
+  return {
+    x: round(center.x + Math.cos(angle) * radii.x * factor),
+    y: round(center.y + Math.sin(angle) * radii.y * factor),
+  };
+}
+
 function nodePosition(value, geometry) {
   const angle = -Math.PI / 2 + (FULL_TURN * value) / 7;
   return {
-    x: round(geometry.center.x + Math.cos(angle) * geometry.radii.x),
-    y: round(geometry.center.y + Math.sin(angle) * geometry.radii.y),
+    ...ellipsePoint(geometry.center, geometry.radii, angle),
     angle,
   };
 }
 
 function portPosition(node, otherNode) {
   const angle = Math.atan2(otherNode.y - node.y, otherNode.x - node.x);
-  return { ...pointAt(node, angle, NODE_RADIUS - 1), angle };
+  return { ...pointAt(node, angle, NODE_RADIUS - 2), angle };
 }
 
-function socketPosition(node, boardPortId, isSpecial) {
+function socketPosition(node, boardPortId, isSpecial, distance = null) {
   const angleByPortId = isSpecial
     ? {
         "main:1": Math.PI,
@@ -58,13 +66,17 @@ function socketPosition(node, boardPortId, isSpecial) {
         "side:b": 0,
       };
   const angle = angleByPortId[boardPortId];
-  return { ...pointAt(node, angle, isSpecial ? 23 : 18), angle };
+  return {
+    ...pointAt(node, angle, distance ?? (isSpecial ? 27 : 21)),
+    angle,
+  };
 }
 
-function linePath(first, second, bend = 0) {
-  if (bend === 0) {
-    return `M ${first.x} ${first.y} L ${second.x} ${second.y}`;
-  }
+function quadraticPath(first, control, second) {
+  return `M ${first.x} ${first.y} Q ${control.x} ${control.y} ${second.x} ${second.y}`;
+}
+
+function internalPath(first, second, bend = 0) {
   const middle = {
     x: (first.x + second.x) / 2,
     y: (first.y + second.y) / 2,
@@ -76,21 +88,64 @@ function linePath(first, second, bend = 0) {
     x: round(middle.x - (dy / length) * bend),
     y: round(middle.y + (dx / length) * bend),
   };
-  return `M ${first.x} ${first.y} Q ${control.x} ${control.y} ${second.x} ${second.y}`;
+  return {
+    path: quadraticPath(first, control, second),
+    route: { start: first, control, end: second },
+  };
+}
+
+/** Enrutado anular determinista y descartable. */
+function threadRoute(thread, first, second, nodePositions, geometry) {
+  const clockwiseSteps = (thread.b - thread.a + 7) % 7;
+  const direction = clockwiseSteps <= 3 ? 1 : -1;
+  const steps = Math.min(clockwiseSteps, 7 - clockwiseSteps);
+  const firstAngle = nodePositions.get(thread.a).angle;
+  const middleAngle = firstAngle + direction * (steps * FULL_TURN / 7) / 2;
+  const baseFactor = ({ 1: 0.9, 2: 0.93, 3: 0.97 })[steps] ?? 0.92;
+  const branchOffset = thread.topology.region === "branch" ? 0.13 : 0;
+  const familyOffset = thread.topology.familyIndex === null
+    ? 0
+    : (thread.topology.familyIndex % 3) * 0.025;
+  const factor = Math.min(baseFactor + branchOffset + familyOffset, 1.14);
+  const control = ellipsePoint(
+    geometry.center,
+    geometry.radii,
+    middleAngle,
+    factor,
+  );
+  return {
+    path: quadraticPath(first, control, second),
+    route: { start: first, control, end: second },
+    lane: thread.topology.region === "branch" ? "outer" : "inner",
+  };
 }
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
 }
 
-function inspectionState(structureId, inspectedStructureId, rootPlacementId, placementId) {
-  const active = inspectedStructureId !== null;
-  const highlighted = active && structureId === inspectedStructureId;
-  const root = active && rootPlacementId === placementId;
+function inspectionState({
+  structureId,
+  familyId,
+  rootPlacementId,
+  placementId,
+  inspectedStructureId,
+  inspectedRouteId,
+}) {
+  const routeActive = inspectedRouteId !== null;
+  const familyActive = !routeActive && inspectedStructureId !== null;
+  const highlighted = routeActive
+    ? structureId === inspectedRouteId
+    : inspectedStructureId === "main"
+      ? structureId === "main"
+      : familyId === inspectedStructureId;
+  const root = (routeActive || familyActive) &&
+    rootPlacementId !== null &&
+    rootPlacementId === placementId;
   return {
-    isTopologyHighlighted: highlighted,
+    isTopologyHighlighted: (routeActive || familyActive) && highlighted,
     isTopologyRoot: root,
-    isTopologyDimmed: active && !highlighted && !root,
+    isTopologyDimmed: (routeActive || familyActive) && !highlighted && !root,
   };
 }
 
@@ -131,6 +186,165 @@ function createNodeInspector(node, bridges, hubs) {
   };
 }
 
+function focusPortPosition(center, index, radius) {
+  const angle = -Math.PI / 2 + (FULL_TURN * index) / 6;
+  return {
+    ...pointAt(center, angle, radius),
+    label: pointAt(center, angle, radius + 22),
+    angle,
+  };
+}
+
+function createNodeFocus({
+  node,
+  bridges,
+  hubs,
+  openTargets,
+  geometry,
+}) {
+  if (!node) {
+    return null;
+  }
+  const center = { ...geometry.center };
+  const radius = geometry.focusRadius;
+  const endpointPositions = new Map();
+  const ports = node.ordinaryPorts.map((port, index) => {
+    const position = focusPortPosition(center, index, radius - 28);
+    const projected = { ...port, ...position };
+    endpointPositions.set(port.id, projected);
+    return projected;
+  });
+  const focusedHubs = hubs.map((hub) => {
+    const hubCenter = { x: center.x, y: center.y + 8 };
+    const sockets = hub.sockets.map((socket) => {
+      const projected = {
+        ...socket,
+        ...socketPosition(
+          hubCenter,
+          socket.boardPortId,
+          hub.isSpecial,
+          hub.isSpecial ? 64 : 52,
+        ),
+      };
+      endpointPositions.set(socket.id, projected);
+      return projected;
+    });
+    return { ...hub, ...hubCenter, sockets };
+  });
+  const focusedBridges = bridges.map((bridge, index) => ({
+    ...bridge,
+    ...internalPath(
+      endpointPositions.get(bridge.first.id),
+      endpointPositions.get(bridge.second.id),
+      ((index % 5) - 2) * 10,
+    ),
+  }));
+  const targets = openTargets
+    .filter((target) => target.value === node.value)
+    .map((target) => ({
+      ...target,
+      ...endpointPositions.get(target.endpoint.id),
+    }));
+  return {
+    value: node.value,
+    center,
+    radius,
+    ports,
+    bridges: focusedBridges,
+    hubs: focusedHubs,
+    targets,
+  };
+}
+
+function sampleQuadratic(route, segments = 18) {
+  const points = [];
+  for (let index = 0; index <= segments; index += 1) {
+    const t = index / segments;
+    const inverse = 1 - t;
+    points.push({
+      x: inverse * inverse * route.start.x +
+        2 * inverse * t * route.control.x +
+        t * t * route.end.x,
+      y: inverse * inverse * route.start.y +
+        2 * inverse * t * route.control.y +
+        t * t * route.end.y,
+    });
+  }
+  return points;
+}
+
+function properSegmentCrossing(firstA, secondA, firstB, secondB) {
+  const orientation = (first, second, third) =>
+    (second.x - first.x) * (third.y - first.y) -
+    (second.y - first.y) * (third.x - first.x);
+  return orientation(firstA, secondA, firstB) *
+      orientation(firstA, secondA, secondB) < 0 &&
+    orientation(firstB, secondB, firstA) *
+      orientation(firstB, secondB, secondA) < 0;
+}
+
+function curvesCross(first, second) {
+  const firstPoints = sampleQuadratic(first.route);
+  const secondPoints = sampleQuadratic(second.route);
+  for (let firstIndex = 1; firstIndex < firstPoints.length; firstIndex += 1) {
+    for (let secondIndex = 1; secondIndex < secondPoints.length; secondIndex += 1) {
+      if (properSegmentCrossing(
+        firstPoints[firstIndex - 1],
+        firstPoints[firstIndex],
+        secondPoints[secondIndex - 1],
+        secondPoints[secondIndex],
+      )) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+export function analyzePortSceneDensity(scene) {
+  let estimatedThreadCrossings = 0;
+  for (let firstIndex = 0; firstIndex < scene.threads.length; firstIndex += 1) {
+    for (
+      let secondIndex = firstIndex + 1;
+      secondIndex < scene.threads.length;
+      secondIndex += 1
+    ) {
+      const first = scene.threads[firstIndex];
+      const second = scene.threads[secondIndex];
+      if ([first.a, first.b].some((value) =>
+        value === second.a || value === second.b
+      )) {
+        continue;
+      }
+      if (curvesCross(first, second)) {
+        estimatedThreadCrossings += 1;
+      }
+    }
+  }
+  const potentialPorts = scene.nodes.flatMap((node) => node.ordinaryPorts)
+    .filter((port) => port.state === "POTENTIAL").length;
+  const usedPorts = 42 - potentialPorts;
+  const activeBranches = new Set(
+    scene.threads
+      .filter((thread) => thread.topology.region === "branch")
+      .map((thread) => thread.topology.structureId),
+  ).size;
+  return {
+    threadCount: scene.threads.length,
+    estimatedThreadCrossings,
+    bridgeCount: scene.bridges.length,
+    hubCount: scene.hubs.length,
+    activeBranches,
+    openEndCount: scene.openTargets.length,
+    potentialPorts,
+    usedPorts,
+    primaryMarks: 7 + scene.openTargets.length + scene.hubs.length +
+      scene.threads.filter((thread) => thread.isLive).length,
+    secondaryMarks: potentialPorts + scene.bridges.length +
+      scene.threads.filter((thread) => !thread.isLive).length,
+  };
+}
+
 /** Geometría descartable del grafo de incidencias. */
 export function createPortScene(
   view,
@@ -139,6 +353,7 @@ export function createPortScene(
     legalTargets = [],
     inspectedStructureId = null,
     inspectedPlacementId = null,
+    inspectedRouteId = null,
     expandedNodeValue = null,
     layout = PORT_SCENE_LAYOUTS.COMPACT,
     scoringResolution = null,
@@ -154,14 +369,47 @@ export function createPortScene(
       nodePosition(node.value, geometry),
     ]),
   );
+  const legalTargetIds = new Set(legalTargets.map(targetIdentity));
+  const hasSelection = selectedDominoId !== null;
+  const legalEndpointIds = new Set(
+    view.portGraph.openTargets
+      .filter((target) => legalTargetIds.has(target.id))
+      .map((target) => target.endpoint.id),
+  );
+  const livePlacementIds = new Set(
+    view.portGraph.openTargets.map((target) => target.placementId),
+  );
+  const decisionPlacementIds = new Set(
+    view.portGraph.openTargets
+      .filter((target) => legalTargetIds.has(target.id))
+      .map((target) => target.placementId),
+  );
   const endpointPositions = new Map();
+  const familyById = new Map(
+    view.portGraph.topology.branchFamilies.map((family) => [family.id, family]),
+  );
   const nodes = view.portGraph.macroNodes.map((node) => {
     const position = nodePositions.get(node.value);
     const ordinaryPorts = node.ordinaryPorts.map((port) => {
       const projected = {
         ...port,
         ...portPosition(position, nodePositions.get(port.otherValue)),
+        isDecisionTarget: legalEndpointIds.has(port.id),
+        isLive: port.isOpenEnd,
       };
+      if (port.topology) {
+        const family = port.topology.familyId
+          ? familyById.get(port.topology.familyId)
+          : null;
+        Object.assign(projected, inspectionState({
+          structureId: port.topology.structureId,
+          familyId: port.topology.familyId,
+          rootPlacementId: family?.originPlacementId ?? null,
+          placementId: port.placementId,
+          inspectedStructureId,
+          inspectedRouteId,
+        }));
+      }
       endpointPositions.set(port.id, projected);
       return projected;
     });
@@ -169,23 +417,18 @@ export function createPortScene(
   });
   const hubs = view.portGraph.doubleHubs.map((hub) => {
     const node = nodePositions.get(hub.value);
-    const hubCenter = { x: node.x, y: node.y + 14 };
+    const hubCenter = { x: node.x, y: node.y + 15 };
     const sockets = hub.sockets.map((socket) => {
       const projected = {
         ...socket,
         ...socketPosition(hubCenter, socket.boardPortId, hub.isSpecial),
+        isDecisionTarget: legalEndpointIds.has(socket.id),
       };
       endpointPositions.set(socket.id, projected);
       return projected;
     });
     return { ...hub, ...hubCenter, sockets };
   });
-  const hubByPlacementId = new Map(hubs.map((hub) => [hub.placementId, hub]));
-  const familyById = new Map(
-    view.portGraph.topology.branchFamilies.map((family) => [family.id, family]),
-  );
-  const legalTargetIds = new Set(legalTargets.map(targetIdentity));
-  const hasSelection = selectedDominoId !== null;
   const compatibleCountsByValue = new Map();
   for (const target of view.portGraph.openTargets) {
     if (legalTargetIds.has(target.id)) {
@@ -214,64 +457,93 @@ export function createPortScene(
   }
 
   const threads = view.portGraph.externalThreads.map((thread) => {
-    const structureId = thread.topology.familyId ?? "main";
     const family = thread.topology.familyId
       ? familyById.get(thread.topology.familyId)
       : null;
+    const first = endpointPositions.get(thread.fromPortId);
+    const second = endpointPositions.get(thread.toPortId);
     return {
       ...thread,
-      path: linePath(
-        endpointPositions.get(thread.fromPortId),
-        endpointPositions.get(thread.toPortId),
-      ),
+      ...threadRoute(thread, first, second, nodePositions, geometry),
       familyTone: thread.topology.familyIndex === null
         ? null
         : thread.topology.familyIndex % 4,
-      ...inspectionState(
-        structureId,
+      isLive: livePlacementIds.has(thread.placementId),
+      isDecisionOwner: decisionPlacementIds.has(thread.placementId),
+      ...inspectionState({
+        structureId: thread.topology.structureId,
+        familyId: thread.topology.familyId,
+        rootPlacementId: family?.originPlacementId ?? null,
+        placementId: thread.placementId,
         inspectedStructureId,
-        family?.originPlacementId ?? null,
-        thread.placementId,
-      ),
+        inspectedRouteId,
+      }),
     };
   });
   const bridgesByValue = new Map(nodes.map((node) => [node.value, []]));
-  const bridges = view.portGraph.internalBridges.map((bridge, index) => {
+  const bridgeIndexByValue = new Map(nodes.map((node) => [node.value, 0]));
+  const bridges = view.portGraph.internalBridges.map((bridge) => {
     const family = bridge.familyId ? familyById.get(bridge.familyId) : null;
+    const localIndex = bridgeIndexByValue.get(bridge.value);
+    bridgeIndexByValue.set(bridge.value, localIndex + 1);
     const projected = {
       ...bridge,
-      path: linePath(
+      ...internalPath(
         endpointPositions.get(bridge.first.id),
         endpointPositions.get(bridge.second.id),
-        ((index % 3) - 1) * 7,
+        ((localIndex % 5) - 2) * 5,
       ),
       familyTone: bridge.familyIndex === null
         ? null
         : bridge.familyIndex % 4,
-      ...inspectionState(
-        bridge.familyId ?? "main",
+      isLive: livePlacementIds.has(bridge.first.placementId) ||
+        livePlacementIds.has(bridge.second.placementId),
+      isDecisionOwner: decisionPlacementIds.has(bridge.first.placementId) ||
+        decisionPlacementIds.has(bridge.second.placementId),
+      ...inspectionState({
+        structureId: bridge.structureId,
+        familyId: bridge.familyId,
+        rootPlacementId: family?.originPlacementId ?? null,
+        placementId: bridge.first.placementId,
         inspectedStructureId,
-        family?.originPlacementId ?? null,
-        bridge.first.placementId,
-      ),
+        inspectedRouteId,
+      }),
     };
     bridgesByValue.get(bridge.value).push(projected);
     return projected;
   });
   const projectedHubs = hubs.map((hub) => {
-    const family = hub.topology.branchFamily
+    const rootedFamily = hub.topology.branchFamily
       ? familyById.get(hub.topology.branchFamily.id)
       : null;
-    const structureId = hub.topology.familyId ?? "main";
+    const ownFamily = hub.topology.familyId
+      ? familyById.get(hub.topology.familyId)
+      : null;
+    const hubInspection = inspectionState({
+      structureId: hub.topology.structureId,
+      familyId: hub.topology.familyId,
+      rootPlacementId: null,
+      placementId: hub.placementId,
+      inspectedStructureId,
+      inspectedRouteId,
+    });
+    const isInspectedBranchRoot = inspectedRouteId !== null
+      ? rootedFamily?.arms.some((arm) => arm.id === inspectedRouteId) ?? false
+      : inspectedStructureId !== null &&
+        rootedFamily?.id === inspectedStructureId;
     return {
       ...hub,
+      isLive: hub.sockets.some((socket) => socket.isOpenEnd),
+      isDecisionOwner: decisionPlacementIds.has(hub.placementId),
       isScoringTerm: scoringHubPlacementIds.has(hub.placementId),
-      ...inspectionState(
-        structureId,
-        inspectedStructureId,
-        family?.originPlacementId ?? null,
-        hub.placementId,
-      ),
+      ...hubInspection,
+      isTopologyDimmed: isInspectedBranchRoot
+        ? false
+        : hubInspection.isTopologyDimmed,
+      isTopologyRoot: isInspectedBranchRoot ||
+        hubInspection.isTopologyRoot ||
+        ownFamily?.originPlacementId === hub.placementId &&
+          hubInspection.isTopologyHighlighted,
     };
   });
   const openTargets = view.portGraph.openTargets.map((target) => {
@@ -297,12 +569,14 @@ export function createPortScene(
         ? null
         : target.topology.familyIndex % 4,
       isScoringTerm: scoringEndpointIds.has(target.endpoint.id),
-      ...inspectionState(
-        target.topology.familyId ?? "main",
+      ...inspectionState({
+        structureId: target.topology.structureId,
+        familyId: target.topology.familyId,
+        rootPlacementId: family?.originPlacementId ?? null,
+        placementId: target.placementId,
         inspectedStructureId,
-        family?.originPlacementId ?? null,
-        target.placementId,
-      ),
+        inspectedRouteId,
+      }),
     };
   });
 
@@ -316,6 +590,17 @@ export function createPortScene(
         projectedHubs.filter((hub) => hub.value === expandedNode.value),
       )
     : null;
+  const nodeFocus = createNodeFocus({
+    node: expandedNode,
+    bridges: expandedNode ? bridgesByValue.get(expandedNode.value) : [],
+    hubs: expandedNode
+      ? projectedHubs.filter((hub) => hub.value === expandedNode.value)
+      : [],
+    openTargets,
+    geometry,
+  });
+  const inspectionActive = inspectedRouteId !== null ||
+    inspectedStructureId !== null;
 
   return {
     viewBox: `0 0 ${geometry.width} ${geometry.height}`,
@@ -327,12 +612,19 @@ export function createPortScene(
       rx: geometry.radii.x,
       ry: geometry.radii.y,
     },
+    visualState: expandedNode ? "node-focus" : inspectionActive
+      ? "inspection"
+      : hasSelection
+        ? "decision"
+        : "rest",
     hasSelection,
     selectedDominoId,
     inspectedStructureId,
     inspectedPlacementId,
+    inspectedRouteId,
     expandedNodeValue,
     nodeInspector,
+    nodeFocus,
     canStart: hasSelection && legalTargetIds.has("START"),
     nodes,
     threads,

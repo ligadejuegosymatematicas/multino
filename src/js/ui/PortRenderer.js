@@ -19,6 +19,8 @@ function topologyClasses(item) {
     item.familyTone === null || item.familyTone === undefined
       ? ""
       : `family-tone-${item.familyTone}`,
+    item.isLive ? "is-live" : "",
+    item.isDecisionOwner || item.isDecisionTarget ? "is-decision-owner" : "",
     item.isTopologyHighlighted ? "is-topology-highlighted" : "",
     item.isTopologyRoot ? "is-topology-root" : "",
     item.isTopologyDimmed ? "is-topology-dimmed" : "",
@@ -26,56 +28,102 @@ function topologyClasses(item) {
   ].filter(Boolean).join(" ");
 }
 
+function routeLabel(topology) {
+  if (!topology || topology.region === "main") {
+    return "línea principal";
+  }
+  return `${topology.structureLabel}, brazo ${topology.armIndex}`;
+}
+
 function renderThread(thread) {
-  const label = `Ficha ${thread.dominoId.replace("-", "|")}, ${thread.topology.region === "main" ? "línea principal" : thread.topology.structureLabel}`;
+  const label = `Ficha ${thread.dominoId.replace("-", "|")}, ${routeLabel(thread.topology)}; inspeccionar recorrido`;
   return `
-    <g class="port-thread ${topologyClasses(thread)}" data-placement-id="${escapeAttribute(thread.placementId)}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
+    <g class="port-thread ${topologyClasses(thread)}" data-placement-id="${escapeAttribute(thread.placementId)}" data-route-id="${escapeAttribute(thread.topology.structureId)}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
       <path class="port-thread__hit" d="${thread.path}"></path>
+      <path class="port-thread__shadow" d="${thread.path}"></path>
       <path class="port-thread__cord" d="${thread.path}"></path>
     </g>`;
 }
 
-function renderBridge(bridge) {
-  const label = `Continuidad por el valor ${bridge.value}, ${bridge.region === "main" ? "principal" : "ramificación"}`;
+function renderBridge(bridge, { focus = false } = {}) {
+  const label = `Continuidad por el valor ${bridge.value}, ${bridge.region === "main" ? "principal" : `ramificación, brazo ${bridge.armIndex}`}; inspeccionar recorrido`;
   return `
-    <g class="port-bridge ${topologyClasses(bridge)}" data-connection-id="${escapeAttribute(bridge.connectionId)}" data-structure-id="${escapeAttribute(bridge.familyId ?? "main")}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
+    <g class="port-bridge${focus ? " is-focus-bridge" : ""} ${topologyClasses(bridge)}" data-connection-id="${escapeAttribute(bridge.connectionId)}" data-route-id="${escapeAttribute(bridge.structureId)}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
       <path class="port-bridge__hit" d="${bridge.path}"></path>
       <path class="port-bridge__stitch" d="${bridge.path}"></path>
     </g>`;
 }
 
-function renderHub(hub) {
+function renderHubMechanism(hub) {
+  return hub.sockets.map((socket) => {
+    const lateral = socket.boardPortId.startsWith("branch:")
+      ? " is-lateral"
+      : "";
+    return `<path class="port-double-hub__mechanism${lateral}" d="M ${hub.x} ${hub.y} L ${socket.x} ${socket.y}"></path>`;
+  }).join("");
+}
+
+function renderHub(hub, { focus = false } = {}) {
   const classes = [
     hub.isSpecial ? "is-special" : "is-ordinary",
+    focus ? "is-focus-hub" : "",
     topologyClasses(hub),
-  ].join(" ");
+  ].filter(Boolean).join(" ");
   const socketMarkup = hub.sockets.map((socket) => `
-    <circle class="port-double-hub__socket${socket.connectionId ? " is-used" : ""}${socket.isOpenEnd ? " is-open" : ""}" cx="${socket.x}" cy="${socket.y}" r="6" data-board-port-id="${escapeAttribute(socket.boardPortId)}"></circle>`).join("");
+    <circle class="port-double-hub__socket${socket.connectionId ? " is-used" : ""}${socket.isOpenEnd ? " is-open" : ""}${socket.isDecisionTarget ? " is-decision-target" : ""}" cx="${socket.x}" cy="${socket.y}" r="${focus ? 8 : 6}" data-board-port-id="${escapeAttribute(socket.boardPortId)}"></circle>`).join("");
   return `
-    <g class="port-double-hub ${classes}" data-placement-id="${escapeAttribute(hub.placementId)}" data-node-value="${hub.value}" role="button" tabindex="0" aria-label="Chancho ${hub.value}|${hub.value}, ${hub.isSpecial ? "especial con cuatro sockets" : "ordinario con dos sockets"}; abrir detalle del valor ${hub.value}">
-      <circle class="port-double-hub__body" cx="${hub.x}" cy="${hub.y}" r="${hub.isSpecial ? 25 : 20}"></circle>
-      <text class="port-double-hub__mark" x="${hub.x}" y="${hub.y}">${hub.isSpecial ? "×4" : "═"}</text>
+    <g class="port-double-hub ${classes}" data-placement-id="${escapeAttribute(hub.placementId)}" data-node-value="${hub.value}" role="button" tabindex="0" aria-label="Chancho ${hub.value}|${hub.value}, ${hub.isSpecial ? "especial con cuatro conexiones" : "ordinario con dos conexiones"}; abrir detalle del valor ${hub.value}">
+      <circle class="port-double-hub__rim" cx="${hub.x}" cy="${hub.y}" r="${hub.isSpecial ? (focus ? 31 : 26) : (focus ? 26 : 21)}"></circle>
+      <circle class="port-double-hub__body" cx="${hub.x}" cy="${hub.y}" r="${hub.isSpecial ? (focus ? 26 : 21) : (focus ? 21 : 16)}"></circle>
+      ${renderHubMechanism(hub)}
       ${socketMarkup}
     </g>`;
 }
 
-function renderNode(node, isExpanded, hasDoubleHub) {
-  const ports = node.ordinaryPorts.map((port) => `
-    <circle class="port-incidence ${port.state === "PLAYED" ? "is-played" : "is-potential"}${port.isOpenEnd ? " is-open" : ""}" cx="${port.x}" cy="${port.y}" r="${port.state === "PLAYED" ? 5.5 : 3.2}" data-port-id="${escapeAttribute(port.id)}"></circle>`).join("");
+function renderIncidence(port, { focus = false } = {}) {
+  const played = port.state === "PLAYED";
+  const interactive = played && port.topology;
+  const classes = [
+    "port-incidence",
+    played ? "is-played" : "is-potential",
+    port.isOpenEnd ? "is-open" : "",
+    focus ? "is-focus-incidence" : "",
+    topologyClasses(port),
+  ].filter(Boolean).join(" ");
+  const interaction = interactive
+    ? ` data-route-id="${escapeAttribute(port.topology.structureId)}" role="button" tabindex="0" aria-label="Incidencia ${port.value} hacia ${port.otherValue}; ${escapeAttribute(routeLabel(port.topology))}; inspeccionar recorrido"`
+    : ` aria-hidden="true"`;
+  const label = focus
+    ? `<text class="port-focus__port-label" x="${port.label.x}" y="${port.label.y}">→${port.otherValue}</text>`
+    : "";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded}" aria-label="Valor ${node.value}; ${node.ordinaryPorts.filter((port) => port.state === "PLAYED").length} incidencias jugadas; abrir detalle">
-      <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="67"></circle>
-      <circle class="port-macro-node__outline" cx="${node.x}" cy="${node.y}" r="55"></circle>
-      <text class="port-macro-node__value" x="${node.x}" y="${node.y - (hasDoubleHub ? 31 : 11)}">${node.value}</text>
-      ${ports}
+    <g class="port-incidence-wrap"${interaction}>
+      <circle class="${classes}" cx="${port.x}" cy="${port.y}" r="${focus ? (played ? 10 : 7) : (played ? 6 : 3.2)}"></circle>
+      ${label}
     </g>`;
 }
 
 function renderNodeShell(node) {
-  return `<circle class="port-macro-node__body" cx="${node.x}" cy="${node.y}" r="55"></circle>`;
+  return `
+    <g class="port-macro-node-shell" aria-hidden="true">
+      <circle class="port-macro-node__shadow" cx="${node.x}" cy="${node.y + 4}" r="64"></circle>
+      <circle class="port-macro-node__rim" cx="${node.x}" cy="${node.y}" r="63"></circle>
+      <circle class="port-macro-node__body" cx="${node.x}" cy="${node.y}" r="57"></circle>
+      <circle class="port-macro-node__inner" cx="${node.x}" cy="${node.y}" r="48"></circle>
+    </g>`;
 }
 
-function renderOpenTarget(target, hasSelection) {
+function renderNode(node, isExpanded, hasDoubleHub) {
+  const playedCount = node.ordinaryPorts.filter((port) => port.state === "PLAYED").length;
+  return `
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded}" aria-label="Valor ${node.value}; ${playedCount} incidencias utilizadas; abrir el saco">
+      <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
+      <text class="port-macro-node__value" x="${node.x}" y="${node.y - (hasDoubleHub ? 32 : 0)}">${node.value}</text>
+      <g class="port-incidences">${node.ordinaryPorts.map((port) => renderIncidence(port)).join("")}</g>
+    </g>`;
+}
+
+function renderOpenTarget(target, hasSelection, { focus = false } = {}) {
   const stateClass = target.isLegal
     ? "is-legal"
     : target.isIncompatible
@@ -83,16 +131,41 @@ function renderOpenTarget(target, hasSelection) {
       : "is-neutral";
   const option = target.optionIndex === null
     ? ""
-    : `<text class="port-open-target__option" x="${target.x + 13}" y="${target.y - 12}">${target.optionIndex}</text>`;
-  const structure = target.topology.region === "main"
-    ? "principal"
-    : target.topology.structureLabel;
+    : `<text class="port-open-target__option" x="${target.x + (focus ? 18 : 14)}" y="${target.y - (focus ? 17 : 13)}">${target.optionIndex}</text>`;
+  const structure = routeLabel(target.topology);
   return `
-    <g class="port-open-target ${stateClass} ${topologyClasses(target)}" data-target-id="${escapeAttribute(target.id)}" role="button" tabindex="0" aria-label="Extremo abierto de valor ${target.value}, ${escapeAttribute(structure)}${hasSelection ? target.isLegal ? "; compatible" : "; no compatible" : ""}">
-      <circle class="port-open-target__hit" cx="${target.x}" cy="${target.y}" r="22"></circle>
-      <circle class="port-open-target__halo" cx="${target.x}" cy="${target.y}" r="12"></circle>
-      <circle class="port-open-target__core" cx="${target.x}" cy="${target.y}" r="5"></circle>
+    <g class="port-open-target ${stateClass}${focus ? " is-focus-target" : ""} ${topologyClasses(target)}" data-target-id="${escapeAttribute(target.id)}" data-route-id="${escapeAttribute(target.topology.structureId)}" role="button" tabindex="0" aria-label="Extremo abierto de valor ${target.value}, ${escapeAttribute(structure)}${hasSelection ? target.isLegal ? "; compatible" : "; no compatible" : ""}">
+      <circle class="port-open-target__hit" cx="${target.x}" cy="${target.y}" r="4"></circle>
+      <circle class="port-open-target__halo" cx="${target.x}" cy="${target.y}" r="${focus ? 16 : 13}"></circle>
+      <circle class="port-open-target__eyelet" cx="${target.x}" cy="${target.y}" r="${focus ? 9 : 7}"></circle>
+      <circle class="port-open-target__core" cx="${target.x}" cy="${target.y}" r="${focus ? 4 : 3}"></circle>
       ${option}
+    </g>`;
+}
+
+function renderFocusPort(port) {
+  return renderIncidence(port, { focus: true });
+}
+
+function renderNodeFocus(focus, hasSelection) {
+  if (!focus) {
+    return "";
+  }
+  return `
+    <g class="port-node-focus" data-port-node-focus data-node-value="${focus.value}" role="dialog" aria-label="Detalle ampliado del valor ${focus.value}">
+      <circle class="port-node-focus__backdrop" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius + 42}"></circle>
+      <circle class="port-node-focus__rim" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius}"></circle>
+      <circle class="port-node-focus__body" cx="${focus.center.x}" cy="${focus.center.y}" r="${focus.radius - 8}"></circle>
+      <text class="port-node-focus__title" x="${focus.center.x}" y="${focus.center.y - focus.radius + 27}">Valor ${focus.value}</text>
+      <text class="port-node-focus__hint" x="${focus.center.x}" y="${focus.center.y + focus.radius - 18}">Cada ojal conserva su incidencia</text>
+      <g class="port-node-focus__bridges">${focus.bridges.map((bridge) => renderBridge(bridge, { focus: true })).join("")}</g>
+      <g class="port-node-focus__ports">${focus.ports.map(renderFocusPort).join("")}</g>
+      <g class="port-node-focus__hubs">${focus.hubs.map((hub) => renderHub(hub, { focus: true })).join("")}</g>
+      <g class="port-node-focus__targets">${focus.targets.map((target) => renderOpenTarget(target, hasSelection, { focus: true })).join("")}</g>
+      <g class="port-node-focus__close" data-close-port-node role="button" tabindex="0" aria-label="Cerrar detalle del valor ${focus.value}">
+        <circle cx="${focus.center.x + focus.radius - 5}" cy="${focus.center.y - focus.radius + 5}" r="19"></circle>
+        <path d="M ${focus.center.x + focus.radius - 12} ${focus.center.y - focus.radius - 2} L ${focus.center.x + focus.radius + 2} ${focus.center.y - focus.radius + 12} M ${focus.center.x + focus.radius + 2} ${focus.center.y - focus.radius - 2} L ${focus.center.x + focus.radius - 12} ${focus.center.y - focus.radius + 12}"></path>
+      </g>
     </g>`;
 }
 
@@ -101,7 +174,7 @@ export function renderPortNodeInspectorMarkup(inspector) {
     return "";
   }
   const bridges = inspector.bridges.length === 0
-    ? "<li>Sin conexiones internas todavía.</li>"
+    ? "<li>Sin continuidades internas todavía.</li>"
     : inspector.bridges.map((bridge) =>
         `<li><strong>${escapeAttribute(bridge.firstLabel)}</strong> ↔ <strong>${escapeAttribute(bridge.secondLabel)}</strong> · ${bridge.region === "main" ? "principal" : "rama"}</li>`
       ).join("");
@@ -109,31 +182,55 @@ export function renderPortNodeInspectorMarkup(inspector) {
     `<p class="port-node-inspector__hub">Chancho ${escapeAttribute(hub.dominoId.replace("-", "|"))}: ${hub.isSpecial ? "especial" : "ordinario"} · ${hub.usedSockets}/${hub.capacity} conexiones</p>`
   ).join("");
   return `
-    <aside class="port-node-inspector" data-port-node-inspector aria-label="Detalle del valor ${inspector.value}">
+    <aside class="port-node-inspector" data-port-node-inspector aria-label="Resumen del valor ${inspector.value}">
       <div>
         <p class="port-node-inspector__kicker">Saco abierto</p>
         <h3>Valor ${inspector.value}</h3>
-        <p>${inspector.playedPortCount} de 6 incidencias ordinarias jugadas.</p>
+        <p>${inspector.playedPortCount} de 6 incidencias ordinarias utilizadas.</p>
         ${hubs}
-        <ul>${bridges}</ul>
+        <details>
+          <summary>Ver ${inspector.bridges.length} continuidades</summary>
+          <ul>${bridges}</ul>
+        </details>
       </div>
       <button type="button" data-close-port-node aria-label="Cerrar detalle del valor ${inspector.value}">Cerrar</button>
     </aside>`;
 }
 
+function renderRouteStatus(scene) {
+  if (scene.inspectedRouteId === null) {
+    return "";
+  }
+  const source = scene.threads.find((thread) => thread.isTopologyHighlighted) ??
+    scene.openTargets.find((target) => target.isTopologyHighlighted);
+  const label = routeLabel(source?.topology);
+  const potential = source?.topology?.branchState === "POTENTIAL"
+    ? " · brazo potencial"
+    : "";
+  return `
+    <div class="port-route-status" role="status">
+      <span><strong>Recorrido:</strong> ${escapeAttribute(label)}${potential}</span>
+      <button type="button" data-close-port-route>Salir</button>
+    </div>`;
+}
+
 /** Serialización SVG verificable sin DOM artificial. */
 export function renderPortSvgMarkup(scene) {
+  const focusActive = scene.nodeFocus !== null;
   return `
-    <svg class="port-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
+    <svg class="port-graph is-${scene.visualState}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
       <title id="port-title">Vista experimental de Puertos</title>
-      <desc id="port-description">Siete macro-nodos fijos, uno por valor. Los hilos exteriores son fichas y las costuras interiores muestran qué incidencias continúan entre sí.</desc>
-      <ellipse class="port-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
-      <g class="port-threads">${scene.threads.map(renderThread).join("")}</g>
-      <g class="port-node-shells">${scene.nodes.map(renderNodeShell).join("")}</g>
-      <g class="port-bridges">${scene.bridges.map(renderBridge).join("")}</g>
-      <g class="port-nodes">${scene.nodes.map((node) => renderNode(node, node.value === scene.expandedNodeValue, scene.hubs.some((hub) => hub.value === node.value))).join("")}</g>
-      <g class="port-double-hubs">${scene.hubs.map(renderHub).join("")}</g>
-      <g class="port-open-targets">${scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
+      <desc id="port-description">Siete macro-nodos fijos. Los hilos son fichas; las costuras interiores muestran qué incidencias continúan. Activa un recorrido o abre un valor para verlo sin interferencias.</desc>
+      <g class="port-scene-base">
+        <ellipse class="port-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
+        <g class="port-threads">${scene.threads.map(renderThread).join("")}</g>
+        <g class="port-node-shells">${scene.nodes.map(renderNodeShell).join("")}</g>
+        <g class="port-bridges">${scene.bridges.map(renderBridge).join("")}</g>
+        <g class="port-nodes">${scene.nodes.map((node) => renderNode(node, node.value === scene.expandedNodeValue, scene.hubs.some((hub) => hub.value === node.value))).join("")}</g>
+        <g class="port-double-hubs">${scene.hubs.map(renderHub).join("")}</g>
+        <g class="port-open-targets">${focusActive ? "" : scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
+      </g>
+      ${renderNodeFocus(scene.nodeFocus, scene.hasSelection)}
     </svg>`;
 }
 
@@ -141,9 +238,18 @@ function activateOnKeyboard(element, callback) {
   element.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      callback();
+      callback(event);
     }
   });
+}
+
+function boardSignature(portView) {
+  const graph = portView.portGraph;
+  return [
+    ...graph.externalThreads.map((thread) => thread.id),
+    ...graph.doubleHubs.map((hub) => hub.id),
+    ...graph.internalBridges.map((bridge) => bridge.id),
+  ].join("|");
 }
 
 export class PortRenderer {
@@ -153,16 +259,29 @@ export class PortRenderer {
     }
     this.container = container;
     this.expandedNodeValue = null;
+    this.inspectedRouteId = null;
+    this.lastBoardSignature = null;
   }
 
   render(presentation, options = {}) {
+    const currentSignature = boardSignature(presentation.portView);
+    if (
+      this.lastBoardSignature !== null &&
+      currentSignature !== this.lastBoardSignature
+    ) {
+      this.expandedNodeValue = null;
+      this.inspectedRouteId = null;
+    }
+    this.lastBoardSignature = currentSignature;
+
     const scene = createPortScene(presentation.portView, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
       inspectedStructureId: presentation.inspectedStructureId,
       inspectedPlacementId: presentation.inspectedPlacementId,
+      inspectedRouteId: this.inspectedRouteId,
       expandedNodeValue: this.expandedNodeValue,
-      layout: this.container.clientWidth >= 720
+      layout: this.container.clientWidth >= 760
         ? PORT_SCENE_LAYOUTS.WIDE
         : PORT_SCENE_LAYOUTS.COMPACT,
       scoringResolution: presentation.scoringResolution ?? null,
@@ -170,53 +289,50 @@ export class PortRenderer {
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
       : "";
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${startMarkup}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderRouteStatus(scene)}${startMarkup}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
-    const threadByPlacementId = new Map(
-      scene.threads.map((thread) => [thread.placementId, thread]),
-    );
-    const hubByPlacementId = new Map(
-      scene.hubs.map((hub) => [hub.placementId, hub]),
-    );
     const activateNode = (value) => {
       this.expandedNodeValue = this.expandedNodeValue === value ? null : value;
       this.render(presentation, options);
     };
+    const activateRoute = (routeId) => {
+      this.inspectedRouteId = this.inspectedRouteId === routeId ? null : routeId;
+      this.expandedNodeValue = null;
+      this.render(presentation, options);
+    };
+
     for (const element of this.container.querySelectorAll(".port-macro-node")) {
       const activate = () => activateNode(Number(element.dataset.nodeValue));
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
-    for (const element of this.container.querySelectorAll(".port-thread")) {
-      const activate = () => options.onInspectEdge?.(
-        threadByPlacementId.get(element.dataset.placementId),
-      );
+    for (const element of this.container.querySelectorAll("[data-route-id]:not(.port-open-target)")) {
+      const activate = (event) => {
+        event?.stopPropagation();
+        activateRoute(element.dataset.routeId);
+      };
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
     for (const element of this.container.querySelectorAll(".port-double-hub")) {
-      const activate = () => {
-        options.onInspectEdge?.(
-          hubByPlacementId.get(element.dataset.placementId),
-        );
+      const activate = (event) => {
+        event.stopPropagation();
         activateNode(Number(element.dataset.nodeValue));
       };
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
-    for (const element of this.container.querySelectorAll(".port-bridge")) {
-      const activate = () => options.onInspectStructure?.(
-        element.dataset.structureId,
-      );
-      element.addEventListener("click", activate);
-      activateOnKeyboard(element, activate);
-    }
     for (const element of this.container.querySelectorAll(".port-open-target")) {
       const target = targetById.get(element.dataset.targetId);
-      const activate = () => target.isLegal
-        ? options.onTarget?.(target)
-        : options.onInspectStructure?.(target.topology.familyId ?? "main");
+      const activate = (event) => {
+        event?.stopPropagation();
+        if (target.isLegal) {
+          options.onTarget?.(target);
+          return;
+        }
+        activateRoute(target.topology.structureId);
+      };
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
@@ -224,17 +340,38 @@ export class PortRenderer {
       "click",
       () => options.onStart?.({ kind: "START" }),
     );
-    this.container.querySelector("[data-close-port-node]")?.addEventListener(
+    for (const element of this.container.querySelectorAll("[data-close-port-node]")) {
+      const close = (event) => {
+        event?.stopPropagation();
+        this.expandedNodeValue = null;
+        this.render(presentation, options);
+      };
+      element.addEventListener("click", close);
+      activateOnKeyboard(element, close);
+    }
+    this.container.querySelector("[data-close-port-route]")?.addEventListener(
       "click",
-      () => activateNode(this.expandedNodeValue),
+      () => {
+        this.inspectedRouteId = null;
+        this.render(presentation, options);
+      },
     );
     for (const element of this.container.querySelectorAll(
       ".port-graph, [data-port-node-inspector]",
     )) {
       element.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && this.expandedNodeValue !== null) {
+        if (event.key !== "Escape") {
+          return;
+        }
+        if (this.expandedNodeValue !== null) {
           event.preventDefault();
           this.expandedNodeValue = null;
+          this.render(presentation, options);
+          return;
+        }
+        if (this.inspectedRouteId !== null) {
+          event.preventDefault();
+          this.inspectedRouteId = null;
           this.render(presentation, options);
         }
       });

@@ -11,11 +11,13 @@ board lógico
 PortGraphProjection
     │
     ▼
-PortScene (geometría descartable)
+PortScene (jerarquía y geometría descartables)
     │
     ▼
 PortRenderer (SVG e intención del usuario)
 ```
+
+La segunda iteración mantiene íntegro ese modelo y cambia la presentación: ya no intenta mostrar las 42 incidencias, todos los hilos y todos los puentes con el mismo peso. La vista usa revelado progresivo para que siga siendo un juego antes que un diagrama exhaustivo.
 
 ## Definición implementada
 
@@ -42,15 +44,44 @@ Los nombres internos solo mantienen identidad para el motor y la acción. La UI 
 
 Los 42 puertos ordinarios potenciales se dibujan discretamente, pero solo una incidencia de ficha ya colocada incluida en `getOpenEndTargets` se convierte en extremo vivo. Los targets conservan `placementId + portId`; varios extremos del mismo valor siguen siendo controles separados y reciben números únicamente cuando una selección necesita desambiguarlos.
 
-Sin ficha seleccionada, los extremos reales tienen halo y área táctil. Con selección, los compatibles ganan énfasis y los incompatibles se atenúan. `START`, `PASS`, cierre, privacidad local y feedback posterior se comparten con las otras vistas mediante `InteractionController` y `projectRoundView`.
+Sin ficha seleccionada, los extremos reales son ojales con halo y área táctil, mientras los puertos potenciales casi desaparecen. Con selección, los compatibles ganan énfasis y los incompatibles se atenúan. Varios targets del mismo valor continúan siendo controles separados; si quedan demasiado próximos, abrir el macro-nodo separa sus incidencias sin cambiar el target canónico. `START`, `PASS`, cierre, privacidad local y feedback posterior se comparten con las otras vistas mediante `InteractionController` y `projectRoundView`.
 
 Puertos no calcula S desde incidencias ni extremos. El feedback utiliza `scoringPresentation`, basado en `scoringTerms`, de modo que un doble con socket libre y contribución cero se representa correctamente.
 
 ## Línea principal y ramas
 
-Principal y ramas se clasifican desde la topología existente. La principal usa hilo continuo; las ramas, trazo segmentado y un acento sobrio de familia. Inspeccionar una estructura resalta sus hilos, puentes, raíz y extremos, y atenúa lo ajeno. Una rama que vuelve a visitar un valor ya usado por la principal reutiliza el mismo `B_n`, pero con otra pareja de incidencias.
+Principal y ramas se clasifican desde la topología existente. La principal usa hilo continuo; las ramas, trazo segmentado y un acento sobrio de familia. Inspeccionar un extremo, hilo, puerto o puente resalta el brazo exacto —o la principal completa— junto con sus puentes, raíz y extremos, y atenúa agresivamente lo ajeno. La inspección de familia de las otras vistas sigue disponible, pero Puertos permite un foco más preciso por brazo. Una rama que vuelve a visitar un valor ya usado por la principal reutiliza el mismo `B_n`, pero con otra pareja de incidencias.
 
-La densidad interior se resuelve bajo demanda mediante «abrir el saco»: el detalle local enumera todas las parejas de incidencias y hubs de un valor sin duplicar el macro-nodo. Es accesible por tacto, mouse, teclado y `Escape`.
+La densidad interior se resuelve bajo demanda mediante «abrir el saco»: una lente SVG amplía el valor elegido, separa en posiciones estables sus seis incidencias `p(n→m)`, muestra puentes y sockets del hub, y conserva los targets exactos. Un resumen textual secundario deja las parejas completas bajo un detalle desplegable. Es accesible por tacto, mouse, teclado y `Escape`.
+
+## Gramática visual v2
+
+La escena tiene tres estados explícitos:
+
+- **reposo:** medallones y extremos dominan; solo los hilos que terminan en un extremo vivo conservan contraste alto; hilos cerrados, puentes y puertos potenciales son contexto;
+- **decisión:** al seleccionar una ficha, los targets compatibles y sus incidencias propietarias pasan al primer plano; el resto se atenúa y no se anticipan S ni puntos;
+- **inspección:** un recorrido exacto se enfatiza de extremo a extremo y todas las estructuras ajenas pierden casi todo su contraste.
+
+Los hilos ya no son cuerdas rectas que cruzan el centro. Cada ficha usa una curva Bézier determinista sobre un carril anular: la principal ocupa el carril interior continuo y las ramas un carril algo más exterior y segmentado. No es *edge bundling* semántico: cada hilo conserva su path, endpoints, `placementId` y control independiente.
+
+Los macro-nodos usan capas de medallón, aro e interior para admitir posteriormente una materialidad más rica sin cambiar la escena. Los dobles se integran como mecanismos: dos brazos en un ordinario y cuatro en un especial, con los brazos laterales segmentados. No aparecen rótulos técnicos ni se duplica el valor.
+
+## Diagnóstico cuantitativo y K
+
+La medición previa al rediseño separó el problema basal de la amplificación causada por K. En posiciones completas sin prioridad visual había 21 hilos no dobles y hasta 35 cruces rectos incluso con `K=0`; por tanto, las ramas no eran la causa única. Los 42 puertos potenciales, puentes, hubs y targets elevaban una posición completa a alrededor de 120–136 marcas simultáneas.
+
+Un fixture sintético de estrés —siete dobles en principal y ambos brazos disponibles para los primeros K especiales— produjo:
+
+| K | hilos | cruces rectos v1 | brazos activos | extremos | marcas simultáneas v1 |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 6 | 0 | 0 | 2 | 90 |
+| 1 | 8 | 0 | 2 | 4 | 98 |
+| 2 | 10 | 3 | 4 | 6 | 106 |
+| 3 | 12 | 8 | 6 | 8 | 114 |
+| 5 | 16 | 18 | 10 | 12 | 130 |
+| 7 | 20 | 35 | 14 | 16 | 146 |
+
+La geometría v2 y el revelado progresivo atacan cruces perceptivos e información simultánea; no cambian ninguna cifra reglamentaria. Como recomendación de experiencia, `K=2` o `K=3` ofrece ramificación estratégica sin llevar de forma habitual a 10–14 brazos potenciales. `K=0…7` continúa completamente soportado, la UI no impone una cota y su valor predeterminado no cambia en este bloque. K altos deben considerarse una configuración avanzada hasta acumular más pruebas humanas.
 
 ## Fixture de continuidad
 
@@ -64,12 +95,12 @@ produce doce hilos y once puentes. En `B_1`, por ejemplo, los pasos `6–1–4` 
 
 ## Responsive y limitación observada
 
-Las geometrías compacta y ancha conservan un heptágono reconocible, targets táctiles y ausencia de overflow horizontal global. En 1366×768 se distinguen nodos, hubs, extremos y recorridos inspeccionados con claridad razonable.
+Las geometrías compacta y ancha conservan un heptágono reconocible, carriles anulares y ausencia de overflow horizontal global. En 1366×768 los medallones, ojales, hubs y recorridos inspeccionados se leen con claridad; el centro deja de ser la zona dominante.
 
-En 390×844 los siete nodos y targets permanecen utilizables. Sin embargo, una mesa casi completa con varias ramas acumula muchos hilos cruzados y no permite seguir globalmente cada recorrido de una sola mirada. La inspección de rama y el detalle local del macro-nodo son necesarios. Esta es una limitación honesta del prototipo y una cuestión de evaluación de producto, no un motivo para persistir geometría ni reducir todo hasta volverlo ilegible.
+En 390×844 los siete nodos conservan aproximadamente 48 px de caja visual en un estado denso y no existe overflow horizontal de página. Los ojales exactos próximos a un hub especial no siempre son cómodos como selección global: «abrir el saco» es la interacción recomendada para separarlos. Un recorrido inspeccionado se puede seguir, pero una posición `K=5/7` casi completa no se entiende globalmente de una sola mirada. Esta limitación sigue siendo honesta: Puertos v2 es jugable en teléfono para decisiones locales, no una vista panorámica exhaustiva de todos los recorridos simultáneos.
 
 ## Comparación
 
-- frente a Tradicional, Puertos sacrifica continuidad espacial inmediata a cambio de agrupar incidencias por valor;
-- frente a Grafo, conserva qué entrada continúa con qué salida y representa dobles como hubs explícitos;
-- Tradicional sigue siendo la vista inicial; Puertos sigue experimental; Grafo conserva su papel analítico.
+- frente a Tradicional, Puertos conserva mejor las visitas repetidas a un valor y los mecanismos de dobles, pero exige aprender hilo ↔ puente y usar foco en densidad alta;
+- frente a Grafo, aporta información distintiva suficiente: identifica qué entrada continúa con qué salida y representa dobles como hubs explícitos; a cambio es visualmente más complejo;
+- Tradicional sigue siendo la vista más inmediata para jugar; Puertos v2 puede ser jugable y analítica a la vez, sobre todo con `K≤3`; Grafo sigue siendo la lectura matemática más simple de valores/aristas, aunque su papel a largo plazo deberá compararse con Puertos en más pruebas humanas.

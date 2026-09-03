@@ -115,6 +115,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - Continuidad de línea y ramas reconstruible sin duplicar valores, incluidos pasos repetidos por un mismo valor y ambos brazos de un chancho especial.
 - Targets abiertos exactos, selección individual `placementId + portId`, inspección de rama/principal y detalle local accesible de macro-nodos densos.
 - Conmutador Tradicional ↔ Puertos ↔ Grafo sin mutar snapshot ni repetir feedback; responsive sin overflow global y limitación móvil densa documentada.
+- Segunda versión sustancial de Puertos con revelado progresivo en reposo, decisión e inspección; medallones y extremos pasan por delante de recorridos cerrados y puertos potenciales.
+- Hilos exteriores en carriles Bézier anulares para retirar las franjas rectas del centro, manteniendo cada ficha e incidencia individualmente identificable.
+- Inspección exacta de principal o brazo lateral desde hilo, puente, puerto o extremo, con raíz correcta y atenuación agresiva de estructuras ajenas.
+- «Abrir el saco» convertido en una lente SVG interactiva con seis incidencias estables, puentes, hubs y targets separados; dobles ordinarios/especiales se muestran como mecanismos de dos/cuatro sockets.
+- Estudio K=0/1/2/3/5/7 documentado: el motor conserva todo el rango y se recomienda K=2 o K=3 únicamente como punto de partida de UX.
 
 ### Decidido
 
@@ -140,6 +145,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 - DEC-040 materializa la reconstrucción tradicional como proyección descartable y mantiene la selección de renderer fuera del snapshot.
 - DEC-042 mantiene la repetición de partidas como coordinación local efímera y aplaza la separación formal RoundState/MatchState.
 - DEC-047 introduce Puertos como proyección experimental intermedia entre la mesa topológica y el grafo simple, sin autoridad reglamentaria ni estado persistido.
+- DEC-048 fija la gramática progresiva y el enrutado anular de Puertos v2; la recomendación de K no es una regla ni una cota del motor.
 
 ### Cambiado
 

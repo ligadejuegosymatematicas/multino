@@ -133,6 +133,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 13 — Vista experimental Puertos: COMPLETADO.** Añade una tercera representación con siete macro-nodos fijos, seis incidencias canónicas por valor, hilos exteriores para fichas no dobles, puentes interiores para conexiones y hubs de dos o cuatro sockets para chanchos. Las ramas reutilizan los mismos siete valores y los targets conservan `placementId + portId`; proyección, geometría, foco local y renderer son descartables y no cambian snapshot, motor ni schema.
 
+**Bloque 14 — Puertos v2, revelado progresivo y carriles anulares: COMPLETADO.** Sustituye hilos rectos de igual peso por curvas Bézier anulares, jerarquiza reposo/decisión/inspección, permite seguir principal o un brazo exacto y materializa «abrir el saco» como lente SVG de seis incidencias, puentes, hub y targets. Documenta `K=2/3` como recomendación de experiencia sin limitar el soporte reglamentario `K=0…7` ni cambiar el valor predeterminado.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

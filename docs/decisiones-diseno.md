@@ -663,3 +663,15 @@ Exponer `getStrategicTargetProjections(state, playerId, dominoId)` como consulta
 **Motivo:** El grafo simple identifica qué fichas existen pero colapsa dos visitas distintas al mismo valor. Alternar hilo exterior → puente interior permite seguir la continuidad real sin duplicar los valores ni reconstruir una mesa física.
 
 **Consecuencias:** La vista se añade al conmutador `Tradicional | Puertos | Grafo` como preferencia local. No cambia snapshot v6, schema, motor, persistencia, reglas, scoring, bonus ni K. En escritorio la representación intermedia permite inspeccionar recorridos con claridad; en 390 px un estado casi completo con muchos cruces requiere foco por rama o apertura local del macro-nodo. No se oculta esa limitación reduciendo el heptágono a una escala ilegible.
+
+## DEC-048 — Revelado progresivo y carriles anulares en Puertos
+
+**Estado:** Aceptada para la segunda iteración experimental.
+
+**Decisión:** Mantener intacto el grafo de incidencias de DEC-047 y añadir únicamente metadata visual derivada. `PortScene` clasifica elementos vivos, propietarios de una decisión y miembros de una ruta inspeccionada. `PortRenderer` presenta tres estados: reposo con contexto secundario, decisión con targets compatibles dominantes e inspección de principal o brazo exacto. Los hilos usan curvas Bézier deterministas próximas al anillo del heptágono: principal continua en carril interior y ramas segmentadas en carril exterior. No se agrupan identidades ni se usa la geometría para legalidad.
+
+«Abrir el saco» se materializa como lente SVG local: separa las seis incidencias deterministas, puentes y sockets del doble, y permite operar los mismos targets `placementId + portId`. Los hubs se integran como mecanismos de dos o cuatro brazos; los nombres técnicos continúan ocultos. La escena expone métricas diagnósticas puras de saturación, sin persistirlas ni convertirlas en reglas.
+
+**Motivo:** En Puertos v1, 21 hilos no dobles podían producir 35 cruces rectos aun con K=0 y los 42 puertos potenciales competían con extremos y nodos. K alto amplificaba el problema, pero no era su causa. El enrutado anular y el revelado progresivo reducen cruces perceptivos e información simultánea sin perder continuidad.
+
+**Consecuencias:** El motor sigue admitiendo `K=0…7`. Las pruebas de estrés favorecen `K=2` o `K=3` como recomendación inicial de experiencia, no como límite ni cambio de default. En 390 px la decisión local y el foco de nodo son utilizables; una posición casi completa con `K=5/7` sigue requiriendo inspección y no ofrece una panorámica exhaustiva. Snapshot v6, schema, reglas, scoring, bonus, persistencia, privacidad y flujo de turno permanecen intactos.

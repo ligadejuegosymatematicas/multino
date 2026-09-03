@@ -286,6 +286,9 @@ export function getPortGraphProjection(state) {
         const boardPortId = placement
           ? sideIdForValue(domino, value)
           : null;
+        const portTopology = placement
+          ? topologyByPlacementId.get(placement.id)
+          : null;
         const connectionId = placement
           ? usage.get(`${placement.id}:${boardPortId}`) ?? null
           : null;
@@ -302,6 +305,7 @@ export function getPortGraphProjection(state) {
           connectionId,
           isOpenEnd: openTarget !== null,
           openTargetId: openTarget?.id ?? null,
+          topology: portTopology ? structuredClone(portTopology) : null,
         };
       }),
     internalBridgeIds: bridgeIdsByValue.get(value),

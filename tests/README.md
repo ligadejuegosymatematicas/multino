@@ -149,6 +149,14 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - revisión manual en 1366×768 y 390×844: siete valores únicos, extremos visibles, foco por rama/nodo, feedback compartido, estado terminal, sin overflow ni errores de consola;
 - limitación honesta: una mesa casi completa con varios recorridos cruzados no se sigue globalmente de un vistazo en 390 px; la inspección local es necesaria y el prototipo no reduce los nodos a una escala ilegible.
 
+### Fase 2, Bloque 14 — Puertos v2 completado
+
+- `tests/ui/port-renderer.test.js`: rutas Bézier anulares, estados de reposo/decisión/inspección, brazo exacto sin mezclar su gemelo, raíz única con varios especiales, lente de seis incidencias y separación de marcas primarias/secundarias;
+- `analyzePortSceneDensity` mide hilos, cruces geométricos estimados, puentes, hubs, ramas, extremos y carga primaria/secundaria sin convertir esas métricas en reglas;
+- CSS verifica puertos potenciales secundarios, recorridos vivos, lente local y `prefers-reduced-motion`; los targets canónicos y el fixture de doce fichas conservan su cobertura anterior;
+- revisión manual en 1366×768 y 390×844 cubre reposo denso, selección, ruta principal/brazo, hub especial, apertura local, puntuación compartida y ausencia de overflow global;
+- se documenta `K=2/3` como recomendación de experiencia; los tests y el motor mantienen `K=0…7` sin cota nueva.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

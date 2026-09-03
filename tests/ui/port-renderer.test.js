@@ -9,6 +9,7 @@ import {
   projectPortView,
 } from "../../src/js/game/index.js";
 import {
+  analyzePortSceneDensity,
   createPortScene,
   PORT_SCENE_LAYOUTS,
 } from "../../src/js/ui/PortScene.js";
@@ -38,6 +39,53 @@ function createTwoArmScenario() {
   return state;
 }
 
+function createTwelveThreadScenario() {
+  let state = createBoardScenario({ K: 0, firstDominoId: "1-6" });
+  state = playDomino(state, "1-6");
+  for (const [dominoId, value] of [
+    ["1-4", 1],
+    ["0-4", 4],
+    ["0-2", 0],
+    ["2-5", 2],
+    ["3-5", 5],
+    ["1-3", 3],
+    ["1-2", 1],
+    ["2-4", 2],
+    ["4-6", 4],
+    ["0-6", 6],
+    ["0-5", 0],
+  ]) {
+    state = playDomino(state, dominoId, (target) => target.value === value);
+  }
+  return state;
+}
+
+function countStraightCrossings(threads) {
+  function orientation(first, second, third) {
+    return (second.x - first.x) * (third.y - first.y) -
+      (second.y - first.y) * (third.x - first.x);
+  }
+  let crossings = 0;
+  for (let firstIndex = 0; firstIndex < threads.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < threads.length; secondIndex += 1) {
+      const first = threads[firstIndex];
+      const second = threads[secondIndex];
+      if ([first.a, first.b].some((value) => value === second.a || value === second.b)) {
+        continue;
+      }
+      if (
+        orientation(first.route.start, first.route.end, second.route.start) *
+          orientation(first.route.start, first.route.end, second.route.end) < 0 &&
+        orientation(second.route.start, second.route.end, first.route.start) *
+          orientation(second.route.start, second.route.end, first.route.end) < 0
+      ) {
+        crossings += 1;
+      }
+    }
+  }
+  return crossings;
+}
+
 test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales", () => {
   const state = createBoardScenario();
   const scene = createPortScene(projectPortView(state));
@@ -47,8 +95,8 @@ test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales
   assert.equal(scene.nodes.flatMap((node) => node.ordinaryPorts).length, 42);
   assert.equal(scene.threads.length, 0);
   assert.equal(scene.bridges.length, 0);
-  assert.equal(markup.match(/<g class="port-macro-node/g)?.length, 7);
-  assert.equal(markup.match(/class="port-incidence is-potential"/g)?.length, 42);
+  assert.equal(markup.match(/aria-label="Valor \d;/g)?.length, 7);
+  assert.equal(markup.match(/port-incidence is-potential/g)?.length, 42);
 });
 
 test("hilos exteriores y costuras interiores se materializan por separado", () => {
@@ -61,8 +109,9 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   assert.equal(scene.threads.length, 2);
   assert.equal(scene.bridges.length, 1);
   assert.equal(scene.bridges[0].value, 1);
-  assert.match(markup, /class="port-thread is-main"/);
-  assert.match(markup, /class="port-bridge is-main"/);
+  assert.match(markup, /class="port-thread is-main(?:\s|")/);
+  assert.match(markup, /class="port-bridge is-main(?:\s|")/);
+  assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
   assert.doesNotMatch(markup, />\s*S\s*=|>\s*\+\d+\s+puntos/i);
 });
 
@@ -163,6 +212,52 @@ test("inspeccionar principal atenúa ramas sin perder sus incidencias", () => {
   assert.equal(scene.nodes.length, 7);
 });
 
+test("inspeccionar un brazo exacto no mezcla el otro brazo de la familia", () => {
+  const state = createTwoArmScenario();
+  const scene = createPortScene(projectPortView(state), {
+    inspectedRouteId: "placement-1:branch:1",
+  });
+
+  assert.equal(scene.visualState, "inspection");
+  assert.ok(
+    scene.threads
+      .filter((thread) => thread.topology.structureId === "placement-1:branch:1")
+      .every((thread) => thread.isTopologyHighlighted),
+  );
+  assert.ok(
+    scene.threads
+      .filter((thread) => thread.topology.structureId === "placement-1:branch:2")
+      .every((thread) => thread.isTopologyDimmed),
+  );
+  assert.equal(
+    scene.hubs.find((hub) => hub.placementId === "placement-1").isTopologyRoot,
+    true,
+  );
+  assert.equal(scene.hubs.filter((hub) => hub.isTopologyRoot).length, 1);
+});
+
+test("un brazo potencial solo señala su propio hub raíz entre varios especiales", () => {
+  let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
+  state = playDomino(state, "3-3", (target) => target.value === 3);
+  const scene = createPortScene(projectPortView(state), {
+    inspectedRouteId: "placement-1:branch:1",
+  });
+
+  assert.equal(scene.hubs.length, 2);
+  assert.deepEqual(
+    scene.hubs
+      .filter((hub) => hub.isTopologyRoot)
+      .map((hub) => hub.placementId),
+    ["placement-1"],
+  );
+  assert.equal(
+    scene.hubs.find((hub) => hub.placementId === "placement-1").isTopologyDimmed,
+    false,
+  );
+});
+
 test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () => {
   const state = createTwoArmScenario();
   const scene = createPortScene(projectPortView(state), {
@@ -174,11 +269,64 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   assert.equal(scene.nodeInspector.value, 4);
   assert.equal(scene.nodeInspector.hubs[0].capacity, 4);
   assert.ok(scene.nodeInspector.bridges.length >= 3);
+  assert.equal(scene.nodeFocus.ports.length, 6);
+  assert.equal(scene.nodeFocus.value, 4);
+  assert.equal(scene.visualState, "node-focus");
   assert.match(inspector, /Saco abierto/);
   assert.match(inspector, /Chancho 4\|4: especial/);
   assert.match(inspector, /chancho · (principal|lateral)/);
   assert.doesNotMatch(inspector, /main:|branch:|side:/);
   assert.doesNotMatch(inspector, /placement-|connection-/);
+
+  const markup = renderPortSvgMarkup(scene);
+  assert.match(markup, /role="dialog" aria-label="Detalle ampliado del valor 4"/);
+  assert.equal(markup.match(/port-focus__port-label/g)?.length, 6);
+  assert.match(markup, /Cada ojal conserva su incidencia/);
+});
+
+test("reposo, decisión e inspección exponen jerarquías progresivas", () => {
+  const state = createTwoArmScenario();
+  const view = projectPortView(state);
+  const rest = createPortScene(view);
+  const playerId = findDominoOwner(state, "3-5");
+  const decision = createPortScene(projectPortView(state, playerId), {
+    selectedDominoId: "3-5",
+    legalTargets: getLegalTargetsForDomino(state, playerId, "3-5"),
+  });
+  const inspection = createPortScene(view, {
+    inspectedRouteId: "placement-1:branch:1",
+  });
+
+  assert.equal(rest.visualState, "rest");
+  assert.equal(decision.visualState, "decision");
+  assert.equal(inspection.visualState, "inspection");
+  assert.ok(rest.threads.some((thread) => !thread.isLive));
+  assert.ok(decision.openTargets.some((target) => target.isLegal));
+  assert.match(renderPortSvgMarkup(decision), /port-graph is-decision/);
+});
+
+test("el análisis de densidad separa información primaria y secundaria", () => {
+  const scene = createPortScene(projectPortView(createTwoArmScenario()));
+  const density = analyzePortSceneDensity(scene);
+
+  assert.equal(density.threadCount, scene.threads.length);
+  assert.equal(density.bridgeCount, scene.bridges.length);
+  assert.equal(density.openEndCount, scene.openTargets.length);
+  assert.equal(density.potentialPorts + density.usedPorts, 42);
+  assert.ok(Number.isInteger(density.estimatedThreadCrossings));
+  assert.ok(density.primaryMarks > 0);
+  assert.ok(density.secondaryMarks > 0);
+});
+
+test("los carriles anulares reducen cruces frente a los hilos rectos del fixture largo", () => {
+  const scene = createPortScene(projectPortView(createTwelveThreadScenario()));
+  const density = analyzePortSceneDensity(scene);
+  const straightCrossings = countStraightCrossings(scene.threads);
+
+  assert.equal(scene.threads.length, 12);
+  assert.ok(straightCrossings > 0);
+  assert.ok(density.estimatedThreadCrossings < straightCrossings);
+  assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
 });
 
 test("los layouts conservan heptágono legible sin achatamiento extremo", () => {
@@ -190,7 +338,20 @@ test("los layouts conservan heptágono legible sin achatamiento extremo", () => 
   assert.equal(wide.nodes.length, 7);
   assert.ok(compact.orbit.rx / compact.orbit.ry < 1.1);
   assert.ok(wide.orbit.rx / wide.orbit.ry < 1.3);
-  assert.ok(compact.width <= 720);
+  assert.ok(compact.width <= 760);
+  assert.ok(wide.threads.every((thread) => thread.lane === "inner" || thread.lane === "outer"));
+});
+
+test("la hoja visual reserva potenciales para detalle y respeta movimiento reducido", async () => {
+  const css = await readFile(
+    new URL("../../src/css/ports.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(css, /\.port-incidence\.is-potential[\s\S]*?opacity:\s*0\.1/);
+  assert.match(css, /\.port-thread\.is-live[\s\S]*?opacity:\s*0\.72/);
+  assert.match(css, /\.port-graph\.is-node-focus \.port-scene-base/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test("la proyección y renderer de Puertos no leen board ni contienen reglas", async () => {
