@@ -167,6 +167,15 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/game-presentation.test.js` cubre HUD móvil en una fila, eliminación de acción/cero pases, handoff compacto, PASS contextual y proximidad tablero → mano;
 - revisión visual en 1366×768 y 390×844 cubre Jugar, selección, recorrido, estructura, saco, scoring, privacidad, terminalidad y ausencia de overflow global.
 
+### Fase 2, Bloque 17 — Puertos estratégico y responsive completado
+
+- `tests/ui/port-renderer.test.js` valida exactamente siete medallones, `n/7` por fichas distintas, doble contado una vez, badges `0/1/2…`, compatibilidad por valor y target canónico exacto;
+- el único chancho ramificador se prueba con `0/4` a `4/4`, saturación y ausencia completa en Lineal;
+- los destinos repetidos no aparecen numerados en reposo: al elegir el valor se ofrecen `Destino 1…q` y la asociación a `placementId + portId` permanece solo en memoria;
+- la vista normal omite incidencias, hilos y hubs técnicos; **Ver estructura** conserva el renderer analítico y el feedback sigue consumiendo `scoringPresentation` sin anticipar puntos;
+- `tests/ui/game-presentation.test.js` cubre acción contextual, mano compacta y composición específica para retrato y paisaje;
+- la prueba manual cubre 1366×768, 390×844, 844×390, selección múltiple, scoring, cambio de vista, ronda completa, tranque, terminalidad y consola limpia.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

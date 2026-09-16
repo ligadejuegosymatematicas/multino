@@ -120,12 +120,20 @@ Las geometrías compacta y ancha conservan un heptágono reconocible, carriles a
 
 En 390×844 los siete nodos conservan aproximadamente 48 px de caja visual en un estado denso y no existe overflow horizontal de página. Los ojales exactos próximos a un hub especial no siempre son cómodos como selección global: «abrir el saco» es la interacción recomendada para separarlos. Un recorrido inspeccionado se puede seguir, pero una posición `K=5/7` casi completa no se entiende globalmente de una sola mirada. Esta limitación sigue siendo honesta: Puertos v2 es jugable en teléfono para decisiones locales, no una vista panorámica exhaustiva de todos los recorridos simultáneos.
 
-Con la interfaz game-first, en 390×844 el comienzo del tablero pasó aproximadamente de `y=310` a `y=131`, una reducción de 179 px (58 %) en información previa; el comienzo de la mano pasó de `y=726` a `y=506`. Cabecera, turno/marcador/S y selector caben antes del tablero sin overflow horizontal. La tapa cerrada hace cómoda la decisión local incluso en K alto, pero no vuelve comprensible de una mirada una estructura completa K=5/7: para eso continúan siendo necesarias la inspección o la vista analítica.
+Con la interfaz game-first, en 390×844 el comienzo del tablero pasó aproximadamente de `y=310` a `y=131`, una reducción de 179 px (58 %) en información previa; el comienzo de la mano pasó de `y=726` a `y=506`. Cabecera, turno/marcador/S y selector caben antes del tablero sin overflow horizontal. La vista normal hace cómoda la decisión local tanto en Ramificado como en Lineal; la estructura exhaustiva continúa siendo deliberadamente una consulta bajo demanda.
+
+## Presentación estratégica vigente
+
+La iteración posterior a DEC-050 conserva intacto el grafo de incidencias, pero cambia el primer nivel de lectura. Los siete `B_n` se presentan como medallones estables que muestran el valor, cuántas de sus siete fichas distintas ya se jugaron (`n/7`) y cuántos targets reglamentarios siguen abiertos. Un doble cuenta una ficha, no dos apariciones del valor. Los badges de targets nunca representan términos de S.
+
+Al seleccionar una ficha, solo los valores compatibles adquieren halo y grosor adicional. Un valor con un único target despacha directamente ese target; con varios se abre un selector humano `Destino 1…q`, cuya asociación exacta a `placementId + portId` permanece en memoria y no se imprime en HTML. No se muestran S futuro, divisibilidad ni puntos anticipados.
+
+En Ramificado, el medallón que contiene el único chancho ramificador integra cuatro indicadores compactos de ocupación y conserva su identidad al saturarse. En Lineal no aparece ese mecanismo. La geometría tenue de `K₇` es únicamente fondo matemático y no expresa fichas jugadas ni legalidad. **Ver estructura** recupera hilos, puentes, hubs e incidencias para análisis; la vista normal no los serializa.
 
 ## Comparación
 
 - frente a Tradicional, Puertos conserva mejor las visitas repetidas a un valor y los mecanismos de dobles, pero exige aprender hilo ↔ puente y usar foco en densidad alta;
 - frente a Grafo, aporta información distintiva suficiente: identifica qué entrada continúa con qué salida y representa dobles como hubs explícitos; a cambio es visualmente más complejo;
-- Tradicional sigue siendo la vista físicamente más inmediata; Puertos v3 ya compite como interfaz de decisión exacta, especialmente cuando hay varios targets del mismo valor, y desplaza su complejidad topológica a demanda; Grafo conserva la lectura matemática más simple de valores/aristas. `K=2/3` sigue siendo una recomendación de experiencia, nunca una cota: el motor y la configuración conservan `K=0…7`.
+- Tradicional sigue siendo la vista físicamente más inmediata; Puertos ofrece la lectura estratégica más compacta de valores disponibles, agotamiento `n/7`, multiplicidad de targets y estado del ramificador; Grafo conserva la lectura matemática más simple de valores/aristas. El reglamento vigente solo expone Ramificado y Lineal; las comparaciones K anteriores permanecen exclusivamente como registro histórico del prototipo.
 
 Una visualización postpartida por pisos o carriles de ramas queda registrada como posibilidad futura. No forma parte de v3 ni se persiste en el snapshot.

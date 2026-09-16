@@ -371,6 +371,7 @@ export function createPortScene(
     inspectedPlacementId = null,
     inspectedRouteId = null,
     expandedNodeValue = null,
+    selectedTargetValue = null,
     showStructure = false,
     layout = PORT_SCENE_LAYOUTS.COMPACT,
     scoringResolution = null,
@@ -388,6 +389,25 @@ export function createPortScene(
   );
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const hasSelection = selectedDominoId !== null;
+  const compatibleCountsByValue = new Map();
+  for (const target of view.portGraph.openTargets) {
+    if (legalTargetIds.has(target.id)) {
+      compatibleCountsByValue.set(
+        target.value,
+        (compatibleCountsByValue.get(target.value) ?? 0) + 1,
+      );
+    }
+  }
+  const selectedDomino = view.hand.find(
+    (domino) => domino.dominoId === selectedDominoId,
+  ) ?? null;
+  const selectedValues = new Set(
+    selectedDomino ? [selectedDomino.a, selectedDomino.b] : [],
+  );
+  const structureByValue = new Map(
+    view.structure.values.map((valueState) => [valueState.value, valueState]),
+  );
+  const branchingDouble = view.structure.branchingDouble;
   const legalEndpointIds = new Set(
     view.portGraph.openTargets
       .filter((target) => legalTargetIds.has(target.id))
@@ -407,6 +427,8 @@ export function createPortScene(
   );
   const nodes = view.portGraph.macroNodes.map((node) => {
     const position = nodePositions.get(node.value);
+    const valueState = structureByValue.get(node.value);
+    const compatibleTargetCount = compatibleCountsByValue.get(node.value) ?? 0;
     const ordinaryPorts = node.ordinaryPorts.map((port) => {
       const projected = {
         ...port,
@@ -430,7 +452,21 @@ export function createPortScene(
       endpointPositions.set(port.id, projected);
       return projected;
     });
-    return { ...node, ...position, ordinaryPorts };
+    return {
+      ...node,
+      ...position,
+      ordinaryPorts,
+      playedTileCount: valueState.playedTileCount,
+      totalTileCount: valueState.totalTileCount,
+      openTargetCount: valueState.openTargetCount,
+      compatibleTargetCount,
+      isCompatible: hasSelection && compatibleTargetCount > 0,
+      isInSelectedDomino: hasSelection && selectedValues.has(node.value),
+      isTargetChoiceOpen: selectedTargetValue === node.value,
+      ramifier: branchingDouble?.value === node.value
+        ? { ...branchingDouble }
+        : null,
+    };
   });
   const hubs = view.portGraph.doubleHubs.map((hub) => {
     const node = nodePositions.get(hub.value);
@@ -446,15 +482,6 @@ export function createPortScene(
     });
     return { ...hub, ...hubCenter, sockets };
   });
-  const compatibleCountsByValue = new Map();
-  for (const target of view.portGraph.openTargets) {
-    if (legalTargetIds.has(target.id)) {
-      compatibleCountsByValue.set(
-        target.value,
-        (compatibleCountsByValue.get(target.value) ?? 0) + 1,
-      );
-    }
-  }
   const compatibleIndexesByValue = new Map();
   const scoringEndpointIds = new Set();
   const scoringHubPlacementIds = new Set();
@@ -604,6 +631,37 @@ export function createPortScene(
     };
   });
 
+  const scoringValues = new Set([
+    ...openTargets
+      .filter((target) => target.isScoringTerm)
+      .map((target) => target.value),
+    ...projectedHubs
+      .filter((hub) => hub.isScoringTerm)
+      .map((hub) => hub.value),
+  ]);
+  const projectedNodes = nodes.map((node) => ({
+    ...node,
+    isScoringSource: scoringValues.has(node.value),
+  }));
+  const targetChoice = selectedTargetValue === null
+    ? null
+    : {
+        value: selectedTargetValue,
+        targets: openTargets.filter(
+          (target) => target.value === selectedTargetValue && target.isLegal,
+        ),
+      };
+  const k7Edges = [];
+  for (let firstValue = 0; firstValue < 7; firstValue += 1) {
+    for (let secondValue = firstValue + 1; secondValue < 7; secondValue += 1) {
+      k7Edges.push({
+        id: `k7:${firstValue}-${secondValue}`,
+        first: nodePositions.get(firstValue),
+        second: nodePositions.get(secondValue),
+      });
+    }
+  }
+
   const expandedNode = expandedNodeValue === null
     ? null
     : nodes.find((node) => node.value === expandedNodeValue) ?? null;
@@ -640,6 +698,8 @@ export function createPortScene(
       ? "structure"
       : inspectionActive
         ? "route"
+      : targetChoice?.targets.length > 1
+        ? "target-choice"
       : hasSelection
         ? "decision"
         : "play",
@@ -652,6 +712,9 @@ export function createPortScene(
     },
     scoringResolution,
     selectedDominoId,
+    selectedTargetValue,
+    selectedDomino,
+    targetChoice,
     inspectedStructureId,
     inspectedPlacementId,
     inspectedRouteId,
@@ -659,7 +722,8 @@ export function createPortScene(
     nodeInspector,
     nodeFocus,
     canStart: hasSelection && legalTargetIds.has("START"),
-    nodes,
+    nodes: projectedNodes,
+    k7Edges,
     threads,
     bridges,
     hubs: projectedHubs,

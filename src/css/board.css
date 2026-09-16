@@ -17,7 +17,7 @@
 
 .graph-root {
   position: relative;
-  height: clamp(20rem, 48vh, 27rem);
+  height: clamp(26rem, calc(100vh - 10.5rem), 39rem);
   overflow: hidden;
   border: 1px solid #dbe3e1;
   border-radius: 0.85rem;
@@ -498,7 +498,7 @@
 
 @media (max-width: 36rem) {
   .graph-root {
-    height: clamp(19rem, 38vh, 21rem);
+    height: clamp(21rem, 46vh, 25rem);
   }
 
   .start-action p {
@@ -508,5 +508,12 @@
   .topology-inspector {
     inset: auto 0.5rem 0.5rem;
     width: auto;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 34rem) {
+  .graph-root {
+    height: calc(100vh - 6.9rem);
+    min-height: 17.5rem;
   }
 }

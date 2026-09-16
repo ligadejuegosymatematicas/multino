@@ -30,9 +30,9 @@ function topologyClasses(item) {
 
 function routeLabel(topology) {
   if (!topology || topology.region === "main") {
-    return "recorrido inicial";
+    return "recorrido de la ronda";
   }
-  return `brazo ${topology.armIndex} del chancho ramificador`;
+  return `recorrido ${topology.armIndex} conectado al chancho ramificador`;
 }
 
 function renderThread(thread) {
@@ -104,8 +104,18 @@ function renderIncidence(port, { focus = false } = {}) {
 }
 
 function renderNodeShell(node) {
+  const stateClasses = [
+    node.isCompatible ? "is-compatible" : "",
+    node.isInSelectedDomino ? "is-in-selected-domino" : "",
+    node.isTargetChoiceOpen ? "is-target-choice" : "",
+    node.openTargetCount > 0 ? "has-open-targets" : "has-no-open-targets",
+    node.ramifier ? "has-ramifier" : "",
+    node.ramifier?.isSaturated ? "is-ramifier-saturated" : "",
+    node.isScoringSource ? "is-scoring-source" : "",
+  ].filter(Boolean).join(" ");
   return `
-    <g class="port-macro-node-shell" aria-hidden="true">
+    <g class="port-macro-node-shell ${stateClasses}" aria-hidden="true">
+      <circle class="port-macro-node__active-ring" cx="${node.x}" cy="${node.y}" r="69"></circle>
       <circle class="port-macro-node__shadow" cx="${node.x}" cy="${node.y + 4}" r="64"></circle>
       <circle class="port-macro-node__rim" cx="${node.x}" cy="${node.y}" r="63"></circle>
       <circle class="port-macro-node__body" cx="${node.x}" cy="${node.y}" r="57"></circle>
@@ -113,15 +123,39 @@ function renderNodeShell(node) {
     </g>`;
 }
 
+function renderRamifierStatus(node) {
+  if (!node.ramifier) {
+    return "";
+  }
+  const dots = [-12, -4, 4, 12].map((offset, index) => `
+    <circle class="port-ramifier__socket${index < node.ramifier.connectionCount ? " is-used" : ""}" cx="${node.x + offset}" cy="${node.y + 39}" r="2.8"></circle>`).join("");
+  return `
+    <g class="port-ramifier" aria-hidden="true">
+      <path class="port-ramifier__mark" d="M ${node.x - 17} ${node.y + 31} Q ${node.x} ${node.y + 24} ${node.x + 17} ${node.y + 31}"></path>
+      ${dots}
+    </g>`;
+}
+
 function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } = {}) {
-  const playedCount = node.ordinaryPorts.filter((port) => port.state === "PLAYED").length;
   const incidences = showIncidences
     ? node.ordinaryPorts.map((port) => renderIncidence(port)).join("")
     : "";
+  const compatibilityLabel = node.isCompatible
+    ? `; ${node.compatibleTargetCount} ${node.compatibleTargetCount === 1 ? "destino compatible" : "destinos compatibles"}`
+    : "";
+  const ramifierLabel = node.ramifier
+    ? `; chancho ramificador con ${node.ramifier.connectionCount} de 4 conexiones${node.ramifier.isSaturated ? "; saturado" : ""}`
+    : "";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded}" aria-label="Valor ${node.value}; ${playedCount} incidencias utilizadas; abrir el saco">
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
-      <text class="port-macro-node__value" x="${node.x}" y="${node.y - (hasDoubleHub ? 32 : 0)}">${node.value}</text>
+      <text class="port-macro-node__value" x="${node.x}" y="${node.y - 8}">${node.value}</text>
+      <text class="port-macro-node__played" x="${node.x}" y="${node.y + 24}">${node.playedTileCount}/${node.totalTileCount}</text>
+      <g class="port-macro-node__target-badge${node.openTargetCount > 0 ? " has-targets" : " is-zero"}">
+        <circle cx="${node.x + 49}" cy="${node.y - 43}" r="15"></circle>
+        <text x="${node.x + 49}" y="${node.y - 43}">${node.openTargetCount}</text>
+      </g>
+      ${renderRamifierStatus(node)}
       <g class="port-incidences">${incidences}</g>
     </g>`;
 }
@@ -182,7 +216,7 @@ export function renderPortNodeInspectorMarkup(inspector) {
   const bridges = inspector.bridges.length === 0
     ? "<li>Sin continuidades internas todavía.</li>"
     : inspector.bridges.map((bridge) =>
-        `<li><strong>${escapeAttribute(bridge.firstLabel)}</strong> ↔ <strong>${escapeAttribute(bridge.secondLabel)}</strong> · ${bridge.region === "main" ? "principal" : "rama"}</li>`
+        `<li><strong>${escapeAttribute(bridge.firstLabel)}</strong> ↔ <strong>${escapeAttribute(bridge.secondLabel)}</strong> · continuidad real</li>`
       ).join("");
   const hubs = inspector.hubs.map((hub) =>
     `<p class="port-node-inspector__hub">Chancho ${escapeAttribute(hub.dominoId.replace("-", "|"))}: ${hub.isSpecial ? "especial" : "ordinario"} · ${hub.usedSockets}/${hub.capacity} conexiones</p>`
@@ -228,7 +262,7 @@ function renderCover(scene) {
     ? routeLabel(source?.topology)
     : isStructure
       ? "Estructura visible"
-      : "Puertos";
+      : "Dominó ×5";
   const action = isRoute || isStructure ? "Volver a jugar" : "Ver estructura";
   const radius = isStructure ? 80 : scene.cover.radius;
   return `
@@ -240,6 +274,46 @@ function renderCover(scene) {
         <text class="port-cover__title" x="${scene.cover.cx}" y="${scene.cover.cy - 7}">${escapeAttribute(title)}</text>
         <text class="port-cover__action" x="${scene.cover.cx}" y="${scene.cover.cy + 20}">${escapeAttribute(action)}</text>`}
     </g>`;
+}
+
+function renderK7Background(scene) {
+  const edges = scene.k7Edges.map((edge) => `
+    <line class="port-k7__edge" x1="${edge.first.x}" y1="${edge.first.y}" x2="${edge.second.x}" y2="${edge.second.y}"></line>`).join("");
+  const loops = scene.nodes.map((node) => `
+    <circle class="port-k7__loop" cx="${node.x}" cy="${node.y}" r="72"></circle>`).join("");
+  return `<g class="port-k7" aria-hidden="true">${edges}${loops}</g>`;
+}
+
+export function renderPortTargetChooserMarkup(targetChoice) {
+  if (!targetChoice || targetChoice.targets.length < 2) {
+    return "";
+  }
+  const options = targetChoice.targets.map((target, index) => `
+    <button type="button" class="port-target-choice__option" data-port-choice-index="${index}">
+      <span>Destino ${index + 1}</span>
+    </button>`).join("");
+  return `
+    <section class="port-target-choice" aria-label="Elegir destino de valor ${targetChoice.value}">
+      <div>
+        <span class="port-target-choice__eyebrow">Valor elegido</span>
+        <strong>${targetChoice.value}</strong>
+      </div>
+      <div class="port-target-choice__options">${options}</div>
+      <button type="button" class="port-target-choice__cancel" data-close-port-choice aria-label="Cancelar elección">×</button>
+    </section>`;
+}
+
+export function getPortValueAction(scene, value) {
+  const targets = scene.openTargets.filter(
+    (target) => target.value === value && target.isLegal,
+  );
+  if (targets.length === 1) {
+    return { type: "PLAY", target: targets[0] };
+  }
+  if (targets.length > 1) {
+    return { type: "CHOOSE", value, targets };
+  }
+  return { type: "NONE", value, targets: [] };
 }
 
 /** Serialización SVG verificable sin DOM artificial. */
@@ -260,16 +334,16 @@ export function renderPortSvgMarkup(scene) {
     ? scene.hubs
     : routeOnly
       ? scene.hubs.filter((hub) => hub.isTopologyHighlighted || hub.isTopologyRoot)
-      : scene.hubs.filter((hub) =>
-          hub.isLive || hub.isDecisionOwner || hub.isScoringTerm
-        );
+      : [];
   const showIncidences = fullStructure || routeOnly;
+  const showOpenTargetDetails = fullStructure || routeOnly || focusActive;
   return `
     <svg class="port-graph is-${scene.visualState}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
-      <title id="port-title">Vista experimental de Puertos</title>
-      <desc id="port-description">Siete macro-nodos fijos. Los hilos son fichas; las costuras interiores muestran qué incidencias continúan. Activa un recorrido o abre un valor para verlo sin interferencias.</desc>
+      <title id="port-title">Vista Puertos</title>
+      <desc id="port-description">Siete valores fijos. Cada medallón muestra cuántas fichas de ese valor se jugaron y cuántos destinos siguen abiertos. La estructura completa está disponible bajo demanda.</desc>
       <g class="port-scene-base">
         <ellipse class="port-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
+        ${renderK7Background(scene)}
         <g class="port-threads">${renderedThreads.map(renderThread).join("")}</g>
         ${renderCover(scene)}
         <g class="port-route-threads">${routeThreads.map(renderThread).join("")}</g>
@@ -277,7 +351,7 @@ export function renderPortSvgMarkup(scene) {
         <g class="port-bridges">${renderedBridges.map(renderBridge).join("")}</g>
         <g class="port-nodes">${scene.nodes.map((node) => renderNode(node, node.value === scene.expandedNodeValue, scene.hubs.some((hub) => hub.value === node.value), { showIncidences })).join("")}</g>
         <g class="port-double-hubs">${renderedHubs.map(renderHub).join("")}</g>
-        <g class="port-open-targets">${focusActive ? "" : scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
+        <g class="port-open-targets">${focusActive || !showOpenTargetDetails ? "" : scene.openTargets.map((target) => renderOpenTarget(target, scene.hasSelection)).join("")}</g>
       </g>
       ${renderNodeFocus(scene.nodeFocus, scene.hasSelection)}
     </svg>`;
@@ -310,6 +384,8 @@ export class PortRenderer {
     this.expandedNodeValue = null;
     this.inspectedRouteId = null;
     this.structureVisible = false;
+    this.targetChoiceValue = null;
+    this.lastSelectedDominoId = null;
     this.lastBoardSignature = null;
   }
 
@@ -322,8 +398,13 @@ export class PortRenderer {
       this.expandedNodeValue = null;
       this.inspectedRouteId = null;
       this.structureVisible = false;
+      this.targetChoiceValue = null;
     }
     this.lastBoardSignature = currentSignature;
+    if (this.lastSelectedDominoId !== presentation.selectedDominoId) {
+      this.targetChoiceValue = null;
+    }
+    this.lastSelectedDominoId = presentation.selectedDominoId;
 
     const scene = createPortScene(presentation.portView, {
       selectedDominoId: presentation.selectedDominoId,
@@ -332,6 +413,7 @@ export class PortRenderer {
       inspectedPlacementId: presentation.inspectedPlacementId,
       inspectedRouteId: this.inspectedRouteId,
       expandedNodeValue: this.expandedNodeValue,
+      selectedTargetValue: this.targetChoiceValue,
       showStructure: this.structureVisible,
       layout: this.container.clientWidth >= 760
         ? PORT_SCENE_LAYOUTS.WIDE
@@ -341,19 +423,37 @@ export class PortRenderer {
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
       : "";
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${startMarkup}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${startMarkup}${renderPortTargetChooserMarkup(scene.targetChoice)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
     const activateNode = (value) => {
+      const valueAction = getPortValueAction(scene, value);
+      if (!this.structureVisible && presentation.selectedDominoId !== null) {
+        if (valueAction.type === "PLAY") {
+          options.onTarget?.(valueAction.target);
+          return;
+        }
+        if (valueAction.type === "CHOOSE") {
+          this.targetChoiceValue = this.targetChoiceValue === value
+            ? null
+            : value;
+          this.render(presentation, options);
+        }
+        return;
+      }
+      if (!this.structureVisible) {
+        return;
+      }
       this.expandedNodeValue = this.expandedNodeValue === value ? null : value;
-      this.structureVisible = false;
       this.inspectedRouteId = null;
+      this.targetChoiceValue = null;
       this.render(presentation, options);
     };
     const activateRoute = (routeId) => {
       this.inspectedRouteId = this.inspectedRouteId === routeId ? null : routeId;
       this.expandedNodeValue = null;
       this.structureVisible = false;
+      this.targetChoiceValue = null;
       this.render(presentation, options);
     };
     const clearRoute = () => {
@@ -372,6 +472,7 @@ export class PortRenderer {
       this.structureVisible = !this.structureVisible;
       this.expandedNodeValue = null;
       this.inspectedRouteId = null;
+      this.targetChoiceValue = null;
       this.render(presentation, options);
     };
 
@@ -413,6 +514,21 @@ export class PortRenderer {
       "click",
       () => options.onStart?.({ kind: "START" }),
     );
+    for (const element of this.container.querySelectorAll("[data-port-choice-index]")) {
+      element.addEventListener("click", () => {
+        const target = scene.targetChoice?.targets[Number(element.dataset.portChoiceIndex)];
+        if (target?.isLegal) {
+          options.onTarget?.(target);
+        }
+      });
+    }
+    this.container.querySelector("[data-close-port-choice]")?.addEventListener(
+      "click",
+      () => {
+        this.targetChoiceValue = null;
+        this.render(presentation, options);
+      },
+    );
     for (const element of this.container.querySelectorAll("[data-close-port-node]")) {
       const close = (event) => {
         event?.stopPropagation();
@@ -436,6 +552,12 @@ export class PortRenderer {
         if (this.expandedNodeValue !== null) {
           event.preventDefault();
           this.expandedNodeValue = null;
+          this.render(presentation, options);
+          return;
+        }
+        if (this.targetChoiceValue !== null) {
+          event.preventDefault();
+          this.targetChoiceValue = null;
           this.render(presentation, options);
           return;
         }

@@ -141,6 +141,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 16 — Consolidación de modos estructurales: COMPLETADO.** Sustituye la configuración pública K por **Ramificado/Lineal**. Ramificado habilita exclusivamente el primer doble colocado; Lineal conserva una única cadena. Añade proyección pura `n/7`, conteo de targets reales y estado del único chancho ramificador sin cambiar schema v6.
 
+**Bloque 17 — Puertos game-first con medallones estratégicos: COMPLETADO.** La vista normal reduce Puertos a siete medallones con valor, fichas jugadas `n/7`, destinos abiertos y estado del único ramificador. La selección resalta valores compatibles, los destinos repetidos se resuelven sin IDs técnicos y **Ver estructura** conserva el análisis completo. La UI común adopta composición retrato/paisaje, acción contextual y mano compacta sin anticipar puntuación futura.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

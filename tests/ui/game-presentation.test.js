@@ -104,11 +104,14 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
       readFile(new URL("../../src/js/ui/TurnIndicator.js", import.meta.url), "utf8"),
     ]);
 
-  assert.match(layoutCss, /grid-template-areas:\s*\n\s*"board"\s*\n\s*"hand"\s*\n\s*"sidebar"/);
+  assert.match(layoutCss, /grid-template-areas:\s*\n\s*"board action"\s*\n\s*"board hand"\s*\n\s*"sidebar sidebar"/);
+  assert.match(layoutCss, /@media \(max-width: 58rem\) and \(orientation: portrait\)[\s\S]+?"board"[\s\S]+?"action"[\s\S]+?"hand"/);
+  assert.match(layoutCss, /\.play-layout:has\(\.round-result:not\(\[hidden\]\)\)[\s\S]+?grid-template-areas:\s*"board sidebar"/);
+  assert.match(layoutCss, /\.play-layout:has\(\.round-result:not\(\[hidden\]\)\) \.round-actions[\s\S]+?grid-template-columns:\s*1fr 1fr/);
   assert.match(componentsCss, /\.player-counts \{[\s\S]+?display:\s*flex/);
-  assert.match(componentsCss, /\.hand-grid \{[\s\S]+?repeat\(7/);
-  assert.match(componentsCss, /@media \(max-width: 36rem\)[\s\S]+?repeat\(4/);
-  assert.match(boardCss, /height:\s*clamp\(20rem, 48vh, 27rem\)/);
+  assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
+  assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
+  assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
   assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
   assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
   assert.match(traditionalCss, /\.traditional-connection \{[\s\S]+?z-index:\s*1/);
@@ -123,7 +126,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(html, />Suma abierta<|>Marcador<|>Siguiente turno</);
   assert.match(html, /id="selection-hint"[^>]+hidden/);
   assert.match(html, /id="pass-action"[^>]+hidden/);
-  assert.match(layoutCss, /grid-template-columns:\s*1\.15fr 1\.4fr 0\.65fr/);
+  assert.match(layoutCss, /grid-template-columns:\s*minmax\(0, 1\.45fr\) minmax\(20rem, 0\.75fr\)/);
   assert.match(componentsCss, /\.graph-stage > \.panel-heading[\s\S]+?justify-content:\s*flex-end/);
   assert.doesNotMatch(html, /Nueva partida independiente|Prototipo/);
   assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\)/);
@@ -135,6 +138,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(turnSource, /consecutivePasses > 0/);
   assert.doesNotMatch(mainSource, /state\.board|applyTurnAction|calculateMoveScore/);
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
+  assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
 });
 
 test("el resultado prioriza ganador final y deja vencedor tradicional como explicación", () => {

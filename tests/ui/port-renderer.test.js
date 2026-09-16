@@ -14,8 +14,10 @@ import {
   PORT_SCENE_LAYOUTS,
 } from "../../src/js/ui/PortScene.js";
 import {
+  getPortValueAction,
   renderPortNodeInspectorMarkup,
   renderPortSvgMarkup,
+  renderPortTargetChooserMarkup,
 } from "../../src/js/ui/PortRenderer.js";
 import {
   createBoardScenario,
@@ -123,17 +125,25 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   assert.doesNotMatch(markup, />\s*S\s*=|>\s*\+\d+\s+puntos/i);
 });
 
-test("un especial se ve como un único hub de cuatro sockets", () => {
+test("el ramificador se resume en el medallón y conserva su hub bajo demanda", () => {
   let state = createBoardScenario({ K: 7, firstDominoId: "5-5" });
   state = playDomino(state, "5-5");
   const scene = createPortScene(projectPortView(state));
   const markup = renderPortSvgMarkup(scene);
+  const structureMarkup = renderPortSvgMarkup(createPortScene(
+    projectPortView(state),
+    { showStructure: true },
+  ));
 
   assert.equal(scene.hubs.length, 1);
   assert.equal(scene.hubs[0].sockets.length, 4);
   assert.equal(scene.openTargets.length, 4);
-  assert.match(markup, /port-double-hub is-special/);
-  assert.equal(markup.match(/port-double-hub__socket is-open/g)?.length, 4);
+  assert.equal(scene.nodes.find((node) => node.value === 5).ramifier.capacity, 4);
+  assert.match(markup, /port-macro-node-shell has-open-targets has-ramifier/);
+  assert.equal(markup.match(/port-ramifier__socket/g)?.length, 4);
+  assert.doesNotMatch(markup, /port-double-hub is-special/);
+  assert.match(structureMarkup, /port-double-hub is-special/);
+  assert.equal(structureMarkup.match(/port-double-hub__socket is-open/g)?.length, 4);
 });
 
 test("targets repetidos mantienen placementId + portId y numeración temporal", () => {
@@ -146,6 +156,12 @@ test("targets repetidos mantienen placementId + portId y numeración temporal", 
     legalTargets,
   });
   const markup = renderPortSvgMarkup(scene);
+  const choiceScene = createPortScene(projectPortView(state, playerId), {
+    selectedDominoId: "4-5",
+    legalTargets,
+    selectedTargetValue: 4,
+  });
+  const choiceMarkup = renderPortTargetChooserMarkup(choiceScene.targetChoice);
 
   assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 4);
   assert.deepEqual(
@@ -162,25 +178,103 @@ test("targets repetidos mantienen placementId + portId y numeración temporal", 
     scene.openTargets.map(({ optionIndex }) => optionIndex),
     [1, 2, 3, 4],
   );
-  assert.equal(markup.match(/port-open-target__option/g)?.length, 4);
+  assert.equal(scene.nodes.find((node) => node.value === 4).compatibleTargetCount, 4);
+  assert.match(markup, /port-macro-node-shell is-compatible is-in-selected-domino has-open-targets has-ramifier/);
+  assert.doesNotMatch(markup, /port-open-target__option/);
+  assert.equal(choiceMarkup.match(/class="port-target-choice__option"/g)?.length, 4);
+  assert.doesNotMatch(choiceMarkup, /placement-|main:|branch:/);
+  const valueAction = getPortValueAction(scene, 4);
+  assert.equal(valueAction.type, "CHOOSE");
+  assert.deepEqual(
+    valueAction.targets.map(({ placementId, portId }) => ({ placementId, portId })),
+    legalTargets.map(({ placementId, portId }) => ({ placementId, portId })),
+  );
 });
 
-test("sin selección los extremos reales brillan y no aparecen opciones", () => {
+test("sin selección los badges hacen visibles extremos reales sin exponer incidencias", () => {
   const state = createTwoArmScenario();
   const scene = createPortScene(projectPortView(state));
   const markup = renderPortSvgMarkup(scene);
 
   assert.ok(scene.openTargets.length > 0);
   assert.ok(scene.openTargets.every((target) => !target.isLegal));
+  assert.equal(markup.match(/port-open-target is-neutral/g)?.length ?? 0, 0);
+  assert.equal(markup.match(/port-open-target__tail/g)?.length ?? 0, 0);
   assert.equal(
-    markup.match(/class="port-open-target is-neutral/g)?.length,
+    scene.nodes.reduce((sum, node) => sum + node.openTargetCount, 0),
     scene.openTargets.length,
   );
-  assert.equal(
-    markup.match(/port-open-target__tail/g)?.length,
-    scene.openTargets.length,
-  );
+  assert.equal(markup.match(/port-macro-node__target-badge/g)?.length, 7);
   assert.doesNotMatch(markup, /port-open-target__option/);
+});
+
+test("cada medallón muestra fichas distintas jugadas y el doble cuenta una vez", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "2-4", targetAt("placement-1", "main:1"));
+  const scene = createPortScene(projectPortView(state));
+  const four = scene.nodes.find((node) => node.value === 4);
+  const two = scene.nodes.find((node) => node.value === 2);
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.equal(four.playedTileCount, 2);
+  assert.equal(two.playedTileCount, 1);
+  assert.equal(four.totalTileCount, 7);
+  assert.match(markup, />2\/7</);
+  assert.equal(markup.match(/port-macro-node__played/g)?.length, 7);
+});
+
+test("la acción directa conserva target exacto cuando un valor ofrece una sola opción", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "1-6" });
+  state = playDomino(state, "1-6");
+  const playerId = findDominoOwner(state, "1-4");
+  const legalTargets = getLegalTargetsForDomino(state, playerId, "1-4");
+  const scene = createPortScene(projectPortView(state, playerId), {
+    selectedDominoId: "1-4",
+    legalTargets,
+  });
+  const action = getPortValueAction(scene, 1);
+
+  assert.equal(action.type, "PLAY");
+  assert.deepEqual(
+    { placementId: action.target.placementId, portId: action.target.portId },
+    { placementId: legalTargets[0].placementId, portId: legalTargets[0].portId },
+  );
+});
+
+test("el ramificador comunica ocupación 0 a 4 y saturación sin filtrar K", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  const ports = ["main:1", "main:2", "branch:1", "branch:2"];
+  const dominoes = ["0-4", "1-4", "2-4", "3-4"];
+
+  for (let count = 0; count <= 4; count += 1) {
+    const scene = createPortScene(projectPortView(state));
+    const node = scene.nodes.find((candidate) => candidate.value === 4);
+    const markup = renderPortSvgMarkup(scene);
+    assert.equal(node.ramifier.connectionCount, count);
+    assert.equal(node.ramifier.remainingConnections, 4 - count);
+    assert.equal(node.ramifier.isSaturated, count === 4);
+    assert.equal(markup.match(/port-ramifier__socket is-used/g)?.length ?? 0, count);
+    if (count < 4) {
+      state = playDomino(
+        state,
+        dominoes[count],
+        targetAt("placement-1", ports[count]),
+      );
+    }
+  }
+});
+
+test("modo Lineal no proyecta ramificador en ningún medallón", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  const scene = createPortScene(projectPortView(state));
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.ok(scene.nodes.every((node) => node.ramifier === null));
+  assert.doesNotMatch(markup, /port-ramifier__/);
+  assert.doesNotMatch(markup, /has-ramifier/);
 });
 
 test("inspeccionar una rama destaca ambos brazos, costuras y chancho raíz", () => {

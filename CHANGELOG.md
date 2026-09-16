@@ -6,6 +6,9 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 
 ### Añadido
 
+- Rediseño game-first de Puertos: siete medallones estratégicos con `n/7`, cantidad de destinos abiertos, halo de compatibilidad y selector humano de targets repetidos.
+- Representación compacta del único chancho ramificador mediante cuatro estados de conexión, con saturación visible y ausencia total del mecanismo en Lineal.
+- Acción de turno contextual, mano compacta y layout específico para retrato, escritorio y paisaje; la topología completa continúa disponible mediante **Ver estructura**.
 - Modos estructurales públicos **Ramificado** y **Lineal**, en sustitución de la configuración K.
 - Regla oficial: solo el primer chancho colocado en Ramificado puede alcanzar cuatro conexiones; todos los posteriores son ordinarios.
 - Proyección pura por valor con fichas jugadas `n/7`, destinos abiertos reales y estado/capacidad del chancho ramificador.

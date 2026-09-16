@@ -7,6 +7,13 @@ function renderHandPips(value) {
   });
 }
 
+function createDominoTile(domino) {
+  const tile = document.createElement("span");
+  tile.className = "hand-domino__tile";
+  tile.innerHTML = `<span class="hand-domino__half">${renderHandPips(domino.a)}</span><span aria-hidden="true" class="hand-domino__divider"></span><span class="hand-domino__half">${renderHandPips(domino.b)}</span>`;
+  return tile;
+}
+
 function createDominoButton(domino, selected, disabled, onSelect) {
   const button = document.createElement("button");
   button.type = "button";
@@ -22,10 +29,7 @@ function createDominoButton(domino, selected, disabled, onSelect) {
     `Ficha ${domino.a}-${domino.b}, ${domino.legalTargetCount > 0 ? `${domino.legalTargetCount} destinos` : "sin jugada legal"}`,
   );
 
-  const tile = document.createElement("span");
-  tile.className = "hand-domino__tile";
-  tile.innerHTML = `<span class="hand-domino__half">${renderHandPips(domino.a)}</span><span aria-hidden="true" class="hand-domino__divider"></span><span class="hand-domino__half">${renderHandPips(domino.b)}</span>`;
-  button.append(tile);
+  button.append(createDominoTile(domino));
   if (domino.legalTargetCount > 1) {
     const status = document.createElement("span");
     status.className = "hand-domino__status";
@@ -34,6 +38,39 @@ function createDominoButton(domino, selected, disabled, onSelect) {
   }
   button.addEventListener("click", () => onSelect?.(domino.dominoId));
   return button;
+}
+
+export function renderTurnAction(container, presentation) {
+  if (!container) {
+    return;
+  }
+  const selected = presentation.view.hand.find(
+    (domino) => domino.dominoId === presentation.selectedDominoId,
+  ) ?? null;
+  container.replaceChildren();
+  container.classList.toggle("has-selection", selected !== null);
+
+  const copy = document.createElement("div");
+  copy.className = "turn-action__copy";
+  const kicker = document.createElement("span");
+  kicker.className = "turn-action__kicker";
+  kicker.textContent = selected ? "Ficha seleccionada" : "Tu turno";
+  const title = document.createElement("strong");
+  title.textContent = selected
+    ? `${selected.a}|${selected.b}`
+    : "Elige una ficha de tu mano";
+  const detail = document.createElement("span");
+  detail.className = "turn-action__detail";
+  detail.textContent = selected
+    ? `${presentation.selectedLegalTargets.length} ${presentation.selectedLegalTargets.length === 1 ? "destino legal" : "destinos legales"}`
+    : "Los valores compatibles se iluminarán en el tablero.";
+  copy.append(kicker, title, detail);
+  if (selected) {
+    const visual = createDominoTile(selected);
+    visual.classList.add("turn-action__tile");
+    container.append(visual);
+  }
+  container.append(copy);
 }
 
 export function renderHand(container, presentation, { onSelect } = {}) {

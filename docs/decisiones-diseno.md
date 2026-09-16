@@ -697,3 +697,13 @@ La misma tapa aloja el feedback efímero de `scoringPresentation`, sin reconstru
 Schema v6 no cambia. Las partidas nuevas codifican Ramificado como `specialMainLineDoublesLimit: 1` y Lineal como `0`; un valor histórico positivo se lee como Ramificado, pero el validador actual rechaza más de un ramificador. El campo se considera detalle interno de compatibilidad.
 
 **Consecuencias:** Desaparecen K, `effectiveK` y el conteo de cupos de la fachada y la configuración. `getRoundStructureProjection` deriva el modo, el conteo de fichas jugadas que contienen cada valor, los destinos abiertos por valor y el estado del único ramificador. No cambian puntuación, pases, tranque, bonus, privacidad ni terminalidad.
+
+## DEC-051 — Puertos como interfaz estratégica de medallones
+
+**Estado:** Aceptada para la presentación game-first posterior a DEC-050.
+
+**Decisión:** Mantener `PortGraphProjection` y toda la topología de incidencias, pero reservarla para **Ver estructura**. En juego normal, `PortScene` compone siete medallones desde la proyección estructural pública: valor, fichas distintas jugadas `n/7`, targets abiertos, compatibilidad con la ficha seleccionada y estado del único chancho ramificador. La geometría tenue de `K₇` solo aporta contexto visual. No se renderizan los 42 puertos potenciales, puentes, hilos ni hubs técnicos.
+
+Un medallón con un solo target compatible ejecuta el target canónico directamente. Si existen varios, el renderer ofrece opciones humanas numeradas y conserva `placementId + portId` exclusivamente en memoria. El ramificador usa cuatro indicadores gráficos ocupados/libres y no aparece en Lineal. Ninguna alternativa anticipa S o puntos; el feedback posterior sigue consumiendo `scoringPresentation`.
+
+**Consecuencias:** Puertos deja de exigir la lectura del diagrama de incidencias para jugar una ronda. Tradicional mantiene la intuición física, Puertos concentra información estratégica y Grafo conserva el resumen matemático. El cambio afecta solo proyección visual aditiva, renderer, HTML/CSS y estado efímero de interacción; snapshot v6, motor, schema, persistencia, reglas, scoring, bonus, privacidad y terminalidad permanecen intactos.

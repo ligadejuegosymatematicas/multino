@@ -3,7 +3,7 @@ import {
   PortRenderer,
   TraditionalRenderer,
 } from "./ui/BoardRenderer.js";
-import { renderHand } from "./ui/HandRenderer.js";
+import { renderHand, renderTurnAction } from "./ui/HandRenderer.js";
 import {
   getGameFeedback,
   renderGameFeedback,
@@ -69,6 +69,8 @@ const handContent = document.querySelector("#hand-content");
 const handPrivacy = document.querySelector("#hand-privacy");
 const handPrivacyTitle = document.querySelector("#hand-privacy-title");
 const revealHandButton = document.querySelector("#reveal-hand-action");
+const turnActionPanel = document.querySelector("#turn-action-panel");
+const turnActionSummary = document.querySelector("#turn-action-summary");
 const scoringCard = document.querySelector("#scoring-card");
 let sessionController;
 let lastFeedbackSequence = null;
@@ -144,7 +146,7 @@ function renderRound(presentation, mode, feedback) {
   boardHeading.textContent = mode === BOARD_VIEW_MODES.GRAPH
     ? "Grafo de valores"
     : mode === BOARD_VIEW_MODES.PORTS
-      ? "Puertos e incidencias"
+      ? "Vista estratégica"
       : "Mesa tradicional";
   for (const button of modeButtons) {
     const isActive = button.dataset.viewMode === mode;
@@ -201,6 +203,12 @@ function renderRound(presentation, mode, feedback) {
   } else {
     document.querySelector("#hand-root").replaceChildren();
   }
+  turnActionPanel.hidden = !handIsVisible || presentation.isFinished;
+  if (handIsVisible) {
+    renderTurnAction(turnActionSummary, presentation);
+  } else {
+    turnActionSummary.replaceChildren();
+  }
   renderTurnPanel(
     document.querySelector("#turn-panel"),
     presentation.view,
@@ -245,10 +253,10 @@ function renderRound(presentation, mode, feedback) {
       presentation.selectedDominoId === null
       ? ""
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
-        ? "La ficha puede iniciar el tablero con la acción inferior."
-        : selectedCount === 1
-          ? "Un destino compatible; activa su extremo."
-          : `${selectedCount} destinos compatibles; elige el extremo lógico concreto.`;
+        ? "Inicia el tablero con la ficha seleccionada."
+        : selectedCount > 1
+          ? `${selectedCount} destinos: elige un valor y luego el destino concreto.`
+          : "Elige el valor iluminado para jugar.";
   selectionHint.hidden = selectionHint.textContent === "";
 }
 
