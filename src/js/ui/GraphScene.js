@@ -129,8 +129,8 @@ function createOpenTarget(
     Math.min(12, 4 + count),
   );
   const structureLabel = target.topology.region === "main"
-    ? "línea principal"
-    : target.topology.structureLabel;
+    ? "recorrido inicial"
+    : `brazo ${target.topology.armIndex} del chancho ramificador`;
   const selectionLabel = !hasSelection
     ? "; activar para inspeccionar la estructura"
     : isLegal
@@ -151,7 +151,7 @@ function createOpenTarget(
       ? null
       : target.topology.familyIndex % 4,
     ...topologyState,
-    accessibleLabel: `Extremo abierto ${target.topology.structureCode}, ${structureLabel}, valor ${target.value}${selectionLabel}`,
+    accessibleLabel: `Extremo abierto, ${structureLabel}, valor ${target.value}${selectionLabel}`,
   };
 }
 
@@ -183,7 +183,7 @@ function createTopologyInspection(
       kind: "main",
       structureId: "main",
       structureCode: "P",
-      structureLabel: "Línea principal",
+      structureLabel: "Recorrido inicial",
       placementId: placement?.placementId ?? null,
       dominoId: edge?.dominoId ?? null,
       topology: placement,
@@ -398,7 +398,10 @@ export function createGraphScene(
     hasSelection,
     selectedDominoId,
     inspection,
-    topologySummary: { ...view.topology.specialDoubles },
+    topologySummary: {
+      structuralMode: view.topology.structuralMode,
+      ...view.topology.branchingDouble,
+    },
     canStart: hasSelection && legalTargetIds.has("START"),
     vertices: view.vertices.map((vertex) => ({
       ...vertex,

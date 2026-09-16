@@ -276,7 +276,8 @@ export function getTraditionalBoardProjection(state) {
       };
     }),
     openTargets,
-    specialDoubles: { ...topology.specialDoubles },
+    structuralMode: topology.structuralMode,
+    branchingDouble: { ...topology.branchingDouble },
   };
 }
 

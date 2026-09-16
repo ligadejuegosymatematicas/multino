@@ -147,11 +147,11 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
       },
     ],
   );
-  assert.equal(family.arms[0].tiles[1].doubleRole, "ORDINARY_BRANCH");
+  assert.equal(family.arms[0].tiles[1].doubleRole, "ORDINARY_DOUBLE");
   assert.equal(family.arms[0].tiles[1].isSpecialDouble, false);
 });
 
-test("un chancho principal fuera de K sigue ordinario y no crea familia", () => {
+test("un chancho posterior sigue ordinario y no crea familia", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(
@@ -169,7 +169,7 @@ test("un chancho principal fuera de K sigue ordinario y no crea familia", () => 
 
   assert.equal(ordinary.isDouble, true);
   assert.equal(ordinary.isSpecialDouble, false);
-  assert.equal(ordinary.doubleRole, "ORDINARY_MAIN_K_EXHAUSTED");
+  assert.equal(ordinary.doubleRole, "ORDINARY_DOUBLE");
   assert.equal(projection.branchFamilies.length, 1);
   assert.equal(
     projection.branchFamilies.some(

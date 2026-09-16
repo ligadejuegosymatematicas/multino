@@ -32,7 +32,6 @@ function targetAt(placementId, portId) {
 function createDeterministicMatch() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 7,
     randomSource: () => 0.999999,
   });
 }
@@ -108,19 +107,8 @@ function createDenseScenario() {
       (target) => target.kind === "main" && target.mainLineEnd === "end",
     );
   }
-  const specialByDominoId = Object.fromEntries(
-    state.board.specialDoublePlacementIds.map((placementId) => [
-      state.board.placements[placementId].dominoId,
-      placementId,
-    ]),
-  );
-  for (const value of [1, 2, 3, 4]) {
-    state = playDomino(
-      state,
-      `${value}-6`,
-      targetAt(specialByDominoId[`${value}-${value}`], "branch:1"),
-    );
-  }
+  state = playDomino(state, "1-6", targetAt("placement-1", "branch:1"));
+  state = playDomino(state, "2-6", targetAt("placement-1", "branch:2"));
   return state;
 }
 
@@ -289,7 +277,7 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
   assert.match(markup, /data-structure-code="A"/);
 });
 
-test("la raíz y ambos brazos comparten familia sin repetir letras en fichas interiores", () => {
+test("la raíz conserva ambos brazos sin exponer letras estructurales", () => {
   const scene = createGraphScene(projectGraphView(createTopologyScenario()));
   const markup = renderGraphSvgMarkup(scene);
   const root = scene.loops.find(
@@ -324,9 +312,9 @@ test("la raíz y ambos brazos comparten familia sin repetir letras en fichas int
     markup,
     /class="open-target is-neutral is-branch-target[^\"]*"[^>]+data-structure-code="A"/,
   );
-  assert.equal(markup.match(/class="graph-family-root__code"/g)?.length, 1);
+  assert.doesNotMatch(markup, /class="graph-family-root__code"/);
   assert.doesNotMatch(markup, /graph-structure-marker/);
-  assert.match(markup, /Ramificación A/);
+  assert.doesNotMatch(markup, />[PABCDEFG]<\/text>/);
 });
 
 test("una familia cerrada pierde letras redundantes pero conserva inspección", () => {
@@ -345,13 +333,10 @@ test("una familia cerrada pierde letras redundantes pero conserva inspección", 
     /class="open-target__structure-code"[^>]*>A<\/text>/,
   );
   assert.match(inspectedMarkup, /class="graph-family-root /);
-  assert.match(
-    inspectedMarkup,
-    /class="open-target__structure-code"[^>]*>A<\/text>/,
-  );
+  assert.doesNotMatch(inspectedMarkup, /class="open-target__structure-code"/);
 });
 
-test("sin ficha seleccionada todos los extremos permanecen visibles y codificados", async () => {
+test("sin ficha seleccionada todos los extremos permanecen visibles sin códigos", async () => {
   const scene = createGraphScene(projectGraphView(createTopologyScenario()));
   const markup = renderGraphSvgMarkup(scene);
   const boardCss = await readFile(
@@ -368,10 +353,7 @@ test("sin ficha seleccionada todos los extremos permanecen visibles y codificado
     markup.match(/class="open-target is-neutral /g)?.length,
     scene.openTargets.length,
   );
-  assert.equal(
-    markup.match(/class="open-target__structure-code"/g)?.length,
-    scene.openTargets.length,
-  );
+  assert.doesNotMatch(markup, /class="open-target__structure-code"/);
   assert.equal(
     scene.openTargets.filter(
       (target) => target.topology.branchState === "STARTED",
@@ -523,7 +505,7 @@ test("la inspección de familia resalta ambos brazos, su raíz y sus extremos", 
   );
   assert.match(markup, /graph-loop is-main is-special-double is-topology-root/);
   assert.match(inspector, /Nace del chancho 4\|4/);
-  assert.match(inspector, /Ramificación A/);
+  assert.match(inspector, /Brazos del chancho ramificador/);
   assert.match(inspector, /2 brazos iniciados/);
   assert.match(inspector, /brazo 2 · posición 1/);
   assert.doesNotMatch(inspector, /branch:1|placement-/);
@@ -586,26 +568,25 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
     }).inspection,
   );
 
-  assert.match(specialMarkup, /Chancho especial en la línea principal/);
+  assert.match(specialMarkup, /Chancho ramificador/);
   assert.match(specialMarkup, /Conexiones: 2\/4/);
   assert.match(specialMarkup, /Ramas iniciadas: 1\/2/);
-  assert.match(ordinaryMainMarkup, /Chancho ordinario en la línea principal/);
+  assert.match(ordinaryMainMarkup, /Chancho ordinario/);
   assert.match(ordinaryMainMarkup, /Conexiones: 1\/2/);
-  assert.match(branchDoubleMarkup, /Chancho ordinario en una rama/);
+  assert.match(branchDoubleMarkup, /Chancho ordinario/);
   assert.match(branchDoubleMarkup, /Conexiones: 1\/2/);
 });
 
-test("effectiveK sigue proyectado sin ocupar espacio permanente en el SVG", () => {
+test("el modo estructural se proyecta sin ocupar espacio permanente", () => {
   let state = createBoardScenario({ K: 20, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   const scene = createGraphScene(projectGraphView(state));
   const markup = renderGraphSvgMarkup(scene);
 
   assert.deepEqual(scene.topologySummary, {
-    configuredK: 20,
-    effectiveK: 7,
-    enabledCount: 1,
-    remainingCapacity: 6,
+    structuralMode: "RAMIFICADO",
+    placementId: "placement-1",
+    exists: true,
   });
   assert.doesNotMatch(markup, /graph-special-summary|Especiales:/);
 });
@@ -623,25 +604,25 @@ test("un grafo denso conserva fichas, targets e inspección individual", () => {
   const markup = renderGraphSvgMarkup(scene);
   const played = [...scene.edges, ...scene.loops];
 
-  assert.equal(played.length, 18);
-  assert.equal(new Set(played.map((edge) => edge.placementId)).size, 18);
+  assert.equal(played.length, 16);
+  assert.equal(new Set(played.map((edge) => edge.placementId)).size, 16);
   assert.equal(scene.vertices.length, 7);
-  assert.equal(scene.openTargets.length, 16);
-  assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 16);
-  assert.equal(played.filter((edge) => edge.isTopologyHighlighted).length, 1);
+  assert.equal(scene.openTargets.length, 4);
+  assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 4);
+  assert.equal(played.filter((edge) => edge.isTopologyHighlighted).length, 2);
   assert.equal(played.filter((edge) => edge.isTopologyRoot).length, 1);
-  assert.equal(played.filter((edge) => edge.isTopologyDimmed).length, 16);
-  assert.equal(markup.match(/data-placement-id=/g)?.length, 18);
-  assert.equal(markup.match(/class="open-target /g)?.length, 16);
+  assert.equal(played.filter((edge) => edge.isTopologyDimmed).length, 13);
+  assert.equal(markup.match(/data-placement-id=/g)?.length, 16);
+  assert.equal(markup.match(/class="open-target /g)?.length, 4);
   assert.deepEqual(
     scene.loops
       .map((loop) => loop.topology.branchFamily?.code)
       .filter(Boolean),
-    ["A", "B", "C", "D", "E", "F", "G"],
+    ["A"],
   );
   assert.equal(
     markup.match(/class="graph-family-root /g)?.length,
-    7,
+    1,
   );
   assert.doesNotMatch(markup, /graph-edge__label|graph-loop__label/);
 });

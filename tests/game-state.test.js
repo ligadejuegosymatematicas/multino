@@ -11,7 +11,7 @@ test("el estado inicial puede hacer round-trip por JSON", () => {
   assert.equal(restored.config.specialMainLineDoublesLimit, 3);
 });
 
-test("K queda sin configurar cuando no fue definido", () => {
+test("la codificación estructural interna queda sin configurar en el estado vacío", () => {
   const state = createEmptyGameState();
 
   assert.equal(state.config.specialMainLineDoublesLimit, null);

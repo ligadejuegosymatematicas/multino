@@ -33,12 +33,10 @@ function tileClasses(tile) {
 
 function renderTile(tile) {
   const role = tile.isSpecialDouble
-    ? "; chancho especial con capacidad lateral"
-    : tile.doubleRole === "ORDINARY_BRANCH"
-      ? "; chancho ordinario en rama"
-      : tile.doubleRole === "ORDINARY_MAIN_K_EXHAUSTED"
-        ? "; chancho ordinario de línea principal"
-        : "";
+    ? "; chancho ramificador"
+    : tile.doubleRole === "ORDINARY_DOUBLE"
+      ? "; chancho ordinario"
+      : "";
   return `
     <div class="${tileClasses(tile)}" style="--tile-x:${tile.x}px;--tile-y:${tile.y}px;--tile-width:${tile.width}px;--tile-height:${tile.height}px" data-placement-id="${escapeAttribute(tile.placementId)}" data-region="${tile.region}" data-special-double="${tile.isSpecialDouble}" role="img" aria-label="Ficha ${tile.firstValue}-${tile.secondValue}${role}">
       <span class="traditional-domino__half">${renderPips(tile.firstValue)}</span>

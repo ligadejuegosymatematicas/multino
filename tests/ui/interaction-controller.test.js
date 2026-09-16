@@ -16,7 +16,6 @@ import {
 function createDeterministicMatch() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 7,
     randomSource: () => 0.999999,
   });
 }

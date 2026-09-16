@@ -6,6 +6,11 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 
 ### Añadido
 
+- Modos estructurales públicos **Ramificado** y **Lineal**, en sustitución de la configuración K.
+- Regla oficial: solo el primer chancho colocado en Ramificado puede alcanzar cuatro conexiones; todos los posteriores son ordinarios.
+- Proyección pura por valor con fichas jugadas `n/7`, destinos abiertos reales y estado/capacidad del chancho ramificador.
+- Compatibilidad de schema v6 mediante codificación interna transitoria `1/0`, sin campos persistidos nuevos.
+
 - Estructura inicial estática compatible con GitHub Pages.
 - Documentación normativa, plan por fases y registro de decisiones.
 - Propuesta de tablero lógico basado en grafo y puertos.

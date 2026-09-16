@@ -1,4 +1,8 @@
-import { createMatch } from "../game/index.js";
+import {
+  createMatch,
+  ROUND_STRUCTURE_MODES,
+  validateRoundStructureMode,
+} from "../game/index.js";
 import { InteractionController } from "./InteractionController.js";
 import {
   BOARD_VIEW_MODES,
@@ -11,16 +15,6 @@ export const LOCAL_GAME_SCREENS = Object.freeze({
 });
 
 const VALID_INITIAL_MODES = new Set(Object.values(BOARD_VIEW_MODES));
-const MIN_UI_K = 0;
-const MAX_UI_K = 7;
-
-function validateUiK(K) {
-  if (!Number.isInteger(K) || K < MIN_UI_K || K > MAX_UI_K) {
-    throw new TypeError("K debe ser un entero entre 0 y 7 en esta interfaz.");
-  }
-  return K;
-}
-
 function validateViewMode(mode) {
   if (!VALID_INITIAL_MODES.has(mode)) {
     throw new TypeError(`Modo visual desconocido: ${String(mode)}.`);
@@ -39,7 +33,7 @@ export class LocalGameSessionController {
     randomSourceFactory = () => Math.random,
     requestAction,
     onChange = () => {},
-    initialK = 7,
+    initialRoundMode = ROUND_STRUCTURE_MODES.BRANCHED,
     initialViewMode = BOARD_VIEW_MODES.TRADITIONAL,
   } = {}) {
     if (!participants || typeof participants !== "object") {
@@ -65,7 +59,7 @@ export class LocalGameSessionController {
     this.onChange = onChange;
     this.screen = LOCAL_GAME_SCREENS.CONFIGURATION;
     this.config = {
-      K: validateUiK(initialK),
+      roundMode: validateRoundStructureMode(initialRoundMode),
       initialViewMode: validateViewMode(initialViewMode),
     };
     this.roundController = null;
@@ -95,11 +89,11 @@ export class LocalGameSessionController {
     return this.roundController?.getState() ?? null;
   }
 
-  setK(K) {
+  setRoundMode(mode) {
     this.#requireConfiguration();
-    this.config.K = validateUiK(K);
+    this.config.roundMode = validateRoundStructureMode(mode);
     this.#emitChange();
-    return this.config.K;
+    return this.config.roundMode;
   }
 
   setInitialViewMode(mode) {
@@ -181,7 +175,7 @@ export class LocalGameSessionController {
     const initialState = this.createRound({
       ...this.participants,
       matchId: `local-game-${this.roundSerial}`,
-      K: this.config.K,
+      mode: this.config.roundMode,
       randomSource,
     });
     const controllerOptions = {

@@ -28,8 +28,9 @@ export { createMatch, MATCH_SETUP_READY } from "./setup/createMatch.js";
 export { dealRoundRobin } from "./setup/Deal.js";
 export { validateInitialMatchSnapshot } from "./setup/InitialStateValidator.js";
 export {
-  getEffectiveK,
-  validateSpecialDoubleLimit,
+  getRoundStructureMode,
+  ROUND_STRUCTURE_MODES,
+  validateRoundStructureMode,
 } from "./setup/MatchConfig.js";
 export { getCounterclockwiseSuccessor } from "./setup/Seating.js";
 export { shuffle } from "./setup/Shuffle.js";
@@ -86,6 +87,9 @@ export {
 } from "./projections/StrategicTargetProjection.js";
 export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
 export { projectRoundView } from "./projections/RoundViewProjection.js";
+export {
+  getRoundStructureProjection,
+} from "./projections/RoundStructureProjection.js";
 export { projectGraphView } from "./projections/GraphViewProjection.js";
 export {
   getPortGraphProjection,

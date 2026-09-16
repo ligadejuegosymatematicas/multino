@@ -1,5 +1,7 @@
 # Legibilidad topológica del Modo Grafo
 
+> **Documento histórico, sustituido parcialmente por DEC-050.** Las propuestas basadas en K, varios chanchos especiales y familias A/B/C ya no describen el reglamento vigente. Se conservan como registro del proceso de diseño.
+
 ## Estado de esta nota
 
 **Cuatro iteraciones funcionales implementadas; alternativas de ampliación todavía en estudio.**

@@ -18,7 +18,7 @@ function targetAt(placementId, portId) {
     target.placementId === placementId && target.portId === portId;
 }
 
-test("Caso C/R-001/R-027/R-032: el primer chancho principal dentro de K es especial", () => {
+test("Caso C/R-001/R-027/R-032: el primer chancho colocado en Ramificado es el ramificador", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
 
@@ -94,7 +94,7 @@ test("Caso E/R-002/R-035: un chancho dentro de rama es ordinario y no bifurca", 
   ]);
 });
 
-test("Caso F/R-027: K=0 deja todos los chanchos con dos puertos ordinarios", () => {
+test("Caso F/R-027: Lineal deja todos los chanchos con dos puertos ordinarios", () => {
   let state = createBoardScenario({ K: 0, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
 
@@ -105,7 +105,7 @@ test("Caso F/R-027: K=0 deja todos los chanchos con dos puertos ordinarios", () 
   );
 });
 
-test("Caso G/R-001: agotado K, otro chancho principal queda ordinario", () => {
+test("Caso G/R-001: un chancho posterior al ramificador queda ordinario", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));

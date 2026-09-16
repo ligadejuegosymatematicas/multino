@@ -1,6 +1,6 @@
 import { domainAssert } from "../errors/DomainError.js";
 import { isDouble } from "../model/Domino.js";
-import { getEffectiveK } from "../setup/MatchConfig.js";
+import { isBranchedRound } from "../setup/MatchConfig.js";
 import { ACTION_TYPES } from "./ActionTypes.js";
 import { getOpenEndTargets } from "./BoardQueries.js";
 import { validateBoardState } from "./BoardValidator.js";
@@ -129,9 +129,8 @@ export function applyPlay(state, action) {
   const placementOnMainLine = boardIsEmpty || selectedTarget.kind === "main";
   const specialDouble =
     isDouble(domino) &&
-    placementOnMainLine &&
-    state.board.specialDoublePlacementIds.length <
-      getEffectiveK(state.config.specialMainLineDoublesLimit);
+    isBranchedRound(state.config) &&
+    state.board.specialDoublePlacementIds.length === 0;
 
   const placementId = getNextSequentialId(
     state.board.placements,

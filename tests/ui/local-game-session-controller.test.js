@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   createMatch,
   getAvailableActions,
+  ROUND_STRUCTURE_MODES,
 } from "../../src/js/game/index.js";
 import {
   LOCAL_GAME_SCREENS,
@@ -51,15 +52,18 @@ test("la aplicación inicia en configuración sin crear ni repartir una ronda", 
 
   assert.deepEqual(presentations.at(-1), {
     screen: LOCAL_GAME_SCREENS.CONFIGURATION,
-    config: { K: 7, initialViewMode: BOARD_VIEW_MODES.TRADITIONAL },
+    config: {
+      roundMode: ROUND_STRUCTURE_MODES.BRANCHED,
+      initialViewMode: BOARD_VIEW_MODES.TRADITIONAL,
+    },
     viewMode: BOARD_VIEW_MODES.TRADITIONAL,
     round: null,
   });
   assert.equal(session.getRoundState(), null);
 });
 
-for (const K of [0, 1, 7]) {
-  test(`la pantalla inicial envía K=${K} al motor existente`, () => {
+for (const mode of Object.values(ROUND_STRUCTURE_MODES)) {
+  test(`la pantalla inicial envía el modo ${mode} al motor`, () => {
     const calls = [];
     const session = createSession({
       createRound: (options) => {
@@ -68,14 +72,14 @@ for (const K of [0, 1, 7]) {
       },
     });
 
-    session.setK(K);
+    session.setRoundMode(mode);
     session.startNewGame();
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].K, K);
+    assert.equal(calls[0].mode, mode);
     assert.equal(
       session.getRoundState().config.specialMainLineDoublesLimit,
-      K,
+      mode === ROUND_STRUCTURE_MODES.BRANCHED ? 1 : 0,
     );
     assert.deepEqual(
       Object.values(session.getRoundState().hands).map((hand) => hand.length),
@@ -84,7 +88,7 @@ for (const K of [0, 1, 7]) {
   });
 }
 
-test("la vista inicial puede ser Grafo, Puertos o Tradicional y cambia sin tocar K", () => {
+test("la vista inicial cambia sin tocar el modo estructural", () => {
   const graphSession = createSession({
     initialViewMode: BOARD_VIEW_MODES.GRAPH,
   });
@@ -98,7 +102,7 @@ test("la vista inicial puede ser Grafo, Puertos o Tradicional y cambia sin tocar
   assert.equal(portSession.getPresentation().viewMode, BOARD_VIEW_MODES.PORTS);
 
   const traditionalSession = createSession({
-    initialK: 1,
+    initialRoundMode: ROUND_STRUCTURE_MODES.BRANCHED,
     initialViewMode: BOARD_VIEW_MODES.TRADITIONAL,
   });
   traditionalSession.startNewGame();
@@ -112,7 +116,10 @@ test("la vista inicial puede ser Grafo, Puertos o Tradicional y cambia sin tocar
   assert.equal(traditionalSession.getPresentation().viewMode, BOARD_VIEW_MODES.PORTS);
   traditionalSession.setViewMode(BOARD_VIEW_MODES.GRAPH);
   assert.equal(traditionalSession.getPresentation().viewMode, BOARD_VIEW_MODES.GRAPH);
-  assert.equal(traditionalSession.getPresentation().config.K, 1);
+  assert.equal(
+    traditionalSession.getPresentation().config.roundMode,
+    ROUND_STRUCTURE_MODES.BRANCHED,
+  );
   assert.deepEqual(traditionalSession.getRoundState(), before);
 });
 
@@ -164,11 +171,11 @@ test("cambiar Tradicional ↔ Puertos ↔ Grafo conserva privacidad y snapshot",
   assert.deepEqual(session.getRoundState(), before);
 });
 
-test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", () => {
+test("Jugar otra crea otra partida limpia y conserva modo/vista", () => {
   const randomSources = [() => 0.999999, () => 0];
   let randomSourceIndex = 0;
   const session = createSession({
-    initialK: 1,
+    initialRoundMode: ROUND_STRUCTURE_MODES.BRANCHED,
     randomSourceFactory: () => randomSources[randomSourceIndex++],
   });
   session.startNewGame();
@@ -195,7 +202,7 @@ test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", 
   const presentation = session.getPresentation();
 
   assert.equal(randomSourceIndex, 2);
-  assert.equal(presentation.config.K, 1);
+  assert.equal(presentation.config.roundMode, ROUND_STRUCTURE_MODES.BRANCHED);
   assert.equal(presentation.viewMode, BOARD_VIEW_MODES.TRADITIONAL);
   assert.equal(next.matchId, "local-game-2");
   assert.equal(next.phase, "playing");
@@ -219,8 +226,10 @@ test("Jugar otra crea otra partida limpia, baraja de nuevo y conserva K/vista", 
   assert.equal(presentation.round.canPass, false);
 });
 
-test("Cambiar configuración descarta el resultado y permite otro K y vista inicial", () => {
-  const session = createSession({ initialK: 7 });
+test("Cambiar configuración permite escoger otro modo y vista inicial", () => {
+  const session = createSession({
+    initialRoundMode: ROUND_STRUCTURE_MODES.BRANCHED,
+  });
   session.startNewGame();
   finishCurrentGame(session);
   session.setViewMode(BOARD_VIEW_MODES.TRADITIONAL);
@@ -229,11 +238,11 @@ test("Cambiar configuración descarta el resultado y permite otro K y vista inic
   assert.equal(session.getPresentation().screen, LOCAL_GAME_SCREENS.CONFIGURATION);
   assert.equal(session.getRoundState(), null);
   assert.deepEqual(session.getPresentation().config, {
-    K: 7,
+    roundMode: ROUND_STRUCTURE_MODES.BRANCHED,
     initialViewMode: BOARD_VIEW_MODES.TRADITIONAL,
   });
 
-  session.setK(0);
+  session.setRoundMode(ROUND_STRUCTURE_MODES.LINEAR);
   session.setInitialViewMode(BOARD_VIEW_MODES.GRAPH);
   session.startNewGame();
 
@@ -256,9 +265,10 @@ test("la UI expone configuración simple y acciones terminales sin divisor edita
   );
 
   assert.match(html, /id="setup-screen"/);
-  assert.match(html, /id="setup-k"/);
-  assert.match(html, /value="0"/);
-  assert.match(html, /value="7" selected/);
+  assert.match(html, /id="setup-round-mode"/);
+  assert.match(html, /value="RAMIFICADO" selected>Ramificado/);
+  assert.match(html, /value="LINEAL">Lineal/);
+  assert.doesNotMatch(html, /\bK\s*=/);
   assert.match(html, /name="initial-view-mode" value="graph">/);
   assert.match(html, /name="initial-view-mode" value="traditional" checked/);
   assert.match(html, /name="initial-view-mode" value="ports">/);

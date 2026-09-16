@@ -27,15 +27,15 @@ function getTopologyClasses(edge) {
 
 function describeTopology(topology) {
   return topology.region === "main"
-    ? `línea principal, posición ${topology.order}`
-    : `${topology.structureLabel}, posición ${topology.depth}`;
+    ? `recorrido inicial, posición ${topology.order}`
+    : `brazo ${topology.armIndex} del chancho ramificador, posición ${topology.depth}`;
 }
 
 function describeRootedBranches(topology) {
   if (topology.branchFamily === null) {
     return "";
   }
-  return `; origina ${topology.branchFamily.label}`;
+  return "; es el chancho ramificador";
 }
 
 function renderFamilyRootMarker(edge) {
@@ -47,12 +47,11 @@ function renderFamilyRootMarker(edge) {
     return "";
   }
   const familyTone = family.familyIndex % 4;
-  const label = `Inspeccionar ${family.label}; nace del chancho ${edge.a}-${edge.b}; ${family.arms.filter((arm) => arm.isOccupied).length} de 2 brazos iniciados`;
+  const label = `Inspeccionar brazos del chancho ramificador ${edge.a}-${edge.b}; ${family.arms.filter((arm) => arm.isOccupied).length} de 2 brazos laterales iniciados`;
   return `
     <g class="graph-family-root family-tone-${familyTone}${edge.isTopologyRoot ? " is-inspected" : ""}${edge.isTopologyDimmed ? " is-dimmed" : ""}" transform="translate(${edge.labelX + 16} ${edge.labelY})" data-family-id="${escapeAttribute(family.id)}" data-family-code="${escapeAttribute(family.code)}" role="button" tabindex="0" aria-pressed="${edge.isTopologyRoot}" aria-label="${escapeAttribute(label)}">
       <circle class="graph-family-root__hit" r="22"></circle>
       <circle class="graph-family-root__badge" r="9"></circle>
-      <text class="graph-family-root__code">${escapeAttribute(family.code)}</text>
     </g>`;
 }
 
@@ -95,16 +94,11 @@ function renderOpenTarget(target, hasSelection) {
   const optionMarkup = target.optionIndex === null
     ? ""
     : `<text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.optionIndex}</text>`;
-  const structureCodeMarkup =
-    target.isFamilyClosed && !target.isTopologyHighlighted
-      ? ""
-      : `<text class="open-target__structure-code" x="${target.endX}" y="${target.endY}">${escapeAttribute(target.topology.structureCode)}</text>`;
   return `
     <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-family-id="${escapeAttribute(target.topology.familyId ?? "")}" data-arm-index="${escapeAttribute(target.topology.armIndex ?? "")}" data-branch-state="${escapeAttribute(target.topology.branchState ?? "")}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="0" aria-disabled="false" aria-label="${escapeAttribute(target.accessibleLabel)}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
       <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="10"></circle>
-      ${structureCodeMarkup}
       ${optionMarkup}
     </g>`;
 }
@@ -134,7 +128,7 @@ export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. P identifica los dos extremos de la línea principal. Cada chancho especial origina una familia A, B, C o siguiente; sus dos brazos conservan targets internos distintos. Las líneas continuas son principales, las segmentadas son ramificaciones y el código junto a un lazo identifica su familia especial.</desc>
+      <desc id="graph-description">Siete valores fijos. Cada curva terminal representa un destino abierto individual. El chancho ramificador se distingue de los dobles ordinarios y sus brazos conservan targets internos distintos.</desc>
       <ellipse class="graph-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
@@ -146,12 +140,10 @@ export function renderGraphSvgMarkup(scene) {
 
 function describeDoubleRole(doubleRole) {
   switch (doubleRole) {
-    case "SPECIAL_MAIN":
-      return "Chancho especial en la línea principal";
-    case "ORDINARY_MAIN_K_EXHAUSTED":
-      return "Chancho ordinario en la línea principal";
-    case "ORDINARY_BRANCH":
-      return "Chancho ordinario en una rama";
+    case "BRANCHING_DOUBLE":
+      return "Chancho ramificador";
+    case "ORDINARY_DOUBLE":
+      return "Chancho ordinario";
     default:
       return null;
   }
@@ -165,8 +157,8 @@ export function renderTopologyInspectionMarkup(inspection) {
   const isFamily = inspection.kind === "family";
   const startedArms = inspection.arms.filter((arm) => arm.isOccupied).length;
   const title = isFamily
-    ? inspection.structureLabel
-    : "Línea principal";
+    ? "Brazos del chancho ramificador"
+    : "Recorrido inicial";
   const region = isFamily
     ? `Nace del chancho ${inspection.rootDominoId?.replace("-", "|") ?? "indicado"}. ${startedArms} brazo${startedArms === 1 ? " iniciado" : "s iniciados"} · ${2 - startedArms} potencial${2 - startedArms === 1 ? "" : "es"}.`
     : topology

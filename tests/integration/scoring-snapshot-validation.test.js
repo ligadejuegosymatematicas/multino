@@ -14,7 +14,6 @@ import { createBlockedTurnState } from "../fixtures/turn-scenarios.js";
 function createScoredState() {
   let state = createMatch({
     ...createValidParticipantInput(),
-    K: 1,
     randomSource: () => 0.25,
   });
   state = ensureDominoInHand(state, state.currentPlayerId, "5-5");

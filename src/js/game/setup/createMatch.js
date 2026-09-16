@@ -2,7 +2,11 @@ import { createEmptyGameState } from "../model/GameState.js";
 import { generateDoubleSixSet } from "../model/Domino.js";
 import { dealRoundRobin } from "./Deal.js";
 import { validateInitialMatchSnapshot } from "./InitialStateValidator.js";
-import { validateSpecialDoubleLimit } from "./MatchConfig.js";
+import {
+  getInternalSpecialDoubleLimit,
+  ROUND_STRUCTURE_MODES,
+  validateRoundStructureMode,
+} from "./MatchConfig.js";
 import { prepareParticipants } from "./Participants.js";
 import { shuffle } from "./Shuffle.js";
 import { findStartingPlayerId } from "./StartingPlayer.js";
@@ -18,10 +22,11 @@ export function createMatch({
   players,
   teams,
   seating,
-  K,
+  mode = ROUND_STRUCTURE_MODES.BRANCHED,
   randomSource = Math.random,
 } = {}) {
-  const specialMainLineDoublesLimit = validateSpecialDoubleLimit(K);
+  const structuralMode = validateRoundStructureMode(mode);
+  const specialMainLineDoublesLimit = getInternalSpecialDoubleLimit(structuralMode);
   const participants = prepareParticipants({ players, teams, seating });
   const dominoList = generateDoubleSixSet();
   const dominoes = Object.fromEntries(

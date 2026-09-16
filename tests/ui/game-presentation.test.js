@@ -67,8 +67,8 @@ test("la primera ficha lateral produce feedback de nueva ramificación", () => {
 
   const feedback = getGameFeedback(projectGraphView(state));
 
-  assert.equal(feedback.openedBranchFamily, "Ramificación A");
-  assert.match(feedback.message, /Ramificación A abierta/);
+  assert.equal(feedback.openedBranchFamily, "Nuevo brazo");
+  assert.match(feedback.message, /Nuevo brazo abierto/);
 });
 
 test("PASS no inventa puntos ni un mensaje estructural", () => {

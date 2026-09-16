@@ -2,7 +2,7 @@
 
 ## Estado y autoridad
 
-La única modalidad reglamentaria aprobada continúa siendo cuatro jugadores, dos equipos 2 vs 2, doble-seis completo, K y puntuación múltiplo de 5 conforme a R-001–R-035.
+Las modalidades reglamentarias aprobadas son cuatro jugadores, dos equipos 2 vs 2, doble-seis completo, modo estructural Ramificado o Lineal y puntuación múltiplo de 5 conforme a R-001–R-035.
 
 Todo lo descrito aquí es análisis de producto. No modifica reglas, snapshot ni motor. Una variante solo podrá implementarse después de formalizar sus propias reglas, invariantes, ejemplos y tests.
 
@@ -13,7 +13,7 @@ Conviene evaluar las variantes como composición de ejes, no como nombres que me
 ```text
 RoundRules
 ├── scoringPolicy
-├── topologyPolicy / K
+├── topologyPolicy / structuralMode
 └── participantPolicy
 
 MatchRules
@@ -74,7 +74,7 @@ No debe inferirse ninguna opción. Una variante `n ≠ 5` permanece incompleta h
 | 8–10 | Experimental | Probable reducción de frecuencia; medir rondas sin puntuación y duración. |
 | valores mayores | Experimental/no recomendable sin evidencia | Pueden volver la puntuación demasiado rara o efectivamente ausente. |
 
-Los candidatos prioritarios para simulación serían `3, 4, 6 y 7`, usando `2` y `8–10` como controles. Las métricas deberían incluir frecuencia de jugadas puntuables, puntos por ronda, ventaja del jugador inicial, duración, bloqueos y efecto de K. Esta tabla no declara que ningún valor sea válido reglamentariamente.
+Los candidatos prioritarios para simulación del divisor serían `3, 4, 6 y 7`, usando `2` y `8–10` como controles. Las métricas deberían incluir frecuencia de jugadas puntuables, puntos por ronda, ventaja del jugador inicial, duración, bloqueos y modo estructural. Esta tabla no declara que ningún valor sea válido reglamentariamente.
 
 ## Sin divisibilidad
 
@@ -103,7 +103,7 @@ No corresponde reutilizar silenciosamente el marcador actual con ceros.
 | Mejor de 3 | Interesante para estudiar | Primera pareja en dos rondas ganadas; definir rondas empatadas. |
 | Mejor de 5 | Experimental | Primera pareja en tres rondas ganadas; mayor duración y abandono. |
 | Meta acumulada | Interesante para Divisible | Definir qué puntaje se acumula, meta, sobrepaso, empate y nueva ronda. |
-| 50 puntos | Candidato de simulación | Duración depende fuertemente de n y K. |
+| 50 puntos | Candidato de simulación | Duración depende fuertemente de n y del modo estructural. |
 | 100 puntos | Candidato de simulación larga | Puede ser excesivo para juego local; requiere datos. |
 
 “Mejor de” mide rondas ganadas; “meta” mide puntos. No conviene mezclarlos sin una razón de producto explícita.

@@ -1,5 +1,7 @@
 # Vista experimental Puertos
 
+> **Nota de vigencia (DEC-050):** las mediciones y recomendaciones K de este documento son registro histórico de los prototipos v1–v3. El producto vigente solo ofrece **Ramificado** —un único chancho ramificador— y **Lineal**. La proyección de incidencias permanece válida.
+
 ## Propósito
 
 Puertos es una representación intermedia entre la mesa topológica completa y el grafo simple de valores. Mantiene exactamente siete macro-nodos y conserva qué incidencias continúan entre sí. Es una proyección descartable para UI: no es fuente de verdad, no valida jugadas y no añade campos al snapshot v6.

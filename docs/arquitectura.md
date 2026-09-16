@@ -94,7 +94,7 @@ La capa no persiste estado, no valida legalidad por una ruta propia y no contien
 
 ### `src/js/game/setup/`
 
-Contiene la preparación pura y atómica de una partida: participantes, ciclo de asientos, K, mezcla, reparto, jugador inicial y validación del snapshot recién creado. No contiene colocaciones ni transiciones de turno. La aleatoriedad entra como dependencia explícita para que los tests sean deterministas.
+Contiene la preparación pura y atómica de una partida: participantes, ciclo de asientos, modo estructural Ramificado/Lineal, mezcla, reparto, jugador inicial y validación del snapshot recién creado. No contiene colocaciones ni transiciones de turno. La aleatoriedad entra como dependencia explícita para que los tests sean deterministas. En schema v6 el modo se codifica internamente como `specialMainLineDoublesLimit: 1|0`; esa representación no pertenece a la fachada pública.
 
 ### `src/js/game/errors/`
 

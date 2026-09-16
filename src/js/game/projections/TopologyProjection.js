@@ -1,5 +1,5 @@
 import { isDouble } from "../model/Domino.js";
-import { getEffectiveK } from "../setup/MatchConfig.js";
+import { getRoundStructureMode } from "../setup/MatchConfig.js";
 import {
   createPortUsageIndex,
   deriveOccupiedBranches,
@@ -29,11 +29,9 @@ function getDoubleRole({ double, region, special }) {
     return null;
   }
   if (special) {
-    return "SPECIAL_MAIN";
+    return "BRANCHING_DOUBLE";
   }
-  return region === "main"
-    ? "ORDINARY_MAIN_K_EXHAUSTED"
-    : "ORDINARY_BRANCH";
+  return "ORDINARY_DOUBLE";
 }
 
 function getAlphabeticCode(index) {
@@ -204,8 +202,7 @@ export function getBoardTopologyProjection(state) {
         depth: branch?.depth ?? null,
         isDouble: double,
         isSpecialDouble: special,
-        isOrdinaryDoubleByKExhaustion:
-          double && region === "main" && !special,
+        isOrdinaryDouble: double && !special,
         isOrdinaryDoubleInBranch:
           double && region === "branch",
         doubleRole: getDoubleRole({ double, region, special }),
@@ -235,9 +232,7 @@ export function getBoardTopologyProjection(state) {
       };
     });
 
-  const configuredK = state.config.specialMainLineDoublesLimit;
-  const effectiveK = getEffectiveK(configuredK);
-  const enabledCount = state.board.specialDoublePlacementIds.length;
+  const branchingPlacementId = state.board.specialDoublePlacementIds[0] ?? null;
 
   return {
     mainLine: {
@@ -272,11 +267,10 @@ export function getBoardTopologyProjection(state) {
       projectOpenTargetTopology(target, branchArmById)
     ),
     placements,
-    specialDoubles: {
-      configuredK,
-      effectiveK,
-      enabledCount,
-      remainingCapacity: Math.max(effectiveK - enabledCount, 0),
+    structuralMode: getRoundStructureMode(state.config),
+    branchingDouble: {
+      placementId: branchingPlacementId,
+      exists: branchingPlacementId !== null,
     },
   };
 }

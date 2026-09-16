@@ -14,6 +14,8 @@ Este documento define la hoja de ruta del proyecto. Avanzar de fase exige que lo
 | 5 — Persistencia y herramientas | NO INICIADA | Guardado, carga y reproducción |
 | 6 — Multijugador remoto | FUTURA | Sincronización segura y autoritativa |
 
+**Regla estructural vigente:** el producto ofrece únicamente **Ramificado** y **Lineal**. La parametrización histórica K quedó sustituida; el schema v6 conserva un campo interno `1/0` solo como puente de compatibilidad.
+
 ## Fase 0 — Especificación y arquitectura
 
 ### Alcance
@@ -50,9 +52,9 @@ La Fase 0 **cumple sus criterios de salida y se declara COMPLETADA**. El inicio 
 
 ### Progreso incremental
 
-**Bloque 1 — Inicialización de partida: COMPLETADO Y APROBADO.** Incluye material doble-seis, participantes y asientos, K, mezcla inyectable, reparto, jugador inicial y validación del snapshot inicial v3.
+**Bloque 1 — Inicialización de partida: COMPLETADO Y APROBADO.** Incluye material doble-seis, participantes y asientos, configuración estructural, mezcla inyectable, reparto, jugador inicial y validación del snapshot inicial.
 
-**Bloque 2 — Núcleo lógico del tablero: COMPLETADO.** Incluye puertos canónicos, primera colocación, línea principal ordenada, chanchos especiales, ramas derivadas, destinos individualizados, enumeración de ficha+destino, aplicación inmutable, historial y validación topológica.
+**Bloque 2 — Núcleo lógico del tablero: COMPLETADO.** Incluye puertos canónicos, primera colocación, camino interno ordenado, chancho ramificador único, brazos derivados, destinos individualizados, enumeración de ficha+destino, aplicación inmutable, historial y validación topológica.
 
 **Bloque 3 — Turnos, pases y terminación básica: COMPLETADO.** Incluye transición reglamentaria sobre la primitiva topológica, restricción al jugador actual, acciones disponibles, pase obligatorio, avance antihorario, contador de turnos, reinicio de pases, salida y tranque con snapshot terminal v4 validado.
 
@@ -90,7 +92,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - Crear y mantener ramificaciones.
 - Calcular puntuación.
 - Cubrir reglas e invariantes con tests unitarios.
-- Derivar `effectiveK` sin modificar el K reglamentario.
+- Derivar el modo estructural y el estado del único ramificador sin duplicar información.
 - Derivar ramificaciones, extremos abiertos, S y resultado final desde el snapshot, sin geometría ni fuentes paralelas.
 - Mantener `score`, `consecutivePasses` y `specialDoublePlacementIds` como estado operativo persistido y verificable contra el historial.
 
@@ -99,7 +101,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 - El motor se ejecuta y prueba sin DOM.
 - Cada transición devuelve un estado válido o un error de dominio explícito.
 - Todas las reglas implementadas enlazan con una sección normativa de `REGLAS.md`.
-- Se cubren caminos normales, K=0, K>7, conexiones, dobles, ramificaciones, pase, tranque y finalización definidos.
+- Se cubren Ramificado, Lineal, conexiones, dobles posteriores, brazos, pase, tranque y finalización.
 - Ninguna prueba depende de posiciones visuales.
 - Cargar un snapshot válido permite continuar sin reproducir `history`.
 
@@ -111,7 +113,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 2 — Primer GraphRenderer funcional: COMPLETADO.** Incluye SVG responsivo sobre heptágono estable, aristas y lazos inspeccionables, una curva individual por destino, mano local, selección ficha/target, START, PASS, puntuación, marcador y cierre de ronda. La UI solo despacha acciones ofrecidas por el motor y vuelve a proyectar el snapshot aceptado.
 
-**Bloque 3 — Primera legibilidad topológica: COMPLETADO.** Añade proyección pura de línea/ramas/chanchos/K, diferenciación permanente sobria, resumen de especiales e inspección contextual que resalta una estructura y su raíz. No cambia motor, schema ni reglas.
+**Bloque 3 — Primera legibilidad topológica: COMPLETADO (contrato histórico sustituido por Bloque 16).** Añadió la primera proyección pura e inspección contextual del tablero.
 
 **Bloque 4 — Identidad y visibilidad de extremos topológicos: COMPLETADO.** Añade códigos derivados `P`, `A`, `B`… compartidos por raíz, fichas y terminal; refuerza la visibilidad neutral de todos los extremos y la jerarquía compatible/incompatible al seleccionar una ficha. No cambia legalidad, motor ni schema.
 
@@ -121,11 +123,11 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 7 — Orientación física, simplificación y cámara tradicional: COMPLETADO.** Corrige cada ficha desde los puertos reales para enfrentar valores iguales, elimina metadata visual redundante en reposo, aligera los símbolos del grafo y añade ajuste/recentrado con viewport desplazable y tamaño mínimo legible. No cambia motor, reglas, schema ni persistencia.
 
-**Bloque 8 — Configuración inicial y nueva partida independiente: COMPLETADO.** Añade una pantalla previa al reparto para elegir `K=0…7` y vista inicial, más acciones terminales para volver a jugar o cambiar configuración. Cada inicio llama de nuevo a `createMatch`, descarta por completo el snapshot/controlador anterior y conserva solo preferencias explícitas de UI; no introduce MatchState ni acumulados.
+**Bloque 8 — Configuración inicial y nueva partida independiente: COMPLETADO.** Añade una pantalla previa al reparto para elegir modo estructural y vista inicial, más acciones terminales para volver a jugar o cambiar configuración. Cada inicio llama de nuevo a `createMatch`, descarta por completo el snapshot/controlador anterior y conserva solo preferencias explícitas de UI; no introduce MatchState ni acumulados.
 
 **Bloque 9 — Jerarquía y feedback general de juego: COMPLETADO.** Compacta título y estado en una banda, ordena la experiencia como tablero → mano → cantidades secundarias, aligera el SVG y la mesa, mejora la escala mínima/recentrado tradicional y añade feedback efímero para puntos, turno y apertura de rama. Todo se deriva de proyecciones y del último evento aceptado; no cambia motor, schema ni reglas.
 
-**Bloque 10 — Escala, capas y mano de juego: COMPLETADO.** Adapta la geometría del Grafo a panel ancho o compacto, amplía escenas tradicionales holgadas sin reducir el mínimo legible, termina conectores en las caras de las fichas y fija su capa por debajo del dominó. La mano usa mini-fichas de puntos, omite el rótulo de destino único y acerca tablero/mano en ambos tamaños. No cambia motor, schema, persistencia, K ni selección reglamentaria.
+**Bloque 10 — Escala, capas y mano de juego: COMPLETADO.** Adapta la geometría del Grafo a panel ancho o compacto, amplía escenas tradicionales holgadas sin reducir el mínimo legible, termina conectores en las caras de las fichas y fija su capa por debajo del dominó. La mano usa mini-fichas de puntos, omite el rótulo de destino único y acerca tablero/mano en ambos tamaños.
 
 **Bloque 11 — Presentación de puntuación y privacidad local: COMPLETADO.** Añade un contrato puro de presentación para términos, S, divisor y resolución de la última jugada; ambos renderers muestran una secuencia breve y compartida sin leer colitas como sustituto de `scoringTerms`. Entre turnos se oculta la siguiente mano hasta una revelación explícita, y el cierre prioriza ganador final/empate. La política activa continúa siendo exclusivamente múltiplos de 5; no cambia schema, persistencia ni reglas.
 
@@ -133,9 +135,11 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 13 — Vista experimental Puertos: COMPLETADO.** Añade una tercera representación con siete macro-nodos fijos, seis incidencias canónicas por valor, hilos exteriores para fichas no dobles, puentes interiores para conexiones y hubs de dos o cuatro sockets para chanchos. Las ramas reutilizan los mismos siete valores y los targets conservan `placementId + portId`; proyección, geometría, foco local y renderer son descartables y no cambian snapshot, motor ni schema.
 
-**Bloque 14 — Puertos v2, revelado progresivo y carriles anulares: COMPLETADO.** Sustituye hilos rectos de igual peso por curvas Bézier anulares, jerarquiza reposo/decisión/inspección, permite seguir principal o un brazo exacto y materializa «abrir el saco» como lente SVG de seis incidencias, puentes, hub y targets. Documenta `K=2/3` como recomendación de experiencia sin limitar el soporte reglamentario `K=0…7` ni cambiar el valor predeterminado.
+**Bloque 14 — Puertos v2, revelado progresivo y carriles anulares: COMPLETADO.** Sustituye hilos rectos de igual peso por curvas Bézier anulares, jerarquiza reposo/decisión/inspección, permite seguir recorridos y materializa «abrir el saco» como lente SVG de seis incidencias, puentes, hub y targets. Sus comparaciones K quedaron históricamente sustituidas por Bloque 16.
 
-**Bloque 15 — Puertos v3 game-first y tapa central: COMPLETADO.** La posición normal conserva siete valores y extremos exactos, pero omite hilos/puentes completos y 42 puertos potenciales. Seguir recorrido revela solo la estructura elegida; Ver estructura recupera v2; abrir el saco mantiene detalle local. La tapa aloja feedback reglamentario y la UI común se compacta para acercar tablero y mano, sin cambiar proyección matemática, snapshot, motor ni K.
+**Bloque 15 — Puertos v3 game-first y tapa central: COMPLETADO.** La posición normal conserva siete valores y extremos exactos, pero omite hilos/puentes completos y 42 puertos potenciales. Seguir recorrido revela solo la estructura elegida; Ver estructura recupera v2; abrir el saco mantiene detalle local. La tapa aloja feedback reglamentario y la UI común se compacta para acercar tablero y mano.
+
+**Bloque 16 — Consolidación de modos estructurales: COMPLETADO.** Sustituye la configuración pública K por **Ramificado/Lineal**. Ramificado habilita exclusivamente el primer doble colocado; Lineal conserva una única cadena. Añade proyección pura `n/7`, conteo de targets reales y estado del único chancho ramificador sin cambiar schema v6.
 
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 

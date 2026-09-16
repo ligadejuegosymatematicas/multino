@@ -2,6 +2,7 @@ import test from "node:test";
 
 import {
   createMatch,
+  ROUND_STRUCTURE_MODES,
   validateInitialMatchSnapshot,
 } from "../../src/js/game/index.js";
 import { assertThrowsDomainCode } from "../fixtures/assertions.js";
@@ -10,7 +11,7 @@ import { createValidParticipantInput } from "../fixtures/participants.js";
 function validSnapshot() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 2,
+    mode: ROUND_STRUCTURE_MODES.BRANCHED,
     randomSource: () => 0.4,
   });
 }
@@ -63,8 +64,8 @@ test("R-004: valida alternancia de compañeros", () => {
   });
 });
 
-test("R-027: valida K", () => {
-  expectCorruption("INVALID_K_RANGE", (snapshot) => {
+test("valida la codificación estructural interna", () => {
+  expectCorruption("INVALID_INTERNAL_STRUCTURE_MODE", (snapshot) => {
     snapshot.config.specialMainLineDoublesLimit = -1;
   });
 });

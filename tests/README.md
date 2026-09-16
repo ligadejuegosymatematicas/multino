@@ -17,7 +17,8 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/model/domino-set.test.js`: R-005, 28 fichas únicas, siete chanchos derivados y rango `0 ≤ a ≤ b ≤ 6`;
 - `tests/model/participants.test.js`: R-003/R-004, cardinalidad, pertenencia y alternancia de equipos;
 - `tests/rules/seating.test.js`: R-009, sucesor y ciclo antihorario;
-- `tests/rules/k-config.test.js`: R-027/DEC-011, dominio de K y `effectiveK` derivado;
+- `tests/rules/round-structure-mode.test.js`: modos públicos Ramificado/Lineal y codificación interna v6;
+- `tests/rules/structural-modes.test.js`: primer doble ramificador, dobles posteriores ordinarios, ronda Lineal completa y proyección estratégica por valor;
 - `tests/rules/shuffle.test.js`: R-029, permutación no mutante y fuente inyectable;
 - `tests/rules/deal.test.js`: R-006/R-029, cuatro manos disjuntas de siete y reparto reproducible;
 - `tests/rules/starting-player.test.js`: R-007, localización de `6-6` en cualquiera de las manos;
@@ -29,8 +30,8 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/rules/board-contracts.test.js`: puertos canónicos e IDs derivados sin contadores ocultos;
 - `tests/integration/board-plays.test.js`: primera ficha, extensión en ambos extremos, compatibilidad e inmutabilidad;
 - `tests/integration/board-topology.test.js`: casos normativos A–H, condición especial, ramas y multiplicidad de destinos;
-- `tests/rules/open-end-bounds.test.js`: identidad de extremos, fórmula exacta `2 + 2s`, máximo global 16 y construcción con ocho destinos del mismo valor;
-- `tests/integration/board-invariants.test.js`: corrupción dirigida de camino principal, puertos, valores, ramas, chanchos, ubicación y K efectivo;
+- `tests/rules/open-end-bounds.test.js`: identidad de extremos, dos destinos en Lineal, cuatro en Ramificado y conservación de cuatro targets concretos del mismo valor;
+- `tests/integration/board-invariants.test.js`: corrupción dirigida de camino interno, puertos, valores, brazos, chanchos y ubicación;
 - `tests/integration/board-public-api.test.js`: fachada pública, carga JSON, historial y límite deliberado sin avance de turno ni puntuación.
 
 ### Bloque 3 de Fase 1 — completado
@@ -71,8 +72,8 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ### Fase 2, Bloque 3 — primera legibilidad topológica completada
 
-- `tests/projections/topology-projection.test.js`: línea/rama, orden, raíz, profundidad, chancho especial, ordinario por K agotado, ordinario lateral, resumen efectivo e inmutabilidad;
-- `tests/ui/graph-renderer.test.js`: clases permanentes, distintivo especial, `s/effectiveK`, resaltado de estructura, raíz lateral, inspector de los tres roles de chancho y escenario denso con 18 fichas/16 targets;
+- `tests/projections/topology-projection.test.js`: recorridos internos, orden, raíz, profundidad, único ramificador, dobles ordinarios e inmutabilidad;
+- `tests/ui/graph-renderer.test.js`: resaltado de estructura, raíz, inspector Ramificador/Ordinario y escenario denso bajo la topología vigente;
 - `tests/ui/interaction-controller.test.js`: inspección efímera alternable, rechazo de placements inexistentes y limpieza tras una acción sin contaminar el snapshot;
 - CSS y leyenda se verifican para asegurar patrones/etiquetas además del color; botón y `Escape` se comprobaron manualmente en navegador local.
 
@@ -85,13 +86,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 ### Fase 2, Bloque 5 — simplificación y familias visuales completada
 
-- `tests/projections/topology-projection.test.js`: ambos extremos principales usan `P`; los puertos `branch:1` y `branch:2` conservan IDs exactos pero comparten una familia por chancho especial; un segundo especial recibe `B`; chanchos ordinarios por K o por rama no originan familias.
+- `tests/projections/topology-projection.test.js`: los puertos internos conservan IDs exactos, el único ramificador expone dos brazos laterales y los chanchos posteriores no originan familias.
 - `tests/ui/graph-renderer.test.js`: elimina etiquetas redundantes de aristas/lazos y letras interiores, reserva números para elecciones múltiples, distingue brazos potenciales/iniciados, inspecciona ambos brazos y raíz, y conserva hit areas táctiles y reglas responsivas.
-- Los escenarios K=1, K=2 y K=7 cubren agotamiento, dos brazos de una familia, segunda familia y grafo denso. La gramática combina trazo, letra, estado de relleno y acento; nunca depende solo del color.
+- Los escenarios Ramificado y Lineal cubren cuatro/dos extremos, ambos brazos, dobles posteriores y grafo denso. La gramática combina trazo, estado de relleno y acento; nunca depende solo del color.
 
 ### Fase 2, Bloque 6 — primer Modo Tradicional y conmutador completados
 
-- `tests/projections/traditional-view-projection.test.js`: orden y orientación lógica de `mainLine`, ambos brazos raíz→terminal, dobles ordinarios en rama/principal por K, targets exactos, terminalidad, inmutabilidad y ausencia de geometría/DOM;
+- `tests/projections/traditional-view-projection.test.js`: orden y orientación lógica del recorrido interno, ambos brazos raíz→terminal, dobles ordinarios posteriores, targets exactos, terminalidad, inmutabilidad y ausencia de geometría/DOM;
 - `tests/ui/traditional-renderer.test.js`: layout horizontal/vertical inicial, fichas de puntos, cruce especial, extremos compatibles, START, target canónico, estado terminado, responsive y accesibilidad;
 - equivalencia directa de mano, jugadas legales, S, turno y resultado entre `projectGraphView` y `projectTraditionalView`;
 - `ViewModeController` se prueba como preferencia efímera y el cambio repetido conserva snapshot y selección local.
@@ -101,21 +102,21 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 - `tests/projections/traditional-view-projection.test.js`: cada brazo expone su puerto/valor de origen además de la cadena ordenada, sin geometría ni persistencia nueva;
 - `tests/ui/traditional-renderer.test.js`: fichas asimétricas por ambos extremos principales, brazo superior/inferior, cadena lateral, doble ordinario y dos especiales; cada unión comprueba ambas caras contra el valor lógico;
-- la mesa en reposo rechaza códigos estructurales, resumen de K, `×4`, familias cromáticas y valores dentro de grandes objetivos; los índices existen solo durante una selección ambigua;
+- la mesa en reposo rechaza códigos estructurales, contadores técnicos, `×4`, familias cromáticas y valores dentro de grandes objetivos; los índices existen solo durante una selección ambigua;
 - la cámara pura cubre ajuste de escritorio y límite mínimo legible en teléfono/estado denso; CSS y renderer cubren viewport interno, tacto, arrastre, recentrado y movimiento reducido;
 - `tests/ui/graph-renderer.test.js` conserva trazo principal/segmentado, targets y familias, pero verifica la ausencia del símbolo especial y de indicadores de brazos redundantes.
 
 ### Fase 2, Bloque 8 — configuración y nueva partida independiente completadas
 
-- `tests/ui/local-game-session-controller.test.js`: pantalla previa sin reparto, K=0/1/7, vista inicial Grafo/Tradicional y cambio de vista sin mutar K ni snapshot;
+- `tests/ui/local-game-session-controller.test.js`: pantalla previa sin reparto, Ramificado/Lineal, vista inicial y cambio de vista sin mutar modo ni snapshot;
 - ciclo real hasta `finished` seguido de «Jugar otra», con nueva fuente de shuffle, manos de siete, tablero/historial vacíos, score 0–0 y ausencia de resultado, selección e inspección anteriores;
-- «Cambiar configuración» descarta la ronda terminal y permite elegir otro K/vista sin introducir RoundState, MatchState, divisor editable ni contratos nuevos de motor;
+- «Cambiar configuración» descarta la ronda terminal y permite elegir otro modo/vista sin introducir RoundState, MatchState ni divisor editable;
 - el HTML expone únicamente la configuración autorizada y las dos acciones terminales, sin dependencias ni DOM artificial en la suite.
 
 ### Fase 2, Bloque 9 — jerarquía y feedback general completados
 
 - `tests/ui/game-presentation.test.js`: feedback derivado de puntos y apertura de rama, neutralidad de PASS, orden tablero → mano → secundarios, cabecera/contadores compactos y ausencia de reglas en la entrada web;
-- `tests/ui/graph-renderer.test.js`: K efectivo sigue disponible en la escena aunque el resumen redundante ya no se serializa dentro del SVG;
+- `tests/ui/graph-renderer.test.js`: el modo estructural se proyecta sin añadir un resumen técnico permanente al SVG;
 - `tests/ui/traditional-renderer.test.js`: el ajuste conserva el nuevo mínimo legible y el viewport interno en estados que exceden la cámara;
 - CSS comprueba cuatro fichas por fila en teléfono, cuadrícula tradicional atenuada, objetivos táctiles y desactivación de feedback animado con `prefers-reduced-motion`.
 
@@ -139,7 +140,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/projections/strategic-target-projection.test.js`: simulación pura por target mediante la transición reglamentaria, correspondencia exacta de S/puntos, targets repetidos, principal/brazos, términos agrupados e inmutabilidad;
 - `tests/ui/traditional-renderer.test.js`: margen geométrico de conexiones, hit areas y puentes respecto del interior de cada ficha, además de selección exacta sin revelar puntuación futura;
 - `tests/ui/graph-renderer.test.js`: extremos protagonistas, familias terminales atenuadas e inexistencia de adelantos de S/puntos en la selección normal;
-- `tests/ui/local-game-session-controller.test.js`: Tradicional como preferencia inicial y Grafo disponible sin mutar K ni snapshot.
+- `tests/ui/local-game-session-controller.test.js`: Tradicional como preferencia inicial y Grafo disponible sin mutar modo ni snapshot.
 
 ### Fase 2, Bloque 13 — vista experimental Puertos completada
 
@@ -155,7 +156,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `analyzePortSceneDensity` mide hilos, cruces geométricos estimados, puentes, hubs, ramas, extremos y carga primaria/secundaria sin convertir esas métricas en reglas;
 - CSS verifica puertos potenciales secundarios, recorridos vivos, lente local y `prefers-reduced-motion`; los targets canónicos y el fixture de doce fichas conservan su cobertura anterior;
 - revisión manual en 1366×768 y 390×844 cubre reposo denso, selección, ruta principal/brazo, hub especial, apertura local, puntuación compartida y ausencia de overflow global;
-- se documenta `K=2/3` como recomendación de experiencia; los tests y el motor mantienen `K=0…7` sin cota nueva.
+- las mediciones históricas de densidad se conservan como registro de diseño; el contrato vigente prueba Ramificado/Lineal.
 
 ### Fase 2, Bloque 15 — Puertos v3 game-first completado
 

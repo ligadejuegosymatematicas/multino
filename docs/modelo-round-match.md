@@ -17,7 +17,7 @@ Una ronda comienza con mezcla y reparto y termina por:
 - salida de un jugador;
 - juego trancado.
 
-Contiene las manos, el tablero, turno, pases, K de esa ronda, marcador de ronda, resultado e historial de acciones de juego.
+Contiene las manos, el tablero, turno, pases, modo estructural de esa ronda, marcador, resultado e historial de acciones de juego.
 
 ### Match
 
@@ -60,7 +60,7 @@ Contiene participantes, política de puntuación, política de victoria, acumula
     hands: {},
     board: {},
     score: { teams: {} },
-    config: { specialMainLineDoublesLimit: 2 },
+    config: { specialMainLineDoublesLimit: 1 }, // RAMIFICADO interno en v6
     history: []
   },
 
@@ -76,7 +76,7 @@ La forma es deliberadamente conceptual. No autoriza una nueva versión, campos n
 | --- | --- | --- |
 | manos y tablero | Sí | Solo mediante ronda activa |
 | turno y pases | Sí | No |
-| K | Sí, porque R-027 lo fija antes de cada ronda | Puede ofrecer un valor predeterminado, no sustituir el de ronda |
+| Modo Ramificado/Lineal | Sí, porque R-027 lo fija antes de cada ronda | Puede ofrecer Ramificado por defecto |
 | puntos producidos en la ronda | Sí | Resumen/acumulado si la política lo exige |
 | historial de jugadas | Sí | Puede conservar referencias o archivos de rondas |
 | participantes y equipos | Referencias | Fuente estable del match |
@@ -155,7 +155,7 @@ GraphRenderer y TraditionalRenderer representan la ronda activa. Un panel superi
 4. Introducir un coordinador de match alrededor del motor de ronda, no dentro del tablero.
 5. Diseñar migración explícita solo cuando exista un contrato aprobado.
 
-Hasta entonces, la pantalla inicial conserva fuera del snapshot únicamente las preferencias para la próxima partida (`K` seleccionado y vista inicial/actual). `K` vuelve a entrar en cada snapshot nuevo por el campo reglamentario ya existente; la vista jamás entra en él.
+Hasta entonces, la pantalla inicial conserva fuera del snapshot únicamente el modo estructural y la vista inicial/actual para la próxima partida. El modo vuelve a entrar en cada snapshot nuevo mediante la codificación interna v6; la vista jamás entra en él.
 
 ## Decisiones pendientes
 
@@ -163,7 +163,7 @@ Hasta entonces, la pantalla inicial conserva fuera del snapshot únicamente las 
 - ganador de ronda en cada scoring policy;
 - tratamiento de rondas empatadas;
 - política de acumulación y metas;
-- conservación de K entre rondas;
+- conservación del modo estructural entre partidas independientes;
 - retención de historiales completos;
 - privacidad de rondas anteriores en multijugador.
 

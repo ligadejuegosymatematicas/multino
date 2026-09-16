@@ -15,7 +15,6 @@ import { createExitTurnState } from "../fixtures/turn-scenarios.js";
 function createDeterministicMatch() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 7,
     randomSource: () => 0.999999,
   });
 }

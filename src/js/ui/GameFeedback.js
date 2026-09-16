@@ -28,8 +28,8 @@ export function getGameFeedback(view) {
       (candidate) => candidate.placementId === latest.placementId,
     );
     if (placement?.region === "branch" && placement.depth === 1) {
-      openedBranchFamily = placement.familyLabel;
-      messages.push(`${placement.familyLabel} abierta`);
+      openedBranchFamily = "Nuevo brazo";
+      messages.push("Nuevo brazo abierto");
     }
   }
 

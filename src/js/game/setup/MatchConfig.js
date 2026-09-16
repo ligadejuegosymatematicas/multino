@@ -1,25 +1,53 @@
 import { domainAssert } from "../errors/DomainError.js";
-import { DOUBLE_SIX_MAX_VALUE } from "../model/Domino.js";
 
-/** R-027 y DEC-011. */
-export function validateSpecialDoubleLimit(K) {
-  domainAssert(
-    typeof K === "number" && Number.isFinite(K) && Number.isInteger(K),
-    "INVALID_K_TYPE",
-    "K debe ser un número entero finito.",
-    { K },
-  );
-  domainAssert(
-    K >= 0,
-    "INVALID_K_RANGE",
-    "K debe ser mayor o igual que cero.",
-    { K },
-  );
+export const ROUND_STRUCTURE_MODES = Object.freeze({
+  BRANCHED: "RAMIFICADO",
+  LINEAR: "LINEAL",
+});
 
-  return K;
+export function validateRoundStructureMode(mode) {
+  domainAssert(
+    Object.values(ROUND_STRUCTURE_MODES).includes(mode),
+    "INVALID_ROUND_STRUCTURE_MODE",
+    "El modo estructural debe ser RAMIFICADO o LINEAL.",
+    { mode },
+  );
+  return mode;
 }
 
-export function getEffectiveK(K) {
-  return Math.min(validateSpecialDoubleLimit(K), DOUBLE_SIX_MAX_VALUE + 1);
+/** Codificación interna transitoria del schema v6: RAMIFICADO=1, LINEAL=0. */
+export function getInternalSpecialDoubleLimit(mode) {
+  return validateRoundStructureMode(mode) === ROUND_STRUCTURE_MODES.BRANCHED
+    ? 1
+    : 0;
 }
 
+/** Lee el campo legado; los valores positivos históricos significan RAMIFICADO. */
+export function validateInternalSpecialDoubleLimit(value) {
+  domainAssert(
+    typeof value === "number" && Number.isFinite(value) && Number.isInteger(value),
+    "INVALID_INTERNAL_STRUCTURE_MODE",
+    "La codificación estructural interna debe ser un entero finito.",
+    { value },
+  );
+  domainAssert(
+    value >= 0,
+    "INVALID_INTERNAL_STRUCTURE_MODE",
+    "La codificación estructural interna no puede ser negativa.",
+    { value },
+  );
+  return value;
+}
+
+export function getRoundStructureMode(configOrLimit) {
+  const value = typeof configOrLimit === "object" && configOrLimit !== null
+    ? configOrLimit.specialMainLineDoublesLimit
+    : configOrLimit;
+  return validateInternalSpecialDoubleLimit(value) === 0
+    ? ROUND_STRUCTURE_MODES.LINEAR
+    : ROUND_STRUCTURE_MODES.BRANCHED;
+}
+
+export function isBranchedRound(configOrLimit) {
+  return getRoundStructureMode(configOrLimit) === ROUND_STRUCTURE_MODES.BRANCHED;
+}

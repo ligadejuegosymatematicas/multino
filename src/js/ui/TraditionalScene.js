@@ -158,7 +158,7 @@ function createTargetScene(
         : hasSelection
           ? "incompatible"
           : "neutral",
-    accessibleLabel: `Extremo ${target.topology.structureCode}, valor ${target.value}, ${target.topology.region === "main" ? "línea principal" : `${target.topology.familyLabel}, brazo ${target.topology.armIndex}`}${isLegal ? optionIndex === null ? ", destino compatible" : `, opción ${optionIndex} de ${optionCount}` : ""}`,
+    accessibleLabel: `Extremo de valor ${target.value}, ${target.topology.region === "main" ? "recorrido inicial" : `brazo ${target.topology.armIndex} del chancho ramificador`}${isLegal ? optionIndex === null ? ", destino compatible" : `, opción ${optionIndex} de ${optionCount}` : ""}`,
   };
 }
 

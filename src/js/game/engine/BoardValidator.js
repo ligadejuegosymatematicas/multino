@@ -1,6 +1,6 @@
 import { domainAssert } from "../errors/DomainError.js";
 import { isDouble } from "../model/Domino.js";
-import { getEffectiveK } from "../setup/MatchConfig.js";
+import { isBranchedRound } from "../setup/MatchConfig.js";
 import {
   getPlacementPort,
   getPlacementPorts,
@@ -219,9 +219,7 @@ export function validateBoardState(state) {
   );
 
   const specialIds = board.specialDoublePlacementIds;
-  const effectiveK = getEffectiveK(
-    state.config?.specialMainLineDoublesLimit,
-  );
+  const branchingEnabled = isBranchedRound(state.config);
   domainAssert(
     new Set(specialIds).size === specialIds.length,
     "INVALID_SPECIAL_DOUBLE",
@@ -229,10 +227,10 @@ export function validateBoardState(state) {
     { specialIds },
   );
   domainAssert(
-    specialIds.length <= effectiveK,
+    specialIds.length <= (branchingEnabled ? 1 : 0),
     "SPECIAL_DOUBLE_LIMIT_EXCEEDED",
-    "La lista especial supera effectiveK.",
-    { specialIds, effectiveK },
+    "La ronda admite como máximo un chancho ramificador.",
+    { specialIds, branchingEnabled },
   );
   for (const placementId of specialIds) {
     const placement = board.placements[placementId];
@@ -241,7 +239,7 @@ export function validateBoardState(state) {
         mainSet.has(placementId) &&
         isDouble(state.dominoes[placement.dominoId]),
       "INVALID_SPECIAL_DOUBLE",
-      "La lista especial solo puede contener chanchos de mainLine.",
+      "La lista especial solo puede contener el primer chancho colocado.",
       { placementId },
     );
   }
@@ -249,18 +247,18 @@ export function validateBoardState(state) {
   const expectedSpecialIds = placementIds
     .filter((placementId) => {
       const placement = board.placements[placementId];
-      return mainSet.has(placementId) && isDouble(state.dominoes[placement.dominoId]);
+      return isDouble(state.dominoes[placement.dominoId]);
     })
     .sort(
       (first, second) =>
         parseSequentialId(first, "placement") -
         parseSequentialId(second, "placement"),
     )
-    .slice(0, effectiveK);
+    .slice(0, branchingEnabled ? 1 : 0);
   domainAssert(
     JSON.stringify(specialIds) === JSON.stringify(expectedSpecialIds),
     "INVALID_SPECIAL_DOUBLE_ORDER",
-    "La lista especial debe contener en orden los primeros K chanchos principales.",
+    "La lista especial debe identificar exclusivamente el primer chancho colocado.",
     { specialIds, expectedSpecialIds },
   );
 

@@ -4,6 +4,7 @@ import { getLatestActionProjection } from "./ActionProjection.js";
 import { getLegalPlayProjection } from "./LegalPlayProjection.js";
 import { getScoringProjection } from "./ScoringProjection.js";
 import { getScoringPresentation } from "./ScoringPresentation.js";
+import { getRoundStructureProjection } from "./RoundStructureProjection.js";
 
 /**
  * Datos reglamentarios compartidos por cualquier representación visual.
@@ -38,6 +39,7 @@ export function projectRoundView(state, playerId = state.currentPlayerId) {
     legalPlays,
     scoring: getScoringProjection(state),
     scoringPresentation: getScoringPresentation(state),
+    structure: getRoundStructureProjection(state),
     participants: {
       players: state.seating.counterclockwisePlayerIds.map((seatedPlayerId) => {
         const player = state.players[seatedPlayerId];

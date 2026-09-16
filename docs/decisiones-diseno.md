@@ -687,3 +687,13 @@ La misma tapa aloja el feedback efímero de `scoringPresentation`, sin reconstru
 **Motivo:** Aunque v2 resolvía recorridos y densidad local, seguía mostrando información estructural solo porque estaba disponible matemáticamente. Las pruebas móviles situaban el tablero cerca de `y=310`; v3 lo acerca a `y=131` y deja visibles los extremos que el jugador necesita para actuar.
 
 **Consecuencias:** La posición normal es mucho más tranquila y exacta para elegir targets, a cambio de perder la panorámica completa hasta solicitarla. Tradicional continúa siendo la lectura física más inmediata; Puertos gana un papel distintivo para decisiones por incidencia; Grafo conserva el resumen matemático. No cambian snapshot v6, schema, motor, reglas, scoring, bonus, K, persistencia, privacidad ni flujo de turno. Una presentación postpartida por pisos de ramas se documenta como estudio futuro, no como implementación.
+
+## DEC-050 — Modos estructurales Ramificado y Lineal
+
+**Estado:** Aceptada; sustituye la parametrización reglamentaria K y las decisiones anteriores que permitían varios chanchos especiales.
+
+**Decisión:** La API pública recibe `mode: "RAMIFICADO" | "LINEAL"`. En Ramificado, el primer doble efectivamente colocado es el único chancho ramificador; en Lineal no existe ninguno. Los dobles posteriores son ordinarios con independencia de su ubicación. Las categorías internas `main:*`/`branch:*` se conservan temporalmente para representar una topología acíclica, pero sus cuatro brazos son equivalentes para el jugador.
+
+Schema v6 no cambia. Las partidas nuevas codifican Ramificado como `specialMainLineDoublesLimit: 1` y Lineal como `0`; un valor histórico positivo se lee como Ramificado, pero el validador actual rechaza más de un ramificador. El campo se considera detalle interno de compatibilidad.
+
+**Consecuencias:** Desaparecen K, `effectiveK` y el conteo de cupos de la fachada y la configuración. `getRoundStructureProjection` deriva el modo, el conteo de fichas jugadas que contienen cada valor, los destinos abiertos por valor y el estado del único ramificador. No cambian puntuación, pases, tranque, bonus, privacidad ni terminalidad.

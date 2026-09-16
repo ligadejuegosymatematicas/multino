@@ -24,6 +24,7 @@ import {
 import {
   BOARD_VIEW_MODES,
 } from "./ui/ViewModeController.js";
+import { ROUND_STRUCTURE_MODES } from "./game/index.js";
 
 const participantConfig = {
   players: [
@@ -52,7 +53,8 @@ const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
 const setupScreen = document.querySelector("#setup-screen");
 const gameScreen = document.querySelector("#game-screen");
 const setupForm = document.querySelector("#setup-form");
-const setupK = document.querySelector("#setup-k");
+const setupRoundMode = document.querySelector("#setup-round-mode");
+const setupRoundModeHelp = document.querySelector("#setup-round-mode-help");
 const initialModeInputs = [
   ...document.querySelectorAll("[name='initial-view-mode']"),
 ];
@@ -106,11 +108,11 @@ function runIntent(intent, successMessage) {
 
 function describeStructure(presentation, structureId) {
   if (structureId === "main") {
-    return "la línea principal";
+    return "el recorrido inicial";
   }
-  return presentation.view.topology.branchFamilies.find(
+  return presentation.view.topology.branchFamilies.some(
     (family) => family.id === structureId,
-  )?.label ?? "la ramificación";
+  ) ? "los brazos del chancho ramificador" : "el recorrido";
 }
 
 function inspectStructure(structureId) {
@@ -255,13 +257,17 @@ function renderSession(session) {
   setupScreen.hidden = !isConfiguring;
   gameScreen.hidden = isConfiguring;
   appShell.classList.toggle("is-playing", !isConfiguring);
-  setupK.value = String(session.config.K);
+  setupRoundMode.value = session.config.roundMode;
+  setupRoundModeHelp.textContent = session.config.roundMode ===
+      ROUND_STRUCTURE_MODES.BRANCHED
+    ? "El primer chancho jugado es el único que puede recibir hasta cuatro conexiones."
+    : "Todos los chanchos son ordinarios y la partida se mantiene como una única cadena.";
   for (const input of initialModeInputs) {
     input.checked = input.value === session.config.initialViewMode;
   }
   sessionBadge.textContent = isConfiguring
     ? "Múltiplos de 5"
-    : `K=${session.config.K} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : session.viewMode === BOARD_VIEW_MODES.PORTS ? "Puertos" : "Tradicional"}`;
+    : `${session.config.roundMode === ROUND_STRUCTURE_MODES.BRANCHED ? "Ramificado" : "Lineal"} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : session.viewMode === BOARD_VIEW_MODES.PORTS ? "Puertos" : "Tradicional"}`;
   if (!isConfiguring) {
     const nextFeedback = getGameFeedback(session.round.view);
     const feedback = nextFeedback?.sequence !== lastFeedbackSequence
@@ -297,8 +303,8 @@ for (const button of modeButtons) {
   });
 }
 
-setupK.addEventListener("change", () => {
-  sessionController.setK(Number(setupK.value));
+setupRoundMode.addEventListener("change", () => {
+  sessionController.setRoundMode(setupRoundMode.value);
 });
 
 for (const input of initialModeInputs) {
@@ -327,7 +333,7 @@ playAgainButton.addEventListener("click", () =>
 changeConfigButton.addEventListener("click", () => {
   try {
     sessionController.changeConfiguration();
-    setupK.focus();
+    setupRoundMode.focus();
   } catch (error) {
     setMessage(error.message);
   }

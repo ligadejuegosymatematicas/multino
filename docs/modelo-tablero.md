@@ -124,21 +124,20 @@ branch:2  valor N
 - Todos tienen valor N para R-028.
 - Cada uno acepta como máximo una conexión.
 
-La correspondencia técnica estable es `a → main:1` y `b → main:2`. Si el chancho especial se agrega a una línea existente, `main:1` recibe la conexión de entrada y `main:2` conserva la continuidad. En la primera colocación, ambos están libres. Esto no significa izquierda/derecha.
+La correspondencia técnica estable es `a → main:1` y `b → main:2`. Si el chancho ramificador se agrega a una cadena existente, `main:1` recibe la conexión de entrada y `main:2` conserva la continuidad. En la primera colocación, ambos están libres. Estos nombres son internos y no establecen jerarquía entre los cuatro brazos.
 
 El número ordinal de una conexión del chancho no identifica un puerto específico: cuenta cuántos de sus cuatro puertos están ocupados. Por R-018 y R-033, el aporte es `2N` con 0 o 1 conexión y 0 con 2, 3 o 4.
 
-## Condición especial persistida
+## Chancho ramificador persistido
 
-`specialDoublePlacementIds` es la fuente normativa para saber qué colocaciones adquirieron capacidad de cuatro conexiones.
+`specialDoublePlacementIds` identifica el único chancho que adquirió capacidad de cuatro conexiones.
 
 La lista:
 
 - contiene solo colocaciones de chanchos;
-- conserva el orden en que adquirieron la condición;
-- tiene longitud máxima `effectiveK = min(K, 7)`;
+- tiene longitud máxima uno;
+- si no está vacía, contiene el primer doble colocado;
 - contiene únicamente IDs presentes en `mainLine.placementIds`;
-- excluye todos los chanchos de ramificaciones;
 - no cambia durante la partida, salvo que una futura regla autorice deshacer.
 
 El historial permite auditarla, pero no es necesario para consultar la capacidad actual de una colocación.
@@ -169,7 +168,7 @@ Cada extremo puede identificarse canónicamente por su pareja `placementId + por
 
 La consulta implementada `getOpenEndTargets(state)` devuelve ese ID compuesto, valor, colocación, puerto y clase topológica. `getLegalPlays(state, playerId)` enumera el producto válido de cada ficha de la mano con cada destino compatible. `getDerivedBranches(state)` reconstruye cada cadena desde su puerto `branch:*` de origen.
 
-En todo tablero válido no vacío, con `s` chanchos especiales, existen exactamente `2 + 2s` destinos abiertos. Por tanto, `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`. Esta cuenta se refiere a puertos legalmente prolongables, no a términos de puntuación.
+En modo Lineal, todo tablero válido no vacío conserva dos destinos abiertos. En modo Ramificado, existen cuatro desde que se coloca el chancho ramificador (salvo que una acción terminal impida seguir jugando). La cuenta se refiere a puertos legalmente prolongables, no a términos de puntuación.
 
 ## Proyección al grafo de valores
 

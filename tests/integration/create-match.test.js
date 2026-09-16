@@ -3,7 +3,8 @@ import test from "node:test";
 
 import {
   createMatch,
-  getEffectiveK,
+  getRoundStructureMode,
+  ROUND_STRUCTURE_MODES,
   validateInitialMatchSnapshot,
 } from "../../src/js/game/index.js";
 import { createValidParticipantInput } from "../fixtures/participants.js";
@@ -11,13 +12,13 @@ import { createValidParticipantInput } from "../fixtures/participants.js";
 function createValidMatch(overrides = {}) {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 3,
+    mode: ROUND_STRUCTURE_MODES.BRANCHED,
     randomSource: () => 0.25,
     ...overrides,
   });
 }
 
-test("R-003/R-005/R-006/R-007/R-009/R-027/R-029: createMatch produce un snapshot v6 preparado", () => {
+test("createMatch produce un snapshot v6 ramificado preparado", () => {
   const snapshot = createValidMatch({ matchId: "match-test" });
 
   assert.equal(snapshot.schemaVersion, 6);
@@ -40,17 +41,17 @@ test("R-003/R-005/R-006/R-007/R-009/R-027/R-029: createMatch produce un snapshot
     specialDoublePlacementIds: [],
   });
   assert.deepEqual(snapshot.score.teams, { A: 0, B: 0 });
-  assert.equal(snapshot.config.specialMainLineDoublesLimit, 3);
+  assert.equal(snapshot.config.specialMainLineDoublesLimit, 1);
+  assert.equal(getRoundStructureMode(snapshot.config), "RAMIFICADO");
   assert.deepEqual(snapshot.history, []);
   assert.equal("stock" in snapshot, false);
 });
 
-test("R-027/DEC-011: createMatch conserva K>7 y no persiste effectiveK", () => {
-  const snapshot = createValidMatch({ K: 8 });
+test("createMatch codifica Lineal como cero sin exponer K", () => {
+  const snapshot = createValidMatch({ mode: ROUND_STRUCTURE_MODES.LINEAR });
 
-  assert.equal(snapshot.config.specialMainLineDoublesLimit, 8);
-  assert.equal(getEffectiveK(snapshot.config.specialMainLineDoublesLimit), 7);
-  assert.equal("effectiveK" in snapshot.config, false);
+  assert.equal(snapshot.config.specialMainLineDoublesLimit, 0);
+  assert.equal(getRoundStructureMode(snapshot.config), "LINEAL");
 });
 
 test("R-029: createMatch es reproducible con una fuente controlada", () => {
@@ -65,7 +66,11 @@ test("createMatch no muta la configuración de participantes recibida", () => {
   const input = createValidParticipantInput();
   const before = structuredClone(input);
 
-  createMatch({ ...input, K: 0, randomSource: () => 0.5 });
+  createMatch({
+    ...input,
+    mode: ROUND_STRUCTURE_MODES.LINEAR,
+    randomSource: () => 0.5,
+  });
 
   assert.deepEqual(input, before);
 });

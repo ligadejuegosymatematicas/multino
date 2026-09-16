@@ -46,7 +46,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 ## Ramificaciones
 
 - Una colocación no principal pertenece a exactamente una cadena de ramificación (R-034, R-035).
-- Toda ramificación se conecta a `mainLine` mediante exactamente un puerto `branch:*` de un chancho especial.
+- Todo brazo lateral se conecta al camino interno `mainLine` mediante exactamente un puerto `branch:*` del chancho ramificador.
 - El puerto de origen pertenece a una colocación incluida en `specialDoublePlacementIds`.
 - Una ramificación forma un camino simple con un único extremo terminal.
 - Ninguna ramificación vuelve a conectarse con `mainLine` en otro punto.
@@ -55,18 +55,18 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - Ninguna colocación de ramificación aparece en `mainLine.placementIds`.
 - `board.branches` y `placement.region` no se persisten; cualquier vista de ramas se reconstruye desde el grafo.
 
-## Chanchos especiales y puertos
+## Chancho ramificador y puertos
 
 - `specialDoublePlacementIds` contiene únicamente colocaciones de chanchos presentes en `mainLine`.
-- La lista conserva el orden de adquisición, no contiene duplicados y su longitud es como máximo `effectiveK`.
-- Un chancho de ramificación nunca aparece en la lista ni consume cupo (R-002, R-035).
+- La lista no contiene duplicados y su longitud máxima es uno.
+- Si existe, su único elemento es el primer doble colocado (R-001).
 - La lista permanece estable durante la partida salvo futura regla explícita de deshacer.
 - Solo una colocación incluida en `specialDoublePlacementIds` puede usar `main:1`, `main:2`, `branch:1` o `branch:2`.
-- Un chancho especial dispone de exactamente esos cuatro puertos lógicos, todos con valor N (R-032).
+- El chancho ramificador dispone de exactamente esos cuatro puertos lógicos, todos con valor N (R-032).
 - `main:1` y `main:2` participan exclusivamente en continuidad principal.
 - `branch:1` y `branch:2` participan exclusivamente como orígenes de ramas.
 - Un chancho no especial posee solo sus dos lados tradicionales y como máximo dos conexiones.
-- Un chancho especial posee como máximo cuatro conexiones.
+- El chancho ramificador posee como máximo cuatro conexiones.
 - Cada puerto admite como máximo una conexión.
 - Una colocación especial agregada a una línea existente usa `main:1` como entrada canónica; `main:2` conserva la continuidad, sin significado geométrico.
 
@@ -124,12 +124,13 @@ score actual
 - Una discrepancia entre marcador, historial y resultado terminal invalida el estado, pero la operación normal consulta `score` directamente.
 - El `openEndsSum` del último `PLAY_DOMINO` coincide con S derivada del tablero actual, incluso si después hubo pases.
 
-## K
+## Modo estructural
 
-- Antes de jugar, K es un entero no negativo; K=0 es válido (R-027).
-- K mayor que 7 se conserva sin rechazo ni normalización persistida.
-- `effectiveK = min(K, 7)` es derivado.
-- Con K=0, `specialDoublePlacementIds` está vacío y no existen puertos `branch:*`.
+- La API pública solo acepta `RAMIFICADO` o `LINEAL` (R-027).
+- En Ramificado, `specialDoublePlacementIds` contiene cero o un ID: el primer doble colocado.
+- En Lineal, `specialDoublePlacementIds` permanece vacío y no existen puertos `branch:*`.
+- Todo doble posterior al primero es ordinario y su grado máximo es dos.
+- Schema v6 codifica internamente Ramificado como `1` y Lineal como `0`; no expone esa cifra al jugador.
 
 ## Fronteras arquitectónicas
 

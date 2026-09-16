@@ -24,22 +24,16 @@
         <form id="setup-form" class="setup-card">
           <div>
             <h2 id="setup-heading">Nueva partida</h2>
-            <p class="setup-intro">Elige los chanchos especiales y cómo quieres ver el tablero.</p>
+            <p class="setup-intro">Elige la estructura de la ronda y cómo quieres ver el tablero.</p>
           </div>
 
-          <label class="setup-field" for="setup-k">
-            <span>Chanchos especiales</span>
-            <select id="setup-k" name="K">
-              <option value="0">K = 0</option>
-              <option value="1">K = 1</option>
-              <option value="2">K = 2</option>
-              <option value="3">K = 3</option>
-              <option value="4">K = 4</option>
-              <option value="5">K = 5</option>
-              <option value="6">K = 6</option>
-              <option value="7" selected>K = 7</option>
+          <label class="setup-field" for="setup-round-mode">
+            <span>Modo</span>
+            <select id="setup-round-mode" name="round-mode">
+              <option value="RAMIFICADO" selected>Ramificado</option>
+              <option value="LINEAL">Lineal</option>
             </select>
-            <small>Los primeros K chanchos colocados en la línea principal pueden recibir hasta cuatro conexiones.</small>
+            <small id="setup-round-mode-help">El primer chancho jugado es el único que puede recibir hasta cuatro conexiones.</small>
           </label>
 
           <fieldset class="setup-field">

@@ -255,7 +255,7 @@ test("un chancho dentro de una rama sigue siendo ordinario", () => {
   );
 
   assert.equal(branchHub.isSpecial, false);
-  assert.equal(branchHub.doubleRole, "ORDINARY_BRANCH");
+  assert.equal(branchHub.doubleRole, "ORDINARY_DOUBLE");
   assert.equal(branchHub.sockets.length, 2);
   assert.equal(branchHub.topology.region, "branch");
 });

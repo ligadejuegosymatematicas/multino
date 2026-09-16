@@ -4,7 +4,7 @@ import {
   DOUBLE_SIX_DOMINO_COUNT,
   generateDoubleSixSet,
 } from "../model/Domino.js";
-import { validateSpecialDoubleLimit } from "./MatchConfig.js";
+import { validateInternalSpecialDoubleLimit } from "./MatchConfig.js";
 import { prepareParticipants } from "./Participants.js";
 import {
   STARTING_DOMINO_ID,
@@ -178,7 +178,9 @@ export function validateInitialMatchSnapshot(snapshot) {
   const playerIds = preparedParticipants.seating.counterclockwisePlayerIds;
   const teamIds = Object.keys(preparedParticipants.teams);
 
-  validateSpecialDoubleLimit(snapshot.config?.specialMainLineDoublesLimit);
+  validateInternalSpecialDoubleLimit(
+    snapshot.config?.specialMainLineDoublesLimit,
+  );
   assertInitialDominoCatalog(snapshot.dominoes);
   assertInitialHands(snapshot.hands, playerIds, Object.keys(snapshot.dominoes));
   assertEmptyInitialBoard(snapshot.board);

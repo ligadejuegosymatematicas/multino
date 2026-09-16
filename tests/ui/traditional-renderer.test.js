@@ -110,7 +110,6 @@ function createOrientationScenario() {
 function createDeterministicMatch() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 7,
     randomSource: () => 0.999999,
   });
 }
@@ -266,7 +265,7 @@ test("orienta fichas asimétricas hacia ambos extremos y ambos brazos", () => {
   assert.equal(tiles.get("placement-7").isDouble, true);
   assert.equal(tiles.get("placement-7").isSpecialDouble, false);
   assert.equal(tiles.get("placement-1").isSpecialDouble, true);
-  assert.equal(tiles.get("placement-3").isSpecialDouble, true);
+  assert.equal(tiles.get("placement-3").isSpecialDouble, false);
 });
 
 test("el markup muestra fichas, cruce especial y extremos abiertos exactos", () => {

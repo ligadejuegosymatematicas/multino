@@ -167,7 +167,7 @@ test("R-001: specialDoublePlacementIds no puede contener una ficha no doble", ()
   });
 });
 
-test("R-001/R-027: la lista especial no puede superar effectiveK", () => {
+test("R-001/R-027: no puede existir más de un chancho ramificador", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));

@@ -2,6 +2,7 @@ import { createMatch } from "../../src/js/game/setup/createMatch.js";
 import { applyPlay } from "../../src/js/game/engine/PlayTransition.js";
 import { getOpenEndTargets } from "../../src/js/game/engine/BoardQueries.js";
 import { createValidParticipantInput } from "./participants.js";
+import { ROUND_STRUCTURE_MODES } from "../../src/js/game/setup/MatchConfig.js";
 
 export function findDominoOwner(state, dominoId) {
   return Object.entries(state.hands).find(([, hand]) =>
@@ -26,10 +27,17 @@ export function ensureDominoInHand(state, playerId, dominoId) {
   return nextState;
 }
 
-export function createBoardScenario({ K = 7, firstDominoId = "6-6" } = {}) {
+export function createBoardScenario({
+  mode,
+  K,
+  firstDominoId = "6-6",
+} = {}) {
+  const structuralMode = mode ?? (K === 0
+    ? ROUND_STRUCTURE_MODES.LINEAR
+    : ROUND_STRUCTURE_MODES.BRANCHED);
   let state = createMatch({
     ...createValidParticipantInput(),
-    K,
+    mode: structuralMode,
     randomSource: () => 0.25,
   });
   state = ensureDominoInHand(

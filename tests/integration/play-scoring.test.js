@@ -18,7 +18,6 @@ import {
 function createInitialState(firstDominoId) {
   const state = createMatch({
     ...createValidParticipantInput(),
-    K: 1,
     randomSource: () => 0.25,
   });
   return ensureDominoInHand(

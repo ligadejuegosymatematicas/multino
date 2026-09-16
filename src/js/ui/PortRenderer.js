@@ -30,9 +30,9 @@ function topologyClasses(item) {
 
 function routeLabel(topology) {
   if (!topology || topology.region === "main") {
-    return "línea principal";
+    return "recorrido inicial";
   }
-  return `${topology.structureLabel}, brazo ${topology.armIndex}`;
+  return `brazo ${topology.armIndex} del chancho ramificador`;
 }
 
 function renderThread(thread) {
@@ -46,7 +46,7 @@ function renderThread(thread) {
 }
 
 function renderBridge(bridge, { focus = false } = {}) {
-  const label = `Continuidad por el valor ${bridge.value}, ${bridge.region === "main" ? "principal" : `ramificación, brazo ${bridge.armIndex}`}; inspeccionar recorrido`;
+  const label = `Continuidad por el valor ${bridge.value}, ${bridge.region === "main" ? "recorrido inicial" : `brazo ${bridge.armIndex} del chancho ramificador`}; inspeccionar recorrido`;
   return `
     <g class="port-bridge${focus ? " is-focus-bridge" : ""} ${topologyClasses(bridge)}" data-connection-id="${escapeAttribute(bridge.connectionId)}" data-route-id="${escapeAttribute(bridge.structureId)}" role="button" tabindex="0" aria-label="${escapeAttribute(label)}">
       <path class="port-bridge__hit" d="${bridge.path}"></path>

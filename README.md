@@ -4,7 +4,7 @@ Base arquitectónica para un juego web de **Dominó múltiplo de 5**, inicialmen
 
 ## Estado actual
 
-Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de tres vistas jugables sobre el mismo estado: TraditionalRenderer como entrada principal, GraphRenderer como vista analítica y PortRenderer como prototipo experimental de incidencias. Puertos conserva siempre siete macro-nodos y muestra cada ficha no doble como hilo exterior y cada continuidad reglamentaria como puente interior, sin duplicar valores ni persistir geometría. La interfaz explica después de cada jugada la secuencia términos → S → divisibilidad → puntos y protege la mano siguiente con una barrera local. Una pantalla inicial permite elegir `K=0…7` y la vista de arranque; tras el cierre puede iniciarse otra partida independiente sin conservar score ni historial. Múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
+Las **Fases 0 y 1 están completadas**. El motor inicializa el snapshot v6 y permite jugar una ronda 2 contra 2 completa: tablero lógico, turnos, pases, tranque, S, puntos por múltiplos de 5, vencedor tradicional, bonificación y resultado final por puntaje. La **Fase 2 está en curso** y dispone de tres vistas jugables sobre el mismo estado: TraditionalRenderer como entrada principal, GraphRenderer como vista analítica y PortRenderer como prototipo experimental de incidencias. Puertos conserva siempre siete macro-nodos y muestra cada ficha no doble como hilo exterior y cada continuidad reglamentaria como puente interior, sin duplicar valores ni persistir geometría. La interfaz explica después de cada jugada la secuencia términos → S → divisibilidad → puntos y protege la mano siguiente con una barrera local. Una pantalla inicial permite elegir el modo estructural **Ramificado** o **Lineal** y la vista de arranque; tras el cierre puede iniciarse otra partida independiente sin conservar score ni historial. Múltiples rondas, metas acumuladas, divisor configurable y refinamiento premium continúan fuera de alcance.
 
 ## Documentos de autoridad
 
@@ -51,7 +51,7 @@ Abrir `http://localhost:4173`. No conviene abrir `index.html` directamente con `
 
 También puede usarse cualquier servidor HTTP estático equivalente.
 
-Al abrir la aplicación todavía no se ha repartido. Elija cuántos chanchos especiales admite la partida (`K`, de 0 a 7), seleccione la vista inicial y pulse **Jugar**. El conmutador permite cambiar de vista durante la misma partida. Al terminar, **Jugar otra** mezcla y reparte desde cero conservando K y la vista actual; **Cambiar configuración** vuelve a la pantalla inicial. Estas partidas son independientes, no rondas acumuladas de un match.
+Al abrir la aplicación todavía no se ha repartido. Elija **Ramificado** —el primer chancho colocado es el único con capacidad cuatro— o **Lineal** —todos los chanchos tienen capacidad dos—, seleccione la vista inicial y pulse **Jugar**. El conmutador permite cambiar de vista durante la misma partida. Al terminar, **Jugar otra** mezcla y reparte desde cero conservando el modo y la vista actual; **Cambiar configuración** vuelve a la pantalla inicial. Estas partidas son independientes, no rondas acumuladas de un match.
 
 ## Tests
 

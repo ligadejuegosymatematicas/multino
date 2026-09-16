@@ -1,5 +1,7 @@
 # Reversibilidad entre Modo Tradicional y Modo Grafo
 
+> **Nota de vigencia:** cualquier referencia posterior a K o a varios chanchos especiales es histórica. DEC-050 limita el reglamento vigente a Ramificado —un único chancho ramificador— y Lineal.
+
 ## Estado de esta nota
 
 **Proyección tradicional y primer renderer funcional implementados; geometría avanzada todavía en estudio.**

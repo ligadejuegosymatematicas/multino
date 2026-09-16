@@ -66,21 +66,21 @@ Los mapas `teams`, `hands` y `score.teams` usan los mismos IDs de equipo o jugad
     specialDoublePlacementIds: []
   },
   score: { teams: { /* ambos equipos en 0 */ } },
-  config: { specialMainLineDoublesLimit: K },
+  config: { specialMainLineDoublesLimit: 1 }, // codificación interna RAMIFICADO
   history: []
 }
 ```
 
-No existe `stock`: la unión de las manos es exactamente el catálogo. `effectiveK` se calcula con `min(K, 7)` y no se persiste. El historial vacío es deliberado: generación, mezcla y reparto son pasos internos de creación, no acciones de dominio que aporten valor al replay.
+No existe `stock`: la unión de las manos es exactamente el catálogo. La fachada recibe `mode: "RAMIFICADO" | "LINEAL"`; schema v6 conserva internamente `1` o `0` en `specialMainLineDoublesLimit` para evitar una migración sin beneficio funcional. El historial vacío es deliberado: generación, mezcla y reparto son pasos internos de creación, no acciones de dominio que aporten valor al replay.
 
 ## Información actual persistida
 
 - Fase, número de turno, jugador actual y pases consecutivos.
 - Cuatro jugadores, dos equipos y orden antihorario.
 - Catálogo doble-seis y ubicación actual de cada ficha.
-- Grafo del tablero, recorrido principal ordenado y colocaciones especiales.
+- Grafo del tablero, recorrido interno ordenado y, como máximo, el chancho ramificador.
 - Marcador actual por equipo.
-- K reglamentario original.
+- Codificación interna del modo estructural vigente.
 - Historial de acciones aceptadas.
 - En estado terminal, motivo, actor/equipo de salida cuando corresponda, sumas restantes, vencedor tradicional, bonificación, ganador por puntaje y empate.
 
@@ -179,13 +179,13 @@ El evento `PASS` no duplica el contador. `consecutivePasses` se valida contando 
 
 `board.specialDoublePlacementIds` persiste la condición histórica adquirida. El motor consulta directamente esta lista para determinar si una colocación dispone de puertos `main:*` y `branch:*`.
 
-La lista debe ser coherente con K, catálogo, `mainLine` e historial, pero ninguna de esas comprobaciones reemplaza el valor normativo del snapshot.
+La lista debe ser coherente con el modo, catálogo, topología e historial, pero ninguna de esas comprobaciones reemplaza el valor operativo del snapshot.
 
 ## Información derivada sin historial
 
 A partir del snapshot actual se derivan:
 
-- `effectiveK = min(K, 7)`;
+- modo estructural público derivado de la codificación interna `1/0`;
 - si una ficha es chancho;
 - ramas y pertenencia de colocaciones no principales;
 - extremos principales, extremos terminales de ramas y puertos `branch:*` libres;
@@ -256,13 +256,13 @@ No existe `stock`. Al comenzar el juego, las 28 fichas están distribuidas entre
 ## Serialización y validación
 
 - Solo tipos JSON y referencias por ID.
-- K se valida como entero no negativo y se conserva aunque sea mayor que 7.
+- La codificación estructural interna es un entero no negativo; las partidas nuevas solo escriben `1` o `0`.
 - Los cuatro jugadores, dos equipos, 28 fichas y ubicaciones deben ser coherentes.
 - Marcador y contador de pases son enteros no negativos; el contador no supera 4.
 - Tablero, lista especial e historial deben satisfacer sus invariantes cruzados.
 - `schemaVersion` se incrementa ante cambios incompatibles.
 
-El validador inicial comprueba schema, participantes, equipos, alternancia, K, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío, ausencia de `roundResult` y serialización JSON. `validateBoardState` valida la topología tanto en `playing` como en `finished`. `validateRoundState` añade turnos únicos, orden antihorario, jugador actual, cola de pases, forma de eventos, mano vacía o bloqueo, S/puntos, sumas restantes, vencedor tradicional, bonificación, marcador final, ganador y empate.
+El validador inicial comprueba schema, participantes, equipos, alternancia, modo estructural interno, catálogo, manos, ubicación única, tablero vacío, marcador, pases, jugador inicial, historial vacío, ausencia de `roundResult` y serialización JSON. `validateBoardState` valida la topología tanto en `playing` como en `finished`. `validateRoundState` añade turnos únicos, orden antihorario, jugador actual, cola de pases, forma de eventos, mano vacía o bloqueo, S/puntos, sumas restantes, vencedor tradicional, bonificación, marcador final, ganador y empate.
 
 El esquema v6 sustituye al v5 para hacer obligatorio el resultado terminal completo y reconciliar `score = puntos de juego + bonificación`. No se implementa migración v5→v6 porque no existen partidas persistidas reales. Un snapshot construido solo mediante `applyPlay` puede seguir validándose topológicamente mediante `validateBoardState`, pero no se presenta como snapshot reglamentario v6.
 

@@ -113,23 +113,13 @@ La colección puede reconstruirse inequívocamente desde el snapshot:
 
 ## Multiplicidad y límites de diseño
 
-El número total de extremos disponibles no coincide con el número de vértices. En un tablero válido no vacío, el grafo de colocaciones es un árbol: cada ficha ordinaria aporta dos puertos, cada chancho especial aporta dos adicionales y cada conexión ocupa dos puertos. Con `p` colocaciones, `p-1` conexiones y `s` chanchos especiales, la cantidad de destinos abiertos es exactamente:
+El número total de extremos disponibles no coincide con el número de vértices. En un tablero válido no vacío, el grafo de colocaciones es un árbol: cada ficha ordinaria aporta dos puertos, el único chancho ramificador aporta dos adicionales y cada conexión ocupa dos puertos. Con `p` colocaciones, `p-1` conexiones y `r ∈ {0,1}` chanchos ramificadores, la cantidad de destinos abiertos es exactamente:
 
 ```text
-(2p + 2s) - 2(p - 1) = 2 + 2s
+(2p + 2r) - 2(p - 1) = 2 + 2r
 ```
 
-Aquí “destino abierto” significa un puerto libre legalmente prolongable: extremo principal, origen lateral libre o terminal de rama. No significa término de puntuación. Como `s ≤ effectiveK = min(K,7)`, el límite estructural global es 16. La expresión `2 + 2K ≤ 16` no es correcta para el K reglamentario cuando `K > 7`; la forma correcta es `2 + 2s ≤ 2 + 2·effectiveK ≤ 16`. El máximo es alcanzable con los siete chanchos especiales en la línea principal.
-
-Para un mismo valor `v`, el límite de diseño es ocho destinos abiertos simultáneos:
-
-- existen seis fichas no dobles incidentes en `v`, cada una con un solo puerto de valor `v`;
-- el chancho especial `v|v` dispone de cuatro puertos de valor `v`;
-- si ese chancho está conectado al resto del tablero, cada conexión consume un puerto suyo y el puerto `v` de una de las seis fichas incidentes;
-- con una conexión, el máximo es `(4 - 1) + (6 - 1) = 8`; con más conexiones disminuye;
-- si el chancho es la única ficha, solo presenta cuatro destinos.
-
-El límite ocho puede alcanzarse con K suficiente usando el chancho `v|v` con una conexión —tres puertos libres— y dejando otros cinco dominós incidentes en `v` como terminales de cadenas diferentes. El Bloque 2 conserva una construcción ejecutable que demuestra simultáneamente ocho destinos de un valor y 16 globales. Ninguno de esos ocho destinos implica ocho términos `v` en S.
+Aquí “destino abierto” significa un puerto libre legalmente prolongable y no un término de puntuación. Lineal conserva dos destinos; Ramificado conserva cuatro desde que aparece su único chancho ramificador. Por ello, el máximo vigente de destinos de un mismo valor es cuatro; ocurre, por ejemplo, al colocar como primera ficha el chancho ramificador `v|v`. Destinos del mismo valor siguen siendo acciones individuales y esos cuatro destinos no equivalen a cuatro términos de puntuación: `openEndTargets` y `scoringTerms` continúan siendo contratos distintos.
 
 ## Opciones visuales para extremos repetidos
 
@@ -226,7 +216,7 @@ Cada `PLAY_DOMINO` aceptado agrega una única arista o lazo; `PASS` no agrega ni
 
 El prototipo usa SVG sin dependencias. Frente a Canvas, SVG permite que vértices, aristas, lazos y targets conserven elementos individuales, nombres accesibles, foco y eventos de mouse, tacto o teclado. `GraphScene.js` produce geometría descartable; `GraphRenderer.js` la serializa y conecta intenciones. Ninguno recibe permiso para decidir legalidad o modificar snapshots.
 
-Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la línea principal física. Una ficha principal usa un trazo continuo; una ficha de rama usa un trazo segmentado, también identificado en la leyenda. Un chancho conserva su lazo cerrado; un especial se reconoce por el lazo reforzado y por su único badge de familia. Se eliminaron el símbolo separado de cuatro brazos y los indicadores auxiliares de brazos para reducir ruido. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que una rama ya jugada no se confunde con un destino.
+Los siete vértices ocupan un heptágono elíptico estable. Su posición no cambia al jugar y no pretende representar la disposición física. Por compatibilidad visual, el recorrido inicial usa trazo continuo y los brazos añadidos al chancho ramificador usan trazo segmentado; esta diferencia no expresa prioridad reglamentaria. Un chancho conserva su lazo cerrado y el único ramificador se reconoce mediante un lazo reforzado. Se eliminaron el símbolo separado de cuatro brazos y los indicadores auxiliares para reducir ruido. Aristas y lazos son enfocables para inspección, pero nunca se convierten en targets de una jugada. Las curvas abiertas siguen siendo controles diferentes con extremo circular, por lo que un brazo ya jugado no se confunde con un destino.
 
 Cada entrada de `openEndTargets` produce exactamente una curva con su propio hit area y `data-target-id`. La terminal muestra siempre la identidad topológica derivada: `P` para principal y `A`, `B`, `C`… para familias laterales. Con una ficha seleccionada, solo los IDs entregados por `getLegalTargetsForDomino` se activan. El índice individual aparece únicamente cuando dos o más targets compatibles comparten valor; nunca reemplaza la letra estructural. Un vértice con un único target compatible puede despacharlo; si existen varios del mismo valor, dirige al usuario hacia las curvas individualizadas y no elige por valor.
 
@@ -234,17 +224,17 @@ Cada entrada de `openEndTargets` produce exactamente una curva con su propio hit
 
 El panel S consume `getScoringProjection`. Los puntos de la última jugada provienen de `getLatestActionProjection`, que resume el evento real sin recalcular `S/5`. Curvas y panel de S permanecen visual y conceptualmente independientes. En `finished` el grafo queda visible, todas las acciones se deshabilitan y se muestran vencedor tradicional, bonificación, score final, ganador por puntaje o empate.
 
-La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y trazos de interacción con tamaño no escalable. En teléfono, el layout prioriza tablero y mano antes de las cantidades secundarias. El pulso legal es discreto y se elimina con `prefers-reduced-motion`. La entrada web crea deliberadamente una sola ronda local con cuatro nombres de demostración y K=7; no incorpora configuración, networking ni nueva ronda. El acabado sigue siendo de evaluación: en grafos densos, cruces y coincidencias de targets necesitarán una estrategia posterior de foco o detalle bajo demanda.
+La primera hipótesis responsiva usa `viewBox`, grid refluido, manos envueltas y trazos de interacción con tamaño no escalable. En teléfono, el layout prioriza tablero y mano antes de las cantidades secundarias. El pulso legal es discreto y se elimina con `prefers-reduced-motion`. La entrada web crea una ronda local Ramificada o Lineal con cuatro nombres de demostración; no incorpora networking ni multirronda.
 
 ## Primera capa de legibilidad topológica
 
-`getBoardTopologyProjection(state)` deriva, sin persistir, una entrada por placement con región, estructura, orden, raíz/profundidad lateral, condición de chancho, condición especial, rol ordinario por K o por rama, conexiones, capacidad y ramas iniciadas. También entrega línea y ramas ordenadas más `{ configuredK, effectiveK, enabledCount, remainingCapacity }`.
+`getBoardTopologyProjection(state)` deriva, sin persistir, una entrada por placement con región interna, estructura, orden, raíz/profundidad, condición de chancho, rol ramificador u ordinario, conexiones, capacidad y brazos iniciados. También entrega el modo estructural y la identidad del único ramificador cuando existe.
 
 `projectGraphView` compone esta consulta. GraphRenderer no consulta `board`. `GraphScene` enlaza cada arista/lazo por `placementId` y aplica únicamente estado visual: principal/rama, especial, estructura inspeccionada, raíz y atenuación.
 
-La vista muestra `Especiales: s/effectiveK`. Al activar una ficha jugada se resalta toda su línea o rama; en una rama también se destaca el chancho raíz. El inspector explica posición o profundidad y, para un chancho, uno de los roles `Especial de línea principal`, `Ordinario de línea principal` u `Ordinario en rama`, además de conexiones/capacidad y ramas iniciadas cuando corresponde. La selección se cierra repitiendo la ficha, con el botón o mediante `Escape`; nunca entra al snapshot.
+Al activar una ficha jugada se resalta su recorrido y, si corresponde, el chancho raíz. El inspector distingue únicamente `Chancho ramificador` y `Chancho ordinario`, además de conexiones/capacidad. La selección se cierra repitiendo la ficha, con el botón o mediante `Escape`; nunca entra al snapshot.
 
-La proyección conserva dos brazos laterales exactos por chancho especial siguiendo `branch:1`, `branch:2`, pero les asigna una familia visual común según `specialDoublePlacementIds`: el primer chancho origina `A`, el segundo `B`, hasta un máximo doble-seis de `G`. La línea principal usa `P`. La letra se muestra fundamentalmente en el badge de la raíz y en los extremos; las fichas interiores conservan `familyId` para inspección, pero no repiten rótulos. Nada de ello tiene significado reglamentario ni se persiste.
+La proyección interna conserva dos brazos laterales exactos `branch:1` y `branch:2` además de las dos continuidades heredadas. Esa diferencia sirve para reconstruir el tablero, pero los cuatro brazos son equivalentes en la regla pública y no se persiste metadata visual adicional.
 
 Sin ficha seleccionada, todos los extremos conservan opacidad alta, terminal ampliada y código visible. Los brazos laterales potenciales usan contorno hueco y curva punteada corta; los ya iniciados, relleno suave y segmento común. Con selección, los compatibles reciben mayor peso, terminal destacada y pulso discreto; el índice solo aparece cuando hace falta distinguir opciones del mismo valor. Los incompatibles permanecen como contexto muy atenuado y `prefers-reduced-motion` elimina la animación.
 

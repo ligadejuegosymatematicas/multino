@@ -18,7 +18,6 @@ import {
 function createInitialState() {
   return createMatch({
     ...createValidParticipantInput(),
-    K: 1,
     randomSource: () => 0.25,
   });
 }
