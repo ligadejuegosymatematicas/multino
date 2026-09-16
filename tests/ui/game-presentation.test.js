@@ -139,6 +139,9 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(mainSource, /state\.board|applyTurnAction|calculateMoveScore/);
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
   assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
+  assert.match(mainSource, /"is-ports-mode"[\s\S]*?mode === BOARD_VIEW_MODES\.PORTS/);
+  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS/);
+  assert.match(layoutCss, /\.app-shell\.is-ports-mode \.round-overview/);
 });
 
 test("el resultado prioriza ganador final y deja vencedor tradicional como explicación", () => {

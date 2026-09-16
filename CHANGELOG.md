@@ -6,6 +6,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 
 ### Añadido
 
+- Cuarta iteración estratégica de Puertos: centro permanente de `scoringPresentation`, términos actuales de S y señales simultáneas independientes para jugabilidad (teal) y puntuación (dorado).
+- Inspector de medallón bajo demanda para `n/7`, targets abiertos y ocupación del único ramificador; la vista normal conserva solo valor y badge de destinos.
+- Gramática cromática estricta: teal para acciones legales, dorado exclusivamente para contribuciones a S y neutro para estructura/ramificador.
+- Puertos evita duplicar S en la cabecera, mantiene selector exacto de targets repetidos y conserva **Ver estructura** como nivel analítico reversible.
 - Rediseño game-first de Puertos: siete medallones estratégicos con `n/7`, cantidad de destinos abiertos, halo de compatibilidad y selector humano de targets repetidos.
 - Representación compacta del único chancho ramificador mediante cuatro estados de conexión, con saturación visible y ausencia total del mecanismo en Lineal.
 - Acción de turno contextual, mano compacta y layout específico para retrato, escritorio y paisaje; la topología completa continúa disponible mediante **Ver estructura**.

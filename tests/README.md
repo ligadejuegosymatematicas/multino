@@ -176,6 +176,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/game-presentation.test.js` cubre acción contextual, mano compacta y composición específica para retrato y paisaje;
 - la prueba manual cubre 1366×768, 390×844, 844×390, selección múltiple, scoring, cambio de vista, ronda completa, tranque, terminalidad y consola limpia.
 
+### Fase 2, Bloque 18 — separación jugabilidad/scoring en Puertos completada
+
+- `tests/ui/port-renderer.test.js`: centro permanente de términos/S, contrato deshabilitado, `n/7` solo en inspección, doble agrupado, ramificador 0–4, doble con dos conexiones que deja de sumar y coexistencia de halo legal con anillo de scoring;
+- `tests/ui/game-presentation.test.js`: S no se duplica en la cabecera cuando Puertos está activo y la franja superior se recompone en dos bloques;
+- los badges siguen reconciliados con targets exactos y el selector conserva `placementId + portId` solo en memoria; no hay preview de S ni puntos futuros;
+- revisión manual: Ramificado completo de 24 acciones con un PASS, ramificador 0/4→4/4, Lineal, terminalidad, 390×844, 844×390 y 1366×768 sin overflow horizontal ni errores de consola.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

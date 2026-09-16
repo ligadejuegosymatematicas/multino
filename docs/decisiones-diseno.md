@@ -707,3 +707,15 @@ Schema v6 no cambia. Las partidas nuevas codifican Ramificado como `specialMainL
 Un medallón con un solo target compatible ejecuta el target canónico directamente. Si existen varios, el renderer ofrece opciones humanas numeradas y conserva `placementId + portId` exclusivamente en memoria. El ramificador usa cuatro indicadores gráficos ocupados/libres y no aparece en Lineal. Ninguna alternativa anticipa S o puntos; el feedback posterior sigue consumiendo `scoringPresentation`.
 
 **Consecuencias:** Puertos deja de exigir la lectura del diagrama de incidencias para jugar una ronda. Tradicional mantiene la intuición física, Puertos concentra información estratégica y Grafo conserva el resumen matemático. El cambio afecta solo proyección visual aditiva, renderer, HTML/CSS y estado efímero de interacción; snapshot v6, motor, schema, persistencia, reglas, scoring, bonus, privacidad y terminalidad permanecen intactos.
+
+## DEC-052 — Capas independientes de jugabilidad y S en Puertos
+
+**Estado:** Aceptada.
+
+**Decisión:** Reservar el primer nivel de cada medallón para valor y multiplicidad de targets reglamentarios. Teal significa acción legal para la ficha seleccionada; dorado significa contribución actual a S. Son capas combinables, no estados excluyentes. El centro serializa términos contribuyentes, expresión y suma desde `scoringPresentation`; la divisibilidad y el premio permanecen efímeros y posteriores a `PLAY_DOMINO`.
+
+`n/7` pasa a un inspector de valor junto con targets abiertos y ocupación neutral del ramificador. El único ramificador no usa dorado. **Ver estructura** conserva toda la proyección de incidencias. Puertos oculta el panel S común para evitar duplicación, sin afectar Tradicional ni Grafo.
+
+**Motivo:** El badge de un valor y su término de puntuación responden preguntas distintas. Un doble ramificador puede tener sockets abiertos y aportar cero tras dos conexiones; compartir color o inferir S desde targets comunicaría una regla falsa.
+
+**Consecuencias:** No hay preview de puntuación futura. El selector humano sigue despachando el target canónico exacto. No cambian snapshot v6, motor, schema, reglas, persistencia, scoring, bonus, PASS, privacidad ni terminalidad.

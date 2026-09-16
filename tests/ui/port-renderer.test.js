@@ -16,6 +16,8 @@ import {
 import {
   getPortValueAction,
   renderPortNodeInspectorMarkup,
+  renderPortStrategicInspectorMarkup,
+  renderPortStructureToggleMarkup,
   renderPortSvgMarkup,
   renderPortTargetChooserMarkup,
 } from "../../src/js/ui/PortRenderer.js";
@@ -99,7 +101,9 @@ test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales
   assert.equal(scene.bridges.length, 0);
   assert.equal(markup.match(/aria-label="Valor \d;/g)?.length, 7);
   assert.equal(markup.match(/port-incidence is-potential/g)?.length ?? 0, 0);
-  assert.match(markup, /class="port-cover"[\s\S]*?aria-label="Ver estructura"/);
+  assert.match(renderPortStructureToggleMarkup(scene), /Ver estructura/);
+  assert.match(markup, /SUMAN AHORA/);
+  assert.match(markup, />S = 0</);
   assert.equal(scene.visualState, "play");
 });
 
@@ -122,7 +126,9 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   assert.match(structureMarkup, /class="port-thread is-main(?:\s|")/);
   assert.match(structureMarkup, /class="port-bridge is-main(?:\s|")/);
   assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
-  assert.doesNotMatch(markup, />\s*S\s*=|>\s*\+\d+\s+puntos/i);
+  assert.match(markup, /SUMAN AHORA/);
+  assert.match(markup, />S = \d+</);
+  assert.doesNotMatch(markup, />\s*\+\d+\s+puntos/i);
 });
 
 test("el ramificador se resume en el medallón y conserva su hub bajo demanda", () => {
@@ -208,7 +214,7 @@ test("sin selección los badges hacen visibles extremos reales sin exponer incid
   assert.doesNotMatch(markup, /port-open-target__option/);
 });
 
-test("cada medallón muestra fichas distintas jugadas y el doble cuenta una vez", () => {
+test("n/7 se conserva en detalle y desaparece del reposo", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(state, "2-4", targetAt("placement-1", "main:1"));
@@ -216,12 +222,20 @@ test("cada medallón muestra fichas distintas jugadas y el doble cuenta una vez"
   const four = scene.nodes.find((node) => node.value === 4);
   const two = scene.nodes.find((node) => node.value === 2);
   const markup = renderPortSvgMarkup(scene);
+  const detailScene = createPortScene(projectPortView(state), {
+    strategicNodeValue: 4,
+  });
+  const detail = renderPortStrategicInspectorMarkup(
+    detailScene.strategicInspector,
+  );
 
   assert.equal(four.playedTileCount, 2);
   assert.equal(two.playedTileCount, 1);
   assert.equal(four.totalTileCount, 7);
-  assert.match(markup, />2\/7</);
-  assert.equal(markup.match(/port-macro-node__played/g)?.length, 7);
+  assert.doesNotMatch(markup, />2\/7</);
+  assert.doesNotMatch(markup, /port-macro-node__played/);
+  assert.match(detail, /Fichas con 4 jugadas:<\/strong> 2\/7/);
+  assert.match(detail, /Destinos abiertos:/);
 });
 
 test("la acción directa conserva target exacto cuando un valor ofrece una sola opción", () => {
@@ -379,8 +393,8 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   assert.equal(scene.nodeFocus.value, 4);
   assert.equal(scene.visualState, "node-focus");
   assert.match(inspector, /3 de 6 ojales utilizados/);
-  assert.match(inspector, /Chancho 4\|4: especial/);
-  assert.match(inspector, /chancho · (principal|lateral)/);
+  assert.match(inspector, /Chancho 4\|4: ramificador/);
+  assert.match(inspector, /chancho · conexión [1-4]/);
   assert.doesNotMatch(inspector, /main:|branch:|side:/);
   assert.doesNotMatch(inspector, /placement-|connection-/);
 
@@ -422,7 +436,7 @@ test("jugar, decisión, recorrido y estructura exponen revelado progresivo", () 
     renderPortSvgMarkup(structure).match(/class="port-thread /g)?.length,
     structure.threads.length,
   );
-  assert.match(renderPortSvgMarkup(structure), /aria-label="Volver a jugar"/);
+  assert.match(renderPortStructureToggleMarkup(structure), /Volver a jugar/);
 });
 
 test("la tapa presenta scoring real y desaparece cuando no hay resolución", () => {
@@ -445,7 +459,7 @@ test("la tapa presenta scoring real y desaparece cuando no hay resolución", () 
   const scoredMarkup = renderPortSvgMarkup(createPortScene(view, {
     scoringResolution,
   }));
-  const disabledMarkup = renderPortSvgMarkup(createPortScene(view));
+  const currentMarkup = renderPortSvgMarkup(createPortScene(view));
 
   assert.match(scoredMarkup, /port-cover__scoring/);
   assert.match(scoredMarkup, />5 \+ 3 \+ 2</);
@@ -456,8 +470,9 @@ test("la tapa presenta scoring real y desaparece cuando no hay resolución", () 
     scoredScene.openTargets.filter((target) => target.isScoringTerm).length,
     1,
   );
-  assert.doesNotMatch(disabledMarkup, /port-cover__scoring/);
-  assert.doesNotMatch(disabledMarkup, /múltiplo de/);
+  assert.doesNotMatch(currentMarkup, /port-cover__scoring/);
+  assert.match(currentMarkup, /port-cover__current-score/);
+  assert.doesNotMatch(currentMarkup, /múltiplo de/);
 });
 
 test("un especial con extremos libres mantiene scoring y targets separados", () => {
@@ -483,7 +498,65 @@ test("un especial con extremos libres mantiene scoring y targets separados", () 
 
   assert.equal(scene.openTargets.length, 4);
   assert.equal(scene.openTargets.filter((target) => target.isScoringTerm).length, 0);
-  assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 1);
+  assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 0);
+  assert.equal(scene.nodes.find((node) => node.value === 5).isScoringSource, false);
+});
+
+test("el contrato scoring disabled elimina el centro matemático sin afectar targets", () => {
+  const view = projectPortView(createTwoArmScenario());
+  const disabledView = {
+    ...view,
+    scoringPresentation: {
+      enabled: false,
+      policyType: "DISABLED",
+      divisor: null,
+      terms: [],
+      sum: null,
+      expression: null,
+      latestResolution: null,
+    },
+  };
+  const scene = createPortScene(disabledView);
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.equal(scene.scoringPresentation, null);
+  assert.equal(scene.openTargets.length, view.portGraph.openTargets.length);
+  assert.doesNotMatch(markup, /SUMAN AHORA|S =/);
+});
+
+test("jugabilidad teal y scoring dorado pueden coexistir en un valor", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  const playerId = findDominoOwner(state, "4-5");
+  const scene = createPortScene(projectPortView(state, playerId), {
+    selectedDominoId: "4-5",
+    legalTargets: getLegalTargetsForDomino(state, playerId, "4-5"),
+  });
+  const four = scene.nodes.find((node) => node.value === 4);
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.equal(four.isCompatible, true);
+  assert.equal(four.isScoringSource, true);
+  assert.match(
+    markup,
+    /port-macro-node-shell is-compatible is-in-selected-domino has-open-targets has-ramifier is-scoring-source/,
+  );
+  assert.match(markup, /port-macro-node__scoring-ring/);
+  assert.match(markup, />2×4</);
+});
+
+test("el ramificador con dos conexiones mantiene targets pero deja de sumar", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "2-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
+  const scene = createPortScene(projectPortView(state));
+  const four = scene.nodes.find((node) => node.value === 4);
+
+  assert.equal(four.openTargetCount, 2);
+  assert.equal(four.ramifier.connectionCount, 2);
+  assert.equal(four.isScoringSource, false);
+  assert.ok(scene.scoringPresentation.terms.every((term) => term.placementId !== "placement-1"));
 });
 
 test("crear los cuatro niveles visuales no modifica el snapshot", () => {
@@ -547,6 +620,10 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-graph\.is-node-focus \.port-scene-base/);
   assert.match(css, /\.port-open-target__tail/);
   assert.match(css, /\.port-cover__scoring/);
+  assert.match(css, /\.port-macro-node-shell\.is-scoring-source \.port-macro-node__scoring-ring/);
+  assert.match(css, /\.port-open-target\.is-legal \{ color: #087a70/);
+  assert.match(css, /\.app-shell\.is-ports-mode \.hand-domino\.is-selected \{[\s\S]*?border-color: var\(--teal\)/);
+  assert.doesNotMatch(css, /\.port-ramifier__[^{]+\{[^}]+#d4a331/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 

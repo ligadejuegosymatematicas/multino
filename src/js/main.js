@@ -135,6 +135,10 @@ function renderRound(presentation, mode, feedback) {
       ? portRenderer
       : traditionalRenderer;
   boardRoot.dataset.viewMode = mode;
+  appShell.classList.toggle(
+    "is-ports-mode",
+    mode === BOARD_VIEW_MODES.PORTS,
+  );
   boardRoot.classList.toggle(
     "is-traditional-view",
     mode === BOARD_VIEW_MODES.TRADITIONAL,
@@ -227,7 +231,8 @@ function renderRound(presentation, mode, feedback) {
     document.querySelector("#scoring-panel"),
     presentation.view,
   );
-  scoringCard.hidden = !presentation.view.scoringPresentation.enabled;
+  scoringCard.hidden = !presentation.view.scoringPresentation.enabled ||
+    mode === BOARD_VIEW_MODES.PORTS;
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,

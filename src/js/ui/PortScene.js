@@ -167,10 +167,10 @@ function inspectionState({
 
 function describeDoubleSocket(boardPortId) {
   const labels = {
-    "main:1": "chancho · principal 1",
-    "main:2": "chancho · principal 2",
-    "branch:1": "chancho · lateral 1",
-    "branch:2": "chancho · lateral 2",
+    "main:1": "chancho · conexión 1",
+    "main:2": "chancho · conexión 2",
+    "branch:1": "chancho · conexión 3",
+    "branch:2": "chancho · conexión 4",
     "side:a": "chancho · extremo 1",
     "side:b": "chancho · extremo 2",
   };
@@ -371,6 +371,7 @@ export function createPortScene(
     inspectedPlacementId = null,
     inspectedRouteId = null,
     expandedNodeValue = null,
+    strategicNodeValue = null,
     selectedTargetValue = null,
     showStructure = false,
     layout = PORT_SCENE_LAYOUTS.COMPACT,
@@ -408,6 +409,15 @@ export function createPortScene(
     view.structure.values.map((valueState) => [valueState.value, valueState]),
   );
   const branchingDouble = view.structure.branchingDouble;
+  const scoringPresentation = view.scoringPresentation?.enabled
+    ? view.scoringPresentation
+    : null;
+  const currentScoringTerms = (scoringPresentation?.terms ?? []).filter(
+    (term) => term.isContributing ?? term.contribution > 0,
+  );
+  const highlightedScoringTerms = (
+    scoringResolution?.terms ?? currentScoringTerms
+  ).filter((term) => term.isContributing ?? term.contribution > 0);
   const legalEndpointIds = new Set(
     view.portGraph.openTargets
       .filter((target) => legalTargetIds.has(target.id))
@@ -485,7 +495,7 @@ export function createPortScene(
   const compatibleIndexesByValue = new Map();
   const scoringEndpointIds = new Set();
   const scoringHubPlacementIds = new Set();
-  for (const term of scoringResolution?.terms ?? []) {
+  for (const term of highlightedScoringTerms) {
     if (term.isDouble) {
       scoringHubPlacementIds.add(term.placementId);
       continue;
@@ -642,6 +652,7 @@ export function createPortScene(
   const projectedNodes = nodes.map((node) => ({
     ...node,
     isScoringSource: scoringValues.has(node.value),
+    isStrategicInspected: strategicNodeValue === node.value,
   }));
   const targetChoice = selectedTargetValue === null
     ? null
@@ -650,6 +661,24 @@ export function createPortScene(
         targets: openTargets.filter(
           (target) => target.value === selectedTargetValue && target.isLegal,
         ),
+      };
+  const strategicNode = strategicNodeValue === null
+    ? null
+    : projectedNodes.find((node) => node.value === strategicNodeValue) ?? null;
+  const strategicInspector = strategicNode === null
+    ? null
+    : {
+        value: strategicNode.value,
+        playedTileCount: strategicNode.playedTileCount,
+        totalTileCount: strategicNode.totalTileCount,
+        openTargetCount: strategicNode.openTargetCount,
+        isScoringSource: strategicNode.isScoringSource,
+        scoringTerms: currentScoringTerms
+          .filter((term) => term.value === strategicNode.value)
+          .map((term) => ({ ...term })),
+        ramifier: strategicNode.ramifier
+          ? { ...strategicNode.ramifier }
+          : null,
       };
   const k7Edges = [];
   for (let firstValue = 0; firstValue < 7; firstValue += 1) {
@@ -711,6 +740,15 @@ export function createPortScene(
       radius: layout === PORT_SCENE_LAYOUTS.WIDE ? 154 : 140,
     },
     scoringResolution,
+    scoringPresentation: scoringPresentation === null
+      ? null
+      : {
+          ...scoringPresentation,
+          terms: currentScoringTerms.map((term) => ({ ...term })),
+          expression: currentScoringTerms.length > 0
+            ? currentScoringTerms.map((term) => term.label).join(" + ")
+            : "0",
+        },
     selectedDominoId,
     selectedTargetValue,
     selectedDomino,
@@ -719,6 +757,8 @@ export function createPortScene(
     inspectedPlacementId,
     inspectedRouteId,
     expandedNodeValue,
+    strategicNodeValue,
+    strategicInspector,
     nodeInspector,
     nodeFocus,
     canStart: hasSelection && legalTargetIds.has("START"),
