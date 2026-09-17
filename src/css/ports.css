@@ -487,6 +487,135 @@
 .port-node-inspector ul { display: grid; gap: 0.16rem; margin-block-start: 0.35rem; padding-inline-start: 1rem; }
 .port-node-inspector__hub { color: #334c58; font-weight: 750; }
 
+/* Capa material premium: conserva la geometría y la semántica de Puertos. */
+.graph-root.is-ports-view {
+  background:
+    radial-gradient(circle at 50% 48%, rgb(39 222 197 / 0.11), transparent 37%),
+    repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 5px),
+    linear-gradient(145deg, #075040, #03352e);
+}
+
+.port-orbit {
+  stroke: rgb(197 154 87 / 0.42);
+  stroke-width: 4;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.28));
+}
+
+.port-k7 { opacity: 0.2; }
+.port-k7__edge,
+.port-k7__loop { stroke: #d6ccb4; }
+
+.port-cover__shadow { fill: rgb(0 0 0 / 0.34); filter: blur(12px); }
+.port-cover__rim { fill: #081f1e; stroke: #a77b3e; stroke-width: 3; }
+.port-cover__body { fill: rgb(5 50 43 / 0.97); stroke: rgb(197 154 87 / 0.56); stroke-width: 1.7; }
+.port-cover__title,
+.port-cover__action,
+.port-cover__expression,
+.port-cover__sum { fill: #f7efd9; }
+.port-cover__empty-terms { fill: #aab8ad; }
+.port-cover__kicker { fill: #d6bc86; }
+.port-cover__term rect { fill: #2f250d; stroke: var(--scoring); }
+.port-cover__term text { fill: #ffe8a3; }
+.port-cover__current-expression { fill: #f0dfbc; }
+.port-cover__current-sum { fill: #ffd766; }
+.port-cover__division { fill: #d8d5c7; }
+.port-cover__outcome { fill: #c4c9bd; }
+.port-cover__outcome.is-award { fill: #ffd766; }
+
+.port-thread__shadow { stroke: rgb(0 0 0 / 0.42); stroke-width: 7; }
+.port-thread__cord { stroke: #c7b184; stroke-width: 3.4; opacity: 0.42; }
+.port-bridge__stitch { stroke: #71c9b8; opacity: 0.52; }
+.port-thread.is-topology-highlighted .port-thread__cord,
+.port-bridge.is-topology-highlighted .port-bridge__stitch {
+  stroke: var(--playable);
+  filter: drop-shadow(0 0 7px rgb(39 222 197 / 0.55));
+}
+
+.port-macro-node__shadow { fill: rgb(0 0 0 / 0.42); filter: blur(7px); }
+.port-macro-node__rim { fill: #8a642f; stroke: #d4b573; stroke-width: 2.8; }
+.port-macro-node__body { fill: #f3ead6; stroke: #fff9e9; }
+.port-macro-node__inner { fill: #faf3e4; stroke: rgb(82 52 22 / 0.2); }
+.port-macro-node-shell.is-compatible .port-macro-node__active-ring {
+  stroke: var(--playable);
+  filter: drop-shadow(0 0 10px rgb(39 222 197 / 0.7));
+}
+.port-macro-node-shell.is-compatible .port-macro-node__rim { stroke: #0cae9d; }
+.port-macro-node-shell.is-target-choice .port-macro-node__active-ring {
+  stroke: var(--playable);
+  filter: drop-shadow(0 0 11px rgb(39 222 197 / 0.58));
+}
+.port-macro-node-shell.has-ramifier .port-macro-node__rim { stroke: #829894; }
+.port-macro-node-shell.is-ramifier-saturated .port-macro-node__rim { stroke: #60716d; }
+.port-macro-node-shell.is-scoring-source .port-macro-node__scoring-ring {
+  stroke: var(--scoring);
+  filter: drop-shadow(0 0 7px rgb(243 196 79 / 0.55));
+}
+.port-macro-node-shell.is-strategic-inspected .port-macro-node__rim { stroke: #f4ead2; }
+.port-macro-node__value,
+.port-macro-node__target-badge text { fill: #12282c; }
+.port-macro-node__target-badge circle { fill: #233d3e; stroke: #d7c293; }
+.port-macro-node__target-badge.has-targets circle { fill: #193c3c; }
+.port-macro-node__target-badge.is-compatible circle { fill: var(--playable-deep); stroke: #8ffff0; }
+
+.port-ramifier__mark { stroke: #526b6a; }
+.port-ramifier__socket { fill: #f4ead2; stroke: #526b6a; }
+.port-ramifier__socket.is-used { fill: #526b6a; }
+.port-incidence { fill: #355d5b; stroke: #f5ecd7; }
+.port-incidence.is-played { fill: #b8dfd6; stroke: #0a5f58; opacity: 0.95; }
+.port-incidence.is-live,
+.port-incidence.is-open { fill: #cafff3; stroke: var(--playable); }
+.port-double-hub__rim { fill: #334b49; stroke: #a8b5aa; }
+.port-double-hub__body { fill: #f4ead4; stroke: #6f7d78; }
+.port-double-hub.is-special .port-double-hub__rim { fill: #304b4b; stroke: #a8b8b3; }
+.port-double-hub.is-special .port-double-hub__body { fill: #dfe9e3; stroke: #60757d; }
+.port-double-hub__socket { fill: #526b6a; stroke: #f5ecd7; }
+.port-double-hub__socket.is-open { fill: #cafff3; stroke: var(--playable); }
+
+.port-open-target { color: #19bca9; }
+.port-open-target__halo { fill: rgb(39 222 197 / 0.14); }
+.port-open-target__eyelet { fill: #062f2c; stroke: #d4fff6; }
+.port-open-target__core { fill: #cafff3; }
+.port-open-target.is-legal { color: #27dec5; }
+.port-open-target.is-legal .port-open-target__halo {
+  fill: rgb(39 222 197 / 0.36);
+  filter: drop-shadow(0 0 6px rgb(39 222 197 / 0.62));
+}
+.port-open-target__option { fill: #d4fff6; stroke: #05342f; }
+
+.port-node-focus__backdrop { fill: rgb(0 0 0 / 0.52); filter: blur(8px); }
+.port-node-focus__rim { fill: #183b38; stroke: #c59a57; }
+.port-node-focus__body { fill: #f3ead6; stroke: #fff8e8; }
+.port-node-focus__title,
+.port-focus__port-label { fill: #102a2c; }
+.port-node-focus__close circle { fill: #092b29; stroke: #c59a57; }
+.port-node-focus__close path { stroke: #f5ecd7; }
+
+.port-target-choice,
+.port-strategic-inspector,
+.port-node-inspector {
+  border-color: rgb(197 154 87 / 0.72);
+  color: #f5ecd7;
+  background: rgb(5 31 29 / 0.97);
+  box-shadow: 0 0.9rem 2.4rem rgb(0 0 0 / 0.45);
+}
+.port-target-choice__eyebrow,
+.port-strategic-inspector__muted { color: #b9c4bb; }
+.port-target-choice strong { color: #f5ecd7; }
+.port-target-choice__option { border-color: var(--playable); color: #effffb; background: var(--playable-deep); }
+.port-target-choice__cancel,
+.port-strategic-inspector__close { border-color: #70847e; color: #f5ecd7; background: #183734; }
+.port-structure-toggle {
+  border-color: rgb(197 154 87 / 0.65);
+  color: #f5ecd7;
+  background: rgb(5 31 29 / 0.9);
+  box-shadow: 0 0.35rem 1rem rgb(0 0 0 / 0.3);
+}
+.port-structure-toggle.is-active { border-color: #8ffff0; color: #032a26; background: var(--playable); }
+.port-strategic-inspector__kicker,
+.port-node-inspector__kicker { color: #61e7d4; }
+.port-strategic-inspector__scoring { color: var(--scoring); }
+.port-node-inspector__hub { color: #d4c7aa; }
+
 @keyframes port-target-pulse { 0%, 100% { opacity: 0.74; } 50% { opacity: 1; } }
 @keyframes port-cover-score { 0% { opacity: 0; transform: translateY(8px) scale(0.96); transform-origin: center; } 16%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
 

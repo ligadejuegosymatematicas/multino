@@ -621,8 +621,9 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-open-target__tail/);
   assert.match(css, /\.port-cover__scoring/);
   assert.match(css, /\.port-macro-node-shell\.is-scoring-source \.port-macro-node__scoring-ring/);
-  assert.match(css, /\.port-open-target\.is-legal \{ color: #087a70/);
-  assert.match(css, /\.app-shell\.is-ports-mode \.hand-domino\.is-selected \{[\s\S]*?border-color: var\(--teal\)/);
+  assert.match(css, /\.port-open-target\.is-legal \{ color: #27dec5/);
+  assert.match(css, /\.graph-root\.is-ports-view \{[\s\S]*?#075040/);
+  assert.match(css, /\.port-macro-node__body \{ fill: #f3ead6/);
   assert.doesNotMatch(css, /\.port-ramifier__[^{]+\{[^}]+#d4a331/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
