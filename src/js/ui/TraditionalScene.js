@@ -52,6 +52,7 @@ export function createTraditionalScene(
     legalTargets = [],
     isFinished = view.roundStatus.phase === "finished",
     scoringResolution = null,
+    previousLayout = null,
   } = {},
 ) {
   const hasSelection = selectedDominoId !== null;
@@ -68,17 +69,39 @@ export function createTraditionalScene(
   );
   const layout = createTraditionalSnakeLayout(view.table, {
     connectionClearance: TRADITIONAL_CONNECTION_CLEARANCE,
+    previousLayout,
   });
   const {
     width,
     height,
-    mainTiles,
-    branchFamilies,
+    mainTiles: layoutMainTiles,
+    branchFamilies: layoutBranchFamilies,
     tiles,
     connections,
     openFacesByTargetId,
     layoutStats,
+    contentBounds,
   } = layout;
+  const sceneTiles = tiles.map((tile) => ({
+    ...tile,
+    isScoringTerm: scoringDoublePlacementIds.has(tile.placementId),
+  }));
+  const sceneTileByPlacementId = new Map(
+    sceneTiles.map((tile) => [tile.placementId, tile]),
+  );
+  const mainTiles = layoutMainTiles.map((tile) =>
+    sceneTileByPlacementId.get(tile.placementId)
+  );
+  const branchFamilies = layoutBranchFamilies.map((family) => ({
+    ...family,
+    root: sceneTileByPlacementId.get(family.root.placementId),
+    arms: family.arms.map((arm) => ({
+      ...arm,
+      tiles: arm.tiles.map((tile) =>
+        sceneTileByPlacementId.get(tile.placementId)
+      ),
+    })),
+  }));
   const mainY = mainTiles.length > 0
     ? mainTiles.reduce((sum, tile) => sum + tile.y, 0) / mainTiles.length
     : height / 2;
@@ -123,9 +146,6 @@ export function createTraditionalScene(
     );
   });
 
-  for (const tile of tiles) {
-    tile.isScoringTerm = scoringDoublePlacementIds.has(tile.placementId);
-  }
   for (const target of openTargets) {
     target.isScoringTerm = scoringPortIds.has(target.id);
   }
@@ -141,10 +161,12 @@ export function createTraditionalScene(
       !isFinished && hasSelection && legalTargetIds.has("START"),
     mainTiles,
     branchFamilies,
-    tiles,
+    tiles: sceneTiles,
     connections,
     openTargets,
     layoutStats,
+    contentBounds,
+    layoutState: layout,
   };
 }
 

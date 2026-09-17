@@ -121,6 +121,7 @@ export class TraditionalRenderer {
     this.container = container;
     this.scrollPosition = null;
     this.sceneSignature = null;
+    this.layoutState = null;
     this.resizeObserver = null;
   }
 
@@ -139,7 +140,9 @@ export class TraditionalRenderer {
       legalTargets: presentation.selectedLegalTargets,
       isFinished: presentation.isFinished,
       scoringResolution: presentation.scoringResolution ?? null,
+      previousLayout: this.layoutState,
     });
+    this.layoutState = scene.layoutState;
     this.container.innerHTML = renderTraditionalTableMarkup(scene);
     const viewport = this.container.querySelector("[data-table-viewport]");
     const nextSignature = `${scene.width}:${scene.height}`;
@@ -148,8 +151,8 @@ export class TraditionalRenderer {
     this.sceneSignature = nextSignature;
     const fitAndPosition = ({ recenter = false } = {}) => {
       const scale = calculateTraditionalFitScale({
-        contentWidth: scene.width,
-        contentHeight: scene.height,
+        contentWidth: scene.contentBounds.width,
+        contentHeight: scene.contentBounds.height,
         viewportWidth: viewport.clientWidth,
         viewportHeight: viewport.clientHeight,
         minScale: scene.isFinished
@@ -163,11 +166,11 @@ export class TraditionalRenderer {
       if (recenter || this.scrollPosition === null) {
         viewport.scrollLeft = Math.max(
           0,
-          (scene.width * scale - viewport.clientWidth) / 2,
+          scene.contentBounds.centerX * scale - viewport.clientWidth / 2,
         );
         viewport.scrollTop = Math.max(
           0,
-          (scene.height * scale - viewport.clientHeight) / 2,
+          scene.contentBounds.centerY * scale - viewport.clientHeight / 2,
         );
       } else {
         viewport.scrollLeft = this.scrollPosition.left;

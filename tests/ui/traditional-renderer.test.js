@@ -146,6 +146,90 @@ function createLongLinearScenario() {
   return state;
 }
 
+function createLongLinearStates() {
+  let state = createBoardScenario({ K: 0, firstDominoId: "6-6" });
+  const states = [];
+  for (const dominoId of [
+    "6-6",
+    "0-6",
+    "0-0",
+    "0-1",
+    "1-1",
+    "1-2",
+    "2-2",
+    "2-3",
+    "3-3",
+    "3-4",
+    "4-4",
+    "4-5",
+    "5-5",
+    "5-6",
+  ]) {
+    state = playDomino(
+      state,
+      dominoId,
+      (target) => target.kind === "main" && target.mainLineEnd === "end",
+    );
+    states.push(state);
+  }
+  return states;
+}
+
+function createRamifiedGrowthStates() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  const states = [];
+  const play = (dominoId, predicate) => {
+    state = playDomino(state, dominoId, predicate);
+    states.push(state);
+  };
+  play("4-4");
+  play("3-4", targetAt("placement-1", "main:2"));
+  play("4-6", targetAt("placement-1", "main:1"));
+  play("1-4", targetAt("placement-1", "branch:1"));
+  play("2-4", targetAt("placement-1", "branch:2"));
+  play("5-6", targetAt("placement-3", "side:b"));
+  play("0-3", targetAt("placement-2", "side:a"));
+  play("1-1", targetAt("placement-4", "side:a"));
+  play("2-2", targetAt("placement-5", "side:a"));
+  return states;
+}
+
+function geometryByPlacement(scene) {
+  return new Map(scene.tiles.map((tile) => [tile.placementId, {
+    x: tile.x,
+    y: tile.y,
+    direction: tile.direction,
+    orientation: tile.orientation,
+    firstValue: tile.firstValue,
+    secondValue: tile.secondValue,
+  }]));
+}
+
+function assertPreviousGeometryFrozen(previous, next) {
+  const before = geometryByPlacement(previous);
+  const after = geometryByPlacement(next);
+  for (const [placementId, geometry] of before) {
+    assert.deepEqual(
+      after.get(placementId),
+      geometry,
+      `${placementId} cambió de posición u orientación`,
+    );
+  }
+}
+
+function createIncrementalScenes(states) {
+  const scenes = [];
+  let previousLayout = null;
+  for (const state of states) {
+    const scene = createTraditionalScene(projectTraditionalView(state), {
+      previousLayout,
+    });
+    previousLayout = scene.layoutState;
+    scenes.push(scene);
+  }
+  return scenes;
+}
+
 test("la escena ubica principal horizontal y ambos brazos verticales", () => {
   const scene = createTraditionalScene(
     projectTraditionalView(createTraditionalScenario()),
@@ -217,6 +301,69 @@ test("Lineal serpentea antes del borde y conserva fichas legibles", () => {
     Math.min(tile.width, tile.height) === 38
   ));
   assert.ok(scene.width < scene.tiles.length * 72);
+});
+
+test("Lineal agrega una ficha sin recolocar el snake ya jugado", () => {
+  const scenes = createIncrementalScenes(createLongLinearStates());
+
+  scenes.slice(1).forEach((scene, index) => {
+    assertPreviousGeometryFrozen(scenes[index], scene);
+    assert.equal(scene.tiles.length, scenes[index].tiles.length + 1);
+    assert.ok(scene.width >= scenes[index].width);
+    assert.ok(scene.height >= scenes[index].height);
+  });
+  assert.ok(scenes.at(-1).layoutStats.turnCount >= 2);
+  assert.ok(new Set(scenes.at(-1).mainTiles.map((tile) => tile.direction)).size >= 3);
+});
+
+test("Ramificado congela 2, 3 y 4 brazos mientras crecen por separado", () => {
+  const scenes = createIncrementalScenes(createRamifiedGrowthStates());
+
+  scenes.slice(1).forEach((scene, index) =>
+    assertPreviousGeometryFrozen(scenes[index], scene)
+  );
+  const finalScene = scenes.at(-1);
+  const root = finalScene.tiles.find((tile) => tile.isSpecialDouble);
+  const rootIndex = finalScene.mainTiles.findIndex(
+    (tile) => tile.placementId === root.placementId,
+  );
+  const outward = new Set([
+    finalScene.mainTiles[rootIndex - 1]?.direction,
+    finalScene.mainTiles[rootIndex + 1]?.direction,
+    ...finalScene.branchFamilies[0].arms
+      .filter((arm) => arm.tiles.length > 0)
+      .map((arm) => arm.tiles[0].direction),
+  ].filter(Boolean));
+  assert.deepEqual(outward, new Set(["left", "right", "up", "down"]));
+});
+
+test("el crecimiento incremental conserva margen al borde y ante colisiones", () => {
+  const scenes = createIncrementalScenes(createLongLinearStates());
+  const margin = TRADITIONAL_COLLISION_MARGIN / 2;
+
+  for (const scene of scenes) {
+    const connectedPairs = new Set(scene.connections.map((connection) =>
+      [connection.firstPlacementId, connection.secondPlacementId]
+        .sort()
+        .join(":"),
+    ));
+    scene.tiles.forEach((first, index) => {
+      scene.tiles.slice(index + 1).forEach((second) => {
+        const pair = [first.placementId, second.placementId]
+          .sort()
+          .join(":");
+        if (connectedPairs.has(pair)) return;
+        assert.equal(
+          traditionalBoundsOverlap(
+            traditionalTileBounds(first, margin),
+            traditionalTileBounds(second, margin),
+          ),
+          false,
+          `${pair} colisionan`,
+        );
+      });
+    });
+  }
 });
 
 test("el layout evita colisiones ambiguas entre fichas no conectadas", () => {

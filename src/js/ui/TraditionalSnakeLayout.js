@@ -8,6 +8,9 @@ const SOFT_HALF_HEIGHT = 270;
 const MIN_WIDTH = 320;
 const MIN_HEIGHT = 260;
 const TABLE_PADDING = 52;
+const STABLE_CANVAS_WIDTH = 1000;
+const STABLE_CANVAS_HEIGHT = 800;
+const LOOKAHEAD_STEPS = 3;
 
 export const TRADITIONAL_COLLISION_MARGIN = COLLISION_MARGIN;
 
@@ -86,7 +89,13 @@ function reverseTile(tile) {
     values: [...tile.values],
     start: { ...tile.end },
     end: { ...tile.start },
+    layoutReversed: !tile.layoutReversed,
   };
+}
+
+function refreshProjectedTile(tile, rawTile) {
+  const oriented = tile.layoutReversed ? reverseTile(rawTile) : rawTile;
+  return projectTile(oriented, tile.x, tile.y, tile.direction);
 }
 
 export function traditionalTileBounds(tile, margin = 0) {
@@ -125,22 +134,22 @@ function collides(candidate, occupied) {
   ));
 }
 
-function withinSoftBoard(tile) {
+function withinSoftBoard(tile, center = { x: 0, y: 0 }) {
   const bounds = traditionalTileBounds(tile);
-  return bounds.left >= -SOFT_HALF_WIDTH &&
-    bounds.right <= SOFT_HALF_WIDTH &&
-    bounds.top >= -SOFT_HALF_HEIGHT &&
-    bounds.bottom <= SOFT_HALF_HEIGHT;
+  return bounds.left >= center.x - SOFT_HALF_WIDTH &&
+    bounds.right <= center.x + SOFT_HALF_WIDTH &&
+    bounds.top >= center.y - SOFT_HALF_HEIGHT &&
+    bounds.bottom <= center.y + SOFT_HALF_HEIGHT;
 }
 
-function hasForwardRoom(tile, direction) {
+function hasForwardRoom(tile, direction, center = { x: 0, y: 0 }) {
   const bounds = traditionalTileBounds(tile);
   const reserve = TILE_LONG + TILE_GAP + COLLISION_MARGIN;
   switch (direction) {
-    case "right": return bounds.right + reserve <= SOFT_HALF_WIDTH;
-    case "left": return bounds.left - reserve >= -SOFT_HALF_WIDTH;
-    case "down": return bounds.bottom + reserve <= SOFT_HALF_HEIGHT;
-    case "up": return bounds.top - reserve >= -SOFT_HALF_HEIGHT;
+    case "right": return bounds.right + reserve <= center.x + SOFT_HALF_WIDTH;
+    case "left": return bounds.left - reserve >= center.x - SOFT_HALF_WIDTH;
+    case "down": return bounds.bottom + reserve <= center.y + SOFT_HALF_HEIGHT;
+    case "up": return bounds.top - reserve >= center.y - SOFT_HALF_HEIGHT;
     default: return false;
   }
 }
@@ -183,16 +192,40 @@ function placeAfterFace(
   return projectTile(tile, x, y, direction);
 }
 
-function scoreCandidate(candidate, direction, currentDirection, initialDirection) {
+function futureRoomScore(candidate, direction, occupied, center) {
+  const vector = VECTOR[direction];
+  const step = extentAlong(candidate, direction) * 2 + TILE_GAP;
+  let score = 0;
+  for (let index = 1; index <= LOOKAHEAD_STEPS; index += 1) {
+    const projected = {
+      ...candidate,
+      x: candidate.x + vector.x * step * index,
+      y: candidate.y + vector.y * step * index,
+    };
+    if (collides(projected, occupied)) break;
+    score += withinSoftBoard(projected, center) ? 180 : 45;
+  }
+  return score;
+}
+
+function scoreCandidate(
+  candidate,
+  direction,
+  currentDirection,
+  initialDirection,
+  occupied,
+  center,
+) {
   const initialVector = VECTOR[initialDirection];
-  const sectorProgress = candidate.x * initialVector.x +
-    candidate.y * initialVector.y;
-  const fitsNext = withinSoftBoard(candidate) &&
-    (direction !== currentDirection || hasForwardRoom(candidate, direction));
+  const sectorProgress = (candidate.x - center.x) * initialVector.x +
+    (candidate.y - center.y) * initialVector.y;
+  const fitsNext = withinSoftBoard(candidate, center) &&
+    (direction !== currentDirection || hasForwardRoom(candidate, direction, center));
   return (fitsNext ? 10000 : 0) +
     (direction === currentDirection ? 500 : 0) +
+    futureRoomScore(candidate, direction, occupied, center) +
     Math.max(-500, sectorProgress) -
-    (Math.abs(candidate.x) + Math.abs(candidate.y)) * 0.02;
+    (Math.abs(candidate.x - center.x) + Math.abs(candidate.y - center.y)) * 0.02;
 }
 
 function choosePlacement(
@@ -204,6 +237,7 @@ function choosePlacement(
   occupied,
   clockwiseFirst,
   connectionClearance,
+  center = { x: 0, y: 0 },
 ) {
   const turns = clockwiseFirst
     ? [CLOCKWISE[currentDirection], COUNTERCLOCKWISE[currentDirection]]
@@ -230,6 +264,8 @@ function choosePlacement(
         direction,
         currentDirection,
         initialDirection,
+        obstacles,
+        center,
       ) + (direction === turns[0] ? 200 : 0) - expansion * 200;
       if (!best || score > best.score) {
         best = { tile: candidate, direction, score };
@@ -250,7 +286,11 @@ function placeChain(
   initialDirection,
   occupied,
   connectionClearance,
-  { reverse = false, clockwiseFirst = true } = {},
+  {
+    reverse = false,
+    clockwiseFirst = true,
+    center = { x: 0, y: 0 },
+  } = {},
 ) {
   const tiles = [];
   let previous = source;
@@ -268,6 +308,7 @@ function placeChain(
       occupied,
       clockwiseFirst,
       connectionClearance,
+      center,
     );
     if (chosen.direction !== direction) turnCount += 1;
     direction = chosen.direction;
@@ -356,123 +397,158 @@ function createConnection(
   };
 }
 
-function normalizeTiles(tiles) {
+function initializeStableCanvas(tiles) {
   if (tiles.length === 0) {
-    return { width: MIN_WIDTH, height: MIN_HEIGHT };
+    return {
+      width: MIN_WIDTH,
+      height: MIN_HEIGHT,
+      softCenter: { x: MIN_WIDTH / 2, y: MIN_HEIGHT / 2 },
+    };
   }
   const left = Math.min(...tiles.map((tile) => traditionalTileBounds(tile).left));
-  const right = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).right));
   const top = Math.min(...tiles.map((tile) => traditionalTileBounds(tile).top));
-  const bottom = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).bottom));
-  const shiftX = TABLE_PADDING - left;
-  const shiftY = TABLE_PADDING - top;
+  const shiftX = Math.max(STABLE_CANVAS_WIDTH / 2, TABLE_PADDING - left);
+  const shiftY = Math.max(STABLE_CANVAS_HEIGHT / 2, TABLE_PADDING - top);
   for (const tile of tiles) {
     tile.x += shiftX;
     tile.y += shiftY;
   }
+  return expandStableCanvas(tiles, {
+    width: STABLE_CANVAS_WIDTH,
+    height: STABLE_CANVAS_HEIGHT,
+    softCenter: { x: shiftX, y: shiftY },
+  });
+}
+
+function expandStableCanvas(tiles, previousSize) {
+  if (tiles.length === 0) return previousSize;
+  const right = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).right));
+  const bottom = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).bottom));
   return {
-    width: Math.max(MIN_WIDTH, right - left + TABLE_PADDING * 2),
-    height: Math.max(MIN_HEIGHT, bottom - top + TABLE_PADDING * 2),
+    width: Math.max(previousSize.width, right + TABLE_PADDING),
+    height: Math.max(previousSize.height, bottom + TABLE_PADDING),
+    softCenter: { ...previousSize.softCenter },
   };
 }
 
-/**
- * Layout físico descartable. Se deriva de la proyección tradicional y mantiene
- * cuatro sectores estables alrededor del único chancho ramificador.
- */
-export function createTraditionalSnakeLayout(
+function directionForSide(side) {
+  switch (side) {
+    case "left": return "left";
+    case "right": return "right";
+    case "top": return "up";
+    case "bottom": return "down";
+    default: throw new TypeError(`Cara tradicional desconocida: ${side}.`);
+  }
+}
+
+function branchDirection(root, armIndex) {
+  if (isHorizontal(root.direction)) return armIndex === 1 ? "up" : "down";
+  return armIndex === 1 ? "left" : "right";
+}
+
+function rawTilesByPlacementId(table) {
+  return new Map([
+    ...table.mainLine.tiles,
+    ...table.branchFamilies.flatMap((family) =>
+      family.arms.flatMap((arm) => arm.tiles)
+    ),
+  ].map((tile) => [tile.placementId, tile]));
+}
+
+function sameTileIdentity(first, second) {
+  return first?.placementId === second?.placementId &&
+    first?.dominoId === second?.dominoId &&
+    first?.values?.[0] === second?.values?.[0] &&
+    first?.values?.[1] === second?.values?.[1];
+}
+
+function canExtendLayout(table, previousLayout) {
+  if (!previousLayout?.tiles || !previousLayout.softCenter) return false;
+  const current = rawTilesByPlacementId(table);
+  if (current.size < previousLayout.tiles.length ||
+      current.size > previousLayout.tiles.length + 1) {
+    return false;
+  }
+  return previousLayout.tiles.every((tile) =>
+    sameTileIdentity(tile, current.get(tile.placementId))
+  );
+}
+
+function createRootFaces(table, tileByPlacementId) {
+  const rootFacesByArmId = new Map();
+  for (const family of table.branchFamilies) {
+    const root = tileByPlacementId.get(family.rootPlacementId);
+    if (!root) continue;
+    for (const arm of family.arms) {
+      const direction = branchDirection(root, arm.armIndex);
+      rootFacesByArmId.set(arm.id, {
+        ...arm.origin,
+        side: sidesFor(direction).end,
+      });
+    }
+  }
+  return rootFacesByArmId;
+}
+
+function contentExceedsSoftBoard(tiles, center) {
+  return tiles.some((tile) => !withinSoftBoard(tile, center));
+}
+
+function measureContent(tiles, softCenter) {
+  if (tiles.length === 0) {
+    return {
+      left: softCenter.x - MIN_WIDTH / 2,
+      right: softCenter.x + MIN_WIDTH / 2,
+      top: softCenter.y - MIN_HEIGHT / 2,
+      bottom: softCenter.y + MIN_HEIGHT / 2,
+      width: MIN_WIDTH,
+      height: MIN_HEIGHT,
+      centerX: softCenter.x,
+      centerY: softCenter.y,
+    };
+  }
+  const left = Math.min(...tiles.map((tile) => traditionalTileBounds(tile).left)) -
+    TABLE_PADDING;
+  const right = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).right)) +
+    TABLE_PADDING;
+  const top = Math.min(...tiles.map((tile) => traditionalTileBounds(tile).top)) -
+    TABLE_PADDING;
+  const bottom = Math.max(...tiles.map((tile) => traditionalTileBounds(tile).bottom)) +
+    TABLE_PADDING;
+  return {
+    left,
+    right,
+    top,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+    centerX: (left + right) / 2,
+    centerY: (top + bottom) / 2,
+  };
+}
+
+function assembleLayout(
   table,
-  { connectionClearance = 2 } = {},
+  tileByPlacementId,
+  size,
+  turnCount,
+  connectionClearance,
 ) {
   const rawMain = table.mainLine.tiles;
-  const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
-  const occupied = [];
-  const tileByPlacementId = new Map();
-  const rootFacesByArmId = new Map();
-  let turnCount = 0;
-
-  if (rawMain.length > 0 && specialIndex >= 0) {
-    const root = projectTile(rawMain[specialIndex], 0, 0, "right");
-    occupied.push(root);
-    tileByPlacementId.set(root.placementId, root);
-    const left = placeChain(
-      root,
-      root.physicalStart,
-      rawMain.slice(0, specialIndex).reverse(),
-      "left",
-      occupied,
-      connectionClearance,
-      { reverse: true, clockwiseFirst: true },
-    );
-    const right = placeChain(
-      root,
-      root.physicalEnd,
-      rawMain.slice(specialIndex + 1),
-      "right",
-      occupied,
-      connectionClearance,
-      { clockwiseFirst: true },
-    );
-    turnCount += left.turnCount + right.turnCount;
-    [...left.tiles, ...right.tiles].forEach((tile) =>
-      tileByPlacementId.set(tile.placementId, tile)
-    );
-
-    for (const family of table.branchFamilies) {
-      const familyRoot = tileByPlacementId.get(family.rootPlacementId);
-      for (const arm of family.arms) {
-        const initialDirection = arm.armIndex === 1 ? "up" : "down";
-        const rootFace = {
-          ...arm.origin,
-          side: initialDirection === "up" ? "top" : "bottom",
-        };
-        rootFacesByArmId.set(arm.id, rootFace);
-        const placed = placeChain(
-          familyRoot,
-          rootFace,
-          arm.tiles,
-          initialDirection,
-          occupied,
-          connectionClearance,
-          { clockwiseFirst: true },
-        );
-        turnCount += placed.turnCount;
-        placed.tiles.forEach((tile) =>
-          tileByPlacementId.set(tile.placementId, tile)
-        );
-      }
-    }
-  } else if (rawMain.length > 0) {
-    const first = projectTile(rawMain[0], 0, 0, "right");
-    occupied.push(first);
-    tileByPlacementId.set(first.placementId, first);
-    const rest = placeChain(
-      first,
-      first.physicalEnd,
-      rawMain.slice(1),
-      "right",
-      occupied,
-      connectionClearance,
-      { clockwiseFirst: true },
-    );
-    turnCount += rest.turnCount;
-    rest.tiles.forEach((tile) =>
-      tileByPlacementId.set(tile.placementId, tile)
-    );
-  }
-
-  const tiles = [...tileByPlacementId.values()];
-  const size = normalizeTiles(tiles);
+  const rootFacesByArmId = createRootFaces(table, tileByPlacementId);
   const mainTiles = rawMain.map((tile) => tileByPlacementId.get(tile.placementId));
   const branchFamilies = table.branchFamilies.map((family) => ({
     ...family,
     root: tileByPlacementId.get(family.rootPlacementId),
-    arms: family.arms.map((arm) => ({
-      ...arm,
-      direction: arm.armIndex === 1 ? "up" : "down",
-      rootFace: rootFacesByArmId.get(arm.id),
-      tiles: arm.tiles.map((tile) => tileByPlacementId.get(tile.placementId)),
-    })),
+    arms: family.arms.map((arm) => {
+      const rootFace = rootFacesByArmId.get(arm.id);
+      return {
+        ...arm,
+        direction: directionForSide(rootFace.side),
+        rootFace,
+        tiles: arm.tiles.map((tile) => tileByPlacementId.get(tile.placementId)),
+      };
+    }),
   }));
   const connections = [];
 
@@ -517,17 +593,20 @@ export function createTraditionalSnakeLayout(
       const family = branchFamilies.find(
         (candidate) => candidate.id === target.topology.familyId,
       );
-      face = family.arms.find(
+      face = family?.arms.find(
         (candidate) => candidate.armIndex === target.topology.armIndex,
-      ).rootFace;
+      )?.rootFace;
     } else {
       face = faceForPort(anchor, target.portId);
     }
-    openFacesByTargetId.set(target.id, { anchor, face });
+    if (face) openFacesByTargetId.set(target.id, { anchor, face });
   }
 
+  const tiles = [...tileByPlacementId.values()];
+  const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
   return {
     ...size,
+    contentBounds: measureContent(tiles, size.softCenter),
     mainTiles,
     branchFamilies,
     tiles,
@@ -535,11 +614,212 @@ export function createTraditionalSnakeLayout(
     openFacesByTargetId,
     layoutStats: {
       strategy: specialIndex >= 0 ? "four-arm-snake" : "linear-snake",
+      incremental: true,
       turnCount,
       collisionMargin: COLLISION_MARGIN,
-      expandedCanvas:
-        size.width > SOFT_HALF_WIDTH * 2 ||
-        size.height > SOFT_HALF_HEIGHT * 2,
+      expandedCanvas: contentExceedsSoftBoard(tiles, size.softCenter),
     },
   };
+}
+
+function createInitialLayout(table, connectionClearance) {
+  const rawMain = table.mainLine.tiles;
+  const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
+  const occupied = [];
+  const tileByPlacementId = new Map();
+  let turnCount = 0;
+
+  if (rawMain.length > 0 && specialIndex >= 0) {
+    const root = projectTile(rawMain[specialIndex], 0, 0, "right");
+    occupied.push(root);
+    tileByPlacementId.set(root.placementId, root);
+    const left = placeChain(
+      root,
+      root.physicalStart,
+      rawMain.slice(0, specialIndex).reverse(),
+      "left",
+      occupied,
+      connectionClearance,
+      { reverse: true, clockwiseFirst: true },
+    );
+    const right = placeChain(
+      root,
+      root.physicalEnd,
+      rawMain.slice(specialIndex + 1),
+      "right",
+      occupied,
+      connectionClearance,
+      { clockwiseFirst: true },
+    );
+    turnCount += left.turnCount + right.turnCount;
+    [...left.tiles, ...right.tiles].forEach((tile) =>
+      tileByPlacementId.set(tile.placementId, tile)
+    );
+
+    for (const family of table.branchFamilies) {
+      const familyRoot = tileByPlacementId.get(family.rootPlacementId);
+      for (const arm of family.arms) {
+        const initialDirection = branchDirection(familyRoot, arm.armIndex);
+        const rootFace = {
+          ...arm.origin,
+          side: sidesFor(initialDirection).end,
+        };
+        const placed = placeChain(
+          familyRoot,
+          rootFace,
+          arm.tiles,
+          initialDirection,
+          occupied,
+          connectionClearance,
+          { clockwiseFirst: true },
+        );
+        turnCount += placed.turnCount;
+        placed.tiles.forEach((tile) =>
+          tileByPlacementId.set(tile.placementId, tile)
+        );
+      }
+    }
+  } else if (rawMain.length > 0) {
+    const first = projectTile(rawMain[0], 0, 0, "right");
+    occupied.push(first);
+    tileByPlacementId.set(first.placementId, first);
+    const rest = placeChain(
+      first,
+      first.physicalEnd,
+      rawMain.slice(1),
+      "right",
+      occupied,
+      connectionClearance,
+      { clockwiseFirst: true },
+    );
+    turnCount += rest.turnCount;
+    rest.tiles.forEach((tile) =>
+      tileByPlacementId.set(tile.placementId, tile)
+    );
+  }
+
+  const size = initializeStableCanvas([...tileByPlacementId.values()]);
+  return assembleLayout(
+    table,
+    tileByPlacementId,
+    size,
+    turnCount,
+    connectionClearance,
+  );
+}
+
+function locateNewTile(table, newPlacementId, tileByPlacementId) {
+  const rawMain = table.mainLine.tiles;
+  const mainIndex = rawMain.findIndex(
+    (tile) => tile.placementId === newPlacementId,
+  );
+  if (mainIndex >= 0) {
+    if (mainIndex === 0 && rawMain.length > 1) {
+      const sourceRaw = rawMain[1];
+      return {
+        rawTile: reverseTile(rawMain[0]),
+        source: tileByPlacementId.get(sourceRaw.placementId),
+        connectionId: table.mainLine.connectionIds[0],
+        initialDirection: "left",
+      };
+    }
+    if (mainIndex === rawMain.length - 1 && mainIndex > 0) {
+      const sourceRaw = rawMain[mainIndex - 1];
+      return {
+        rawTile: rawMain[mainIndex],
+        source: tileByPlacementId.get(sourceRaw.placementId),
+        connectionId: table.mainLine.connectionIds[mainIndex - 1],
+        initialDirection: "right",
+      };
+    }
+    return null;
+  }
+
+  for (const family of table.branchFamilies) {
+    const root = tileByPlacementId.get(family.rootPlacementId);
+    for (const arm of family.arms) {
+      const index = arm.tiles.findIndex(
+        (tile) => tile.placementId === newPlacementId,
+      );
+      if (index < 0 || index !== arm.tiles.length - 1) continue;
+      return {
+        rawTile: arm.tiles[index],
+        source: index === 0
+          ? root
+          : tileByPlacementId.get(arm.tiles[index - 1].placementId),
+        connectionId: arm.connectionIds[index],
+        initialDirection: branchDirection(root, arm.armIndex),
+        rootFace: index === 0
+          ? {
+              ...arm.origin,
+              side: sidesFor(branchDirection(root, arm.armIndex)).end,
+            }
+          : null,
+      };
+    }
+  }
+  return null;
+}
+
+function extendLayout(table, previousLayout, connectionClearance) {
+  const currentRawTiles = rawTilesByPlacementId(table);
+  const tileByPlacementId = new Map(previousLayout.tiles.map((tile) => {
+    const refreshed = refreshProjectedTile(
+      tile,
+      currentRawTiles.get(tile.placementId),
+    );
+    return [refreshed.placementId, refreshed];
+  }));
+  let turnCount = previousLayout.layoutStats.turnCount;
+
+  if (currentRawTiles.size > tileByPlacementId.size) {
+    const newPlacementId = [...currentRawTiles.keys()].find(
+      (placementId) => !tileByPlacementId.has(placementId),
+    );
+    const extension = locateNewTile(table, newPlacementId, tileByPlacementId);
+    if (!extension?.source) return null;
+    const sourceFace = extension.rootFace ??
+      faceForConnection(extension.source, extension.connectionId);
+    const currentDirection = directionForSide(sourceFace.side);
+    const chosen = choosePlacement(
+      extension.rawTile,
+      extension.source,
+      sourceFace,
+      currentDirection,
+      extension.initialDirection,
+      [...tileByPlacementId.values()],
+      true,
+      connectionClearance,
+      previousLayout.softCenter,
+    );
+    if (chosen.direction !== currentDirection) turnCount += 1;
+    tileByPlacementId.set(newPlacementId, chosen.tile);
+  }
+
+  const size = expandStableCanvas(
+    [...tileByPlacementId.values()],
+    previousLayout,
+  );
+  return assembleLayout(
+    table,
+    tileByPlacementId,
+    size,
+    turnCount,
+    connectionClearance,
+  );
+}
+
+/**
+ * Geometría visual descartable. `previousLayout` permite crecer una sola ficha
+ * sin recolocar ni reorientar las ya vistas durante la sesión.
+ */
+export function createTraditionalSnakeLayout(
+  table,
+  { connectionClearance = 2, previousLayout = null } = {},
+) {
+  if (canExtendLayout(table, previousLayout)) {
+    const extended = extendLayout(table, previousLayout, connectionClearance);
+    if (extended) return extended;
+  }
+  return createInitialLayout(table, connectionClearance);
 }
