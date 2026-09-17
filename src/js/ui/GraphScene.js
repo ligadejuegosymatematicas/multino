@@ -12,11 +12,11 @@ const LAYOUT_GEOMETRY = Object.freeze({
     orbit: Object.freeze({ rx: 218, ry: 218 }),
   }),
   [GRAPH_SCENE_LAYOUTS.WIDE]: Object.freeze({
-    width: 1160,
-    height: 500,
-    center: Object.freeze({ x: 580, y: 250 }),
-    radii: Object.freeze({ x: 430, y: 140 }),
-    orbit: Object.freeze({ rx: 390, ry: 118 }),
+    width: 960,
+    height: 620,
+    center: Object.freeze({ x: 480, y: 305 }),
+    radii: Object.freeze({ x: 310, y: 230 }),
+    orbit: Object.freeze({ rx: 280, ry: 205 }),
   }),
 });
 const VERTEX_RADIUS = 35;
@@ -85,6 +85,27 @@ function createLoop(edge, vertex) {
     labelX: label.x,
     labelY: label.y,
   };
+}
+
+function createPotentialStructure(positions) {
+  const edges = [];
+  for (let a = 0; a <= 6; a += 1) {
+    for (let b = a + 1; b <= 6; b += 1) {
+      edges.push({
+        id: `potential-${a}-${b}`,
+        a,
+        b,
+        ...lineBetweenVertices(positions.get(a), positions.get(b)),
+      });
+    }
+  }
+  const loops = Array.from({ length: 7 }, (_, value) =>
+    createLoop(
+      { id: `potential-${value}-${value}`, a: value, b: value },
+      positions.get(value),
+    )
+  );
+  return { edges, loops };
 }
 
 function getTargetAngles(vertex, count, hasLoop) {
@@ -253,6 +274,7 @@ export function createGraphScene(
       getVertexPosition(vertex.value, geometry),
     ]),
   );
+  const potentialStructure = createPotentialStructure(positions);
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const scoringPortIds = new Set(
     (scoringResolution?.terms ?? [])
@@ -410,6 +432,8 @@ export function createGraphScene(
       isCompatible: legalTargetIdsByValue.has(vertex.value),
       isScoringTerm: scoringValues.has(vertex.value),
     })),
+    potentialEdges: potentialStructure.edges,
+    potentialLoops: potentialStructure.loops,
     edges,
     loops,
     openTargets,

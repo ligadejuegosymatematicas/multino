@@ -127,6 +127,10 @@ test("el SVG inicial renderiza exactamente los siete vértices estables", () => 
   assert.equal(scene.edges.length, 0);
   assert.equal(scene.loops.length, 0);
   assert.equal(scene.openTargets.length, 0);
+  assert.equal(scene.potentialEdges.length, 21);
+  assert.equal(scene.potentialLoops.length, 7);
+  assert.equal(markup.match(/class="graph-possibility__edge"/g)?.length, 21);
+  assert.equal(markup.match(/class="graph-possibility__loop"/g)?.length, 7);
 });
 
 test("el encuadre ancho expande el grafo sin alterar sus siete valores", () => {
@@ -141,10 +145,37 @@ test("el encuadre ancho expande el grafo sin alterar sus siete valores", () => {
     Math.min(...wide.vertices.map(({ x }) => x));
 
   assert.equal(wide.layout, "wide");
-  assert.equal(wide.viewBox, "0 0 1160 500");
+  assert.equal(wide.viewBox, "0 0 960 620");
   assert.equal(wide.vertices.length, 7);
-  assert.ok(wideSpan > compactSpan * 1.7);
+  assert.ok(wideSpan > compactSpan * 1.2);
+  assert.ok(wideSpan < compactSpan * 1.4);
   assert.match(renderGraphSvgMarkup(wide), /<ellipse class="graph-orbit"/);
+});
+
+test("K7 posible permanece tenue y el subgrafo jugado conserva otra capa", async () => {
+  const state = playFirst(createDeterministicMatch(), "0-3");
+  const scene = createGraphScene(projectGraphView(state));
+  const markup = renderGraphSvgMarkup(scene);
+  const boardCss = await readFile(
+    new URL("../../src/css/board.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(scene.potentialEdges.length, 21);
+  assert.equal(scene.potentialLoops.length, 7);
+  assert.equal(scene.edges.length, 1);
+  assert.ok(
+    markup.indexOf('class="graph-possibilities"') <
+      markup.indexOf('class="graph-edges"'),
+  );
+  assert.match(
+    boardCss,
+    /\.graph-possibility__edge,[\s\S]+?opacity:\s*0\.075/,
+  );
+  assert.match(
+    boardCss,
+    /\.graph-root\[data-view-mode="graph"\] \.graph-edge__line[\s\S]+?stroke:\s*#e5dcc7/,
+  );
 });
 
 test("el feedback destaca solo términos reales de S en el grafo", () => {

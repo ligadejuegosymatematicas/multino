@@ -453,6 +453,155 @@
   outline-offset: 2px;
 }
 
+/* Graph premium: K7 is context, the played subgraph is the subject. */
+.graph-root[data-view-mode="graph"] {
+  border-color: var(--game-line);
+  background:
+    radial-gradient(circle at 50% 48%, rgb(19 116 99 / 0.22), transparent 42%),
+    radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.055), transparent 25%),
+    repeating-linear-gradient(113deg, transparent 0 4px, rgb(255 255 255 / 0.012) 5px 6px),
+    var(--game-felt-deep);
+  box-shadow: var(--game-shadow-inset);
+}
+
+.graph-root[data-view-mode="graph"] .graph-orbit {
+  stroke: rgb(214 174 92 / 0.28);
+  stroke-width: 2;
+  stroke-dasharray: 2 12;
+}
+
+.graph-possibilities {
+  color: var(--game-ivory);
+  pointer-events: none;
+}
+
+.graph-possibility__edge,
+.graph-possibility__loop {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  opacity: 0.075;
+  vector-effect: non-scaling-stroke;
+}
+
+.graph-possibility__loop {
+  opacity: 0.11;
+}
+
+.graph-root[data-view-mode="graph"] .graph-edge,
+.graph-root[data-view-mode="graph"] .graph-loop {
+  opacity: 0.96;
+}
+
+.graph-root[data-view-mode="graph"] .graph-edge__line {
+  stroke: #e5dcc7;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.48));
+}
+
+.graph-root[data-view-mode="graph"] .graph-edge.is-main .graph-edge__line {
+  stroke: #f5ead3;
+}
+
+.graph-root[data-view-mode="graph"] .graph-edge.is-branch .graph-edge__line,
+.graph-root[data-view-mode="graph"] .graph-loop.is-branch .graph-loop__shape {
+  stroke: #b9c4bb;
+  stroke-dasharray: 12 7;
+}
+
+.graph-root[data-view-mode="graph"] .graph-loop__shape {
+  fill: rgb(239 229 208 / 0.08);
+  stroke: #d9cba9;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.48));
+}
+
+.graph-root[data-view-mode="graph"] .graph-loop.is-special-double .graph-loop__shape {
+  stroke: #c8d0cb;
+  filter: drop-shadow(0 0 5px rgb(220 231 226 / 0.22));
+}
+
+.graph-root[data-view-mode="graph"] .graph-family-root {
+  opacity: 0.42;
+}
+
+.graph-root[data-view-mode="graph"] .graph-family-root__badge {
+  fill: var(--game-felt-deep);
+  stroke: #aeb8b3;
+}
+
+.graph-root[data-view-mode="graph"] .graph-vertex__circle {
+  fill: var(--game-ivory);
+  stroke: var(--game-brass);
+  stroke-width: 4;
+  filter: drop-shadow(0 5px 4px rgb(0 0 0 / 0.48));
+}
+
+.graph-root[data-view-mode="graph"] .graph-vertex__value {
+  fill: var(--game-ink-dark);
+  font-family: var(--game-font-display);
+  font-size: 31px;
+  font-weight: 800;
+}
+
+.graph-root[data-view-mode="graph"] .graph-vertex.is-compatible .graph-vertex__circle {
+  stroke: var(--game-teal-bright);
+  stroke-width: 8;
+  filter:
+    drop-shadow(0 0 8px rgb(39 222 197 / 0.82))
+    drop-shadow(0 5px 4px rgb(0 0 0 / 0.48));
+}
+
+.graph-root[data-view-mode="graph"] .open-target {
+  color: #d5ddd6;
+}
+
+.graph-root[data-view-mode="graph"] .open-target.is-branch-target {
+  color: #aebcb4;
+}
+
+.graph-root[data-view-mode="graph"] .open-target__end {
+  fill: var(--game-felt-deep);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px rgb(225 237 231 / 0.32));
+}
+
+.graph-root[data-view-mode="graph"] .open-target.is-legal {
+  color: var(--game-teal-bright);
+}
+
+.graph-root[data-view-mode="graph"] .open-target.is-legal .open-target__end {
+  fill: #073f3a;
+  filter: drop-shadow(0 0 9px rgb(39 222 197 / 0.9));
+}
+
+.graph-root[data-view-mode="graph"] .open-target__option-index {
+  fill: #031f1c;
+  stroke: var(--game-teal-bright);
+  stroke-width: 5px;
+}
+
+.graph-root[data-view-mode="graph"] .graph-edge.is-scoring-term .graph-edge__line,
+.graph-root[data-view-mode="graph"] .graph-loop.is-scoring-term .graph-loop__shape,
+.graph-root[data-view-mode="graph"] .open-target.is-scoring-term .open-target__curve,
+.graph-root[data-view-mode="graph"] .open-target.is-scoring-term .open-target__end,
+.graph-root[data-view-mode="graph"] .graph-vertex.is-scoring-term .graph-vertex__circle {
+  stroke: var(--game-gold-bright);
+  filter: drop-shadow(0 0 8px rgb(255 201 78 / 0.72));
+}
+
+.graph-root[data-view-mode="graph"] .topology-inspector,
+.graph-root[data-view-mode="graph"] + .topology-inspector {
+  color: var(--game-ivory);
+  border-color: var(--game-brass);
+  background: rgb(4 31 28 / 0.96);
+}
+
+.graph-root[data-view-mode="graph"] .start-action,
+.graph-root[data-view-mode="graph"] .topology-inspector {
+  color: var(--game-ivory);
+  border-color: var(--game-brass);
+  background: rgb(4 31 28 / 0.96);
+}
+
 @keyframes target-pulse {
   0%, 100% { opacity: 0.76; }
   50% { opacity: 1; }

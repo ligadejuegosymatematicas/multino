@@ -123,13 +123,25 @@ function renderVertex(vertex, hasSelection) {
     </g>`;
 }
 
+function renderPotentialEdge(edge) {
+  return `<path class="graph-possibility__edge" d="${edge.path}" aria-hidden="true"></path>`;
+}
+
+function renderPotentialLoop(loop) {
+  return `<path class="graph-possibility__loop" d="${loop.path}" aria-hidden="true"></path>`;
+}
+
 /** Serialización SVG comprobable sin instalar un DOM de tests. */
 export function renderGraphSvgMarkup(scene) {
   return `
     <svg class="value-graph" viewBox="${scene.viewBox}" role="group" aria-labelledby="graph-title graph-description" preserveAspectRatio="xMidYMid meet">
       <title id="graph-title">Grafo de valores de la ronda</title>
-      <desc id="graph-description">Siete valores fijos. Cada curva terminal representa un destino abierto individual. El chancho ramificador se distingue de los dobles ordinarios y sus brazos conservan targets internos distintos.</desc>
+      <desc id="graph-description">Siete valores fijos sobre la estructura posible del grafo completo. Las aristas y lazos intensos son las fichas jugadas; cada curva terminal representa un destino abierto individual.</desc>
       <ellipse class="graph-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
+      <g class="graph-possibilities" aria-hidden="true">
+        ${scene.potentialEdges.map(renderPotentialEdge).join("")}
+        ${scene.potentialLoops.map(renderPotentialLoop).join("")}
+      </g>
       <g class="graph-edges">${scene.edges.map(renderEdge).join("")}</g>
       <g class="graph-loops">${scene.loops.map(renderLoop).join("")}</g>
       <g class="graph-family-roots">${scene.loops.map(renderFamilyRootMarker).join("")}</g>
