@@ -115,6 +115,9 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(themeCss, /--club-wood:/);
   assert.match(themeCss, /--club-ivory:/);
   assert.match(themeCss, /--club-brass:/);
+  assert.match(themeCss, /--game-felt-deep:\s*var\(--club-felt-deep\)/);
+  assert.match(themeCss, /--game-teal-bright:\s*var\(--playable\)/);
+  assert.match(themeCss, /--game-gold-bright:\s*var\(--scoring\)/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
   assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
@@ -124,6 +127,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(traditionalCss, /\.traditional-domino \{[\s\S]+?z-index:\s*10/);
   assert.match(traditionalCss, /\.traditional-target \{[\s\S]+?z-index:\s*5/);
   assert.match(traditionalCss, /\.traditional-table__canvas \{[\s\S]+?margin-inline:\s*auto/);
+  assert.match(traditionalCss, /\.traditional-camera-controls \{[\s\S]+?inset:\s*0\.65rem auto auto 0\.65rem/);
   assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*none[\s\S]+?stroke-width:\s*32[\s\S]+?pointer-events:\s*stroke/);
   assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);

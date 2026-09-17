@@ -559,7 +559,7 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     markup.match(/class="traditional-target [^"]+"[^>]+ disabled/g)?.length,
     scene.openTargets.length,
   );
-  assert.match(markup, />Ver mesa completa<\/button>/);
+  assert.match(markup, />Centrar mesa<\/button>/);
   assert.ok(scene.tiles.some((tile) => tile.isScoringTerm));
   assert.match(markup, /traditional-domino [^"]*is-scoring-term/);
 });
@@ -624,7 +624,7 @@ test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo leg
     viewportHeight: 430,
     minScale: TRADITIONAL_FINAL_MIN_SCALE,
   });
-  assert.equal(finalFit, 0.221);
+  assert.equal(finalFit, TRADITIONAL_FINAL_MIN_SCALE);
   assert.ok(finalFit < TRADITIONAL_MIN_READABLE_SCALE);
-  assert.ok(finalFit >= TRADITIONAL_FINAL_MIN_SCALE);
+  assert.ok(finalFit >= 0.5);
 });

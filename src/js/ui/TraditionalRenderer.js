@@ -97,7 +97,7 @@ export function renderTraditionalTableMarkup(scene) {
   return `
     <div class="traditional-table" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
       <div class="traditional-camera-controls">
-        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">${scene.isFinished ? "Ver mesa completa" : "Ajustar tablero"}</button>
+        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">${scene.isFinished ? "Centrar mesa" : "Ajustar tablero"}</button>
       </div>
       <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Ventana desplazable sobre la mesa; arrastra para recorrerla">
         <div class="traditional-table__canvas" data-table-canvas>

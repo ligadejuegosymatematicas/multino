@@ -24,6 +24,17 @@
   --shadow-panel: 0 0.8rem 2rem rgb(0 0 0 / 0.3);
   --shadow-raised: 0 0.45rem 1rem rgb(0 0 0 / 0.38);
   --transition-fast: 150ms ease;
+
+  /* Shared renderer aliases: one material language across all three views. */
+  --game-felt-deep: var(--club-felt-deep);
+  --game-line: rgb(197 154 87 / 0.52);
+  --game-brass: var(--club-brass-soft);
+  --game-ivory: var(--club-ivory);
+  --game-ink-dark: var(--club-ink);
+  --game-teal-bright: var(--playable);
+  --game-gold-bright: var(--scoring);
+  --game-shadow-inset: inset 0 0 3rem rgb(0 0 0 / 0.36);
+  --game-font-display: Georgia, "Times New Roman", serif;
 }
 
 body {

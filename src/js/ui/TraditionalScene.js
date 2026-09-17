@@ -7,7 +7,7 @@ export const TRADITIONAL_CONNECTION_CLEARANCE = 2;
 export const TRADITIONAL_TARGET_CENTER_DISTANCE = 20;
 export const TRADITIONAL_TARGET_HIT_SIZE = 32;
 export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
-export const TRADITIONAL_FINAL_MIN_SCALE = 0.18;
+export const TRADITIONAL_FINAL_MIN_SCALE = 0.55;
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
