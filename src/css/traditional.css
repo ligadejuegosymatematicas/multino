@@ -346,6 +346,117 @@
   transform: translateX(-50%);
 }
 
+/* Traditional premium: physical ivory tiles remain above every route. */
+.graph-root.is-traditional-view {
+  border-color: var(--game-line);
+  background:
+    radial-gradient(circle at 50% 42%, rgb(26 132 107 / 0.16), transparent 45%),
+    radial-gradient(circle at 20% 14%, rgb(255 255 255 / 0.04), transparent 24%),
+    repeating-linear-gradient(117deg, transparent 0 4px, rgb(255 255 255 / 0.012) 5px 6px),
+    var(--game-felt-deep);
+  background-size: auto;
+  box-shadow: var(--game-shadow-inset);
+}
+
+.traditional-camera-controls button {
+  border-color: rgb(197 155 80 / 0.68);
+  color: var(--game-ivory);
+  background: rgb(4 31 28 / 0.92);
+  box-shadow: 0 0.3rem 0.9rem rgb(0 0 0 / 0.34);
+}
+
+.traditional-connection {
+  z-index: 1;
+  color: rgb(225 216 194 / 0.48);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.52));
+}
+
+.traditional-connection.is-branch {
+  color: rgb(175 194 183 / 0.42);
+}
+
+.traditional-domino {
+  z-index: 10;
+  border-color: #6e5a3a;
+  color: #102824;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.82), transparent 38%),
+    linear-gradient(160deg, #fffaf0, #dfd3ba);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.68),
+    inset 0 -3px 5px rgb(89 65 31 / 0.18),
+    0 5px 7px rgb(0 0 0 / 0.48);
+}
+
+.traditional-domino__divider {
+  background: linear-gradient(#594a36, #1d2c29, #594a36);
+  box-shadow: 0 0 1px rgb(255 255 255 / 0.58);
+}
+
+.traditional-domino.is-special-double {
+  box-shadow:
+    0 0 0 2px #aab5af,
+    0 0 0 5px rgb(210 220 214 / 0.18),
+    inset 0 0 0 1px rgb(255 255 255 / 0.68),
+    0 5px 7px rgb(0 0 0 / 0.48);
+}
+
+.traditional-domino__special {
+  border-color: #7f9189;
+  background: #d9e0db;
+}
+
+.traditional-domino__special::before,
+.traditional-domino__special::after {
+  background: #405a52;
+}
+
+.traditional-target {
+  z-index: 20;
+  color: #dce8e1;
+}
+
+.traditional-target__socket {
+  border-color: currentColor;
+  background: var(--game-felt-deep);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.6),
+    0 0 0 2px rgb(255 255 255 / 0.08);
+}
+
+.traditional-target.is-potential {
+  opacity: 0.52;
+}
+
+.traditional-target.is-legal {
+  color: var(--game-teal-bright);
+}
+
+.traditional-target.is-legal .traditional-target__socket {
+  border-width: 4px;
+  background: #073f3a;
+  box-shadow:
+    0 0 0 5px rgb(39 222 197 / 0.18),
+    0 0 11px rgb(39 222 197 / 0.8);
+}
+
+.traditional-target__option {
+  color: #052b27;
+  border-color: var(--game-teal-bright);
+  background: var(--game-teal-bright);
+}
+
+.traditional-domino.is-scoring-term {
+  box-shadow:
+    0 0 0 3px var(--game-gold-bright),
+    0 0 13px rgb(255 201 78 / 0.72),
+    0 5px 7px rgb(0 0 0 / 0.48);
+}
+
+.traditional-target.is-scoring-term:not(.is-legal) {
+  color: var(--game-gold-bright);
+}
+
 @keyframes traditional-target-pulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -50%) scale(1.08); }

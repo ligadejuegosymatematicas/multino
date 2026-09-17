@@ -20,6 +20,11 @@ import {
   TRADITIONAL_TARGET_CENTER_DISTANCE,
   TRADITIONAL_TARGET_HIT_SIZE,
 } from "../../src/js/ui/TraditionalScene.js";
+import {
+  TRADITIONAL_COLLISION_MARGIN,
+  traditionalBoundsOverlap,
+  traditionalTileBounds,
+} from "../../src/js/ui/TraditionalSnakeLayout.js";
 import { InteractionController } from "../../src/js/ui/InteractionController.js";
 import {
   BOARD_VIEW_MODES,
@@ -114,6 +119,33 @@ function createDeterministicMatch() {
   });
 }
 
+function createLongLinearScenario() {
+  let state = createBoardScenario({ K: 0, firstDominoId: "6-6" });
+  for (const dominoId of [
+    "6-6",
+    "0-6",
+    "0-0",
+    "0-1",
+    "1-1",
+    "1-2",
+    "2-2",
+    "2-3",
+    "3-3",
+    "3-4",
+    "4-4",
+    "4-5",
+    "5-5",
+    "5-6",
+  ]) {
+    state = playDomino(
+      state,
+      dominoId,
+      (target) => target.kind === "main" && target.mainLineEnd === "end",
+    );
+  }
+  return state;
+}
+
 test("la escena ubica principal horizontal y ambos brazos verticales", () => {
   const scene = createTraditionalScene(
     projectTraditionalView(createTraditionalScenario()),
@@ -162,21 +194,72 @@ test("cada unión física enfrenta el valor exacto de su conexión lógica", () 
     );
   }
 
-  const connections = new Map(
-    scene.connections.map((connection) => [connection.id, connection]),
+  assert.ok(scene.connections.every((connection) =>
+    connection.segments.length === 1 || connection.segments.length === 2
+  ));
+  assert.ok(scene.connections.flatMap((connection) => connection.segments)
+    .every((segment) =>
+      segment.orientation === "horizontal" || segment.orientation === "vertical"
+    ));
+});
+
+test("Lineal serpentea antes del borde y conserva fichas legibles", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createLongLinearScenario()),
   );
-  for (const id of ["connection-1", "connection-2", "connection-3", "connection-4"]) {
-    assert.equal(connections.get(id).firstFace.side, "right");
-    assert.equal(connections.get(id).secondFace.side, "left");
-  }
-  for (const id of ["connection-5", "connection-6", "connection-7"]) {
-    assert.equal(connections.get(id).firstFace.side, "top");
-    assert.equal(connections.get(id).secondFace.side, "bottom");
-  }
-  for (const id of ["connection-8", "connection-9"]) {
-    assert.equal(connections.get(id).firstFace.side, "bottom");
-    assert.equal(connections.get(id).secondFace.side, "top");
-  }
+  const directions = scene.mainTiles.map((tile) => tile.direction);
+
+  assert.equal(scene.layoutStats.strategy, "linear-snake");
+  assert.ok(scene.layoutStats.turnCount >= 2);
+  assert.ok(new Set(directions).size >= 3);
+  assert.ok(scene.tiles.every((tile) =>
+    Math.max(tile.width, tile.height) === 72 &&
+    Math.min(tile.width, tile.height) === 38
+  ));
+  assert.ok(scene.width < scene.tiles.length * 72);
+});
+
+test("el layout evita colisiones ambiguas entre fichas no conectadas", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createOrientationScenario()),
+  );
+  const connectedPairs = new Set(scene.connections.map((connection) =>
+    [connection.firstPlacementId, connection.secondPlacementId].sort().join(":"),
+  ));
+  const margin = TRADITIONAL_COLLISION_MARGIN / 2;
+
+  scene.tiles.forEach((first, firstIndex) => {
+    scene.tiles.slice(firstIndex + 1).forEach((second) => {
+      const pair = [first.placementId, second.placementId].sort().join(":");
+      if (connectedPairs.has(pair)) return;
+      assert.equal(
+        traditionalBoundsOverlap(
+          traditionalTileBounds(first, margin),
+          traditionalTileBounds(second, margin),
+        ),
+        false,
+        `${pair} queda demasiado cerca`,
+      );
+    });
+  });
+});
+
+test("Ramificado dispone cuatro brazos alrededor del único chancho", () => {
+  const scene = createTraditionalScene(
+    projectTraditionalView(createOrientationScenario()),
+  );
+  const root = scene.tiles.find((tile) => tile.isSpecialDouble);
+  const outwardDirections = new Set([
+    scene.mainTiles[scene.mainTiles.indexOf(root) - 1]?.direction,
+    scene.mainTiles[scene.mainTiles.indexOf(root) + 1]?.direction,
+    ...scene.branchFamilies[0].arms
+      .filter((arm) => arm.tiles.length > 0)
+      .map((arm) => arm.tiles[0].direction),
+  ].filter(Boolean));
+
+  assert.equal(scene.layoutStats.strategy, "four-arm-snake");
+  assert.deepEqual(outwardDirections, new Set(["left", "right", "up", "down"]));
+  assert.equal(scene.branchFamilies[0].arms.length, 2);
 });
 
 test("conectores, hit areas y puentes quedan fuera del interior de las fichas", () => {
@@ -187,28 +270,27 @@ test("conectores, hit areas y puentes quedan fuera del interior de las fichas", 
   const strokeHalf = 2;
 
   for (const connection of scene.connections) {
-    const bounds = connection.orientation === "horizontal"
-      ? {
-          left: Math.min(connection.x1, connection.x2),
-          right: Math.max(connection.x1, connection.x2),
-          top: connection.y1 - strokeHalf,
-          bottom: connection.y1 + strokeHalf,
-        }
-      : {
-          left: connection.x1 - strokeHalf,
-          right: connection.x1 + strokeHalf,
-          top: Math.min(connection.y1, connection.y2),
-          bottom: Math.max(connection.y1, connection.y2),
-        };
-    for (const placementId of [
-      connection.firstPlacementId,
-      connection.secondPlacementId,
-    ]) {
-      assert.equal(
-        rectanglesOverlap(bounds, tileBounds(tiles.get(placementId))),
-        false,
-        `${connection.id} invade ${placementId}`,
-      );
+    for (const segment of connection.segments) {
+      const bounds = segment.orientation === "horizontal"
+        ? {
+            left: Math.min(segment.x, segment.x2),
+            right: Math.max(segment.x, segment.x2),
+            top: segment.y - strokeHalf,
+            bottom: segment.y + strokeHalf,
+          }
+        : {
+            left: segment.x - strokeHalf,
+            right: segment.x + strokeHalf,
+            top: Math.min(segment.y, segment.y2),
+            bottom: Math.max(segment.y, segment.y2),
+          };
+      for (const tile of tiles.values()) {
+        assert.equal(
+          rectanglesOverlap(bounds, tileBounds(tile)),
+          false,
+          `${segment.id} invade ${tile.placementId}`,
+        );
+      }
     }
   }
 
@@ -257,11 +339,13 @@ test("orienta fichas asimétricas hacia ambos extremos y ambos brazos", () => {
     ),
     [
       { id: "placement-6", first: 1, second: 4 },
-      { id: "placement-8", first: 0, second: 1 },
+      { id: "placement-8", first: 1, second: 0 },
       { id: "placement-9", first: 4, second: 2 },
-      { id: "placement-10", first: 2, second: 5 },
+      { id: "placement-10", first: 5, second: 2 },
     ],
   );
+  assert.equal(tiles.get("placement-8").direction, "right");
+  assert.equal(tiles.get("placement-10").direction, "left");
   assert.equal(tiles.get("placement-7").isDouble, true);
   assert.equal(tiles.get("placement-7").isSpecialDouble, false);
   assert.equal(tiles.get("placement-1").isSpecialDouble, true);

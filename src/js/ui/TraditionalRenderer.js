@@ -46,22 +46,28 @@ function renderTile(tile) {
     </div>`;
 }
 
-function renderConnection(connection) {
+function renderConnectionSegment(connection, segment) {
   const thickness = 4;
-  const isHorizontal = connection.orientation === "horizontal";
+  const isHorizontal = segment.orientation === "horizontal";
   const left = isHorizontal
-    ? Math.min(connection.x1, connection.x2)
-    : connection.x1 - thickness / 2;
+    ? Math.min(segment.x, segment.x2)
+    : segment.x - thickness / 2;
   const top = isHorizontal
-    ? connection.y1 - thickness / 2
-    : Math.min(connection.y1, connection.y2);
+    ? segment.y - thickness / 2
+    : Math.min(segment.y, segment.y2);
   const width = isHorizontal
-    ? Math.abs(connection.x2 - connection.x1)
+    ? Math.abs(segment.x2 - segment.x)
     : thickness;
   const height = isHorizontal
     ? thickness
-    : Math.abs(connection.y2 - connection.y1);
-  return `<span class="traditional-connection is-${connection.orientation} is-${connection.region}" style="--connection-left:${left}px;--connection-top:${top}px;--connection-width:${width}px;--connection-height:${height}px" data-connection-id="${escapeAttribute(connection.id)}" data-connection-value="${connection.value}" aria-hidden="true"></span>`;
+    : Math.abs(segment.y2 - segment.y);
+  return `<span class="traditional-connection is-${segment.orientation} is-${connection.region}" style="--connection-left:${left}px;--connection-top:${top}px;--connection-width:${width}px;--connection-height:${height}px" data-connection-id="${escapeAttribute(connection.id)}" data-connection-segment="${escapeAttribute(segment.id)}" data-connection-value="${connection.value}" aria-hidden="true"></span>`;
+}
+
+function renderConnection(connection) {
+  return connection.segments
+    .map((segment) => renderConnectionSegment(connection, segment))
+    .join("");
 }
 
 function renderTarget(target) {
@@ -138,7 +144,7 @@ export class TraditionalRenderer {
     const viewport = this.container.querySelector("[data-table-viewport]");
     const nextSignature = `${scene.width}:${scene.height}`;
     const shouldRecenter = scene.isFinished ||
-      this.sceneSignature !== nextSignature;
+      this.sceneSignature === null;
     this.sceneSignature = nextSignature;
     const fitAndPosition = ({ recenter = false } = {}) => {
       const scale = calculateTraditionalFitScale({
