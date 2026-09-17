@@ -2,24 +2,43 @@ export function renderTurnPanel(container, view, { emphasize = false } = {}) {
   if (!container) {
     return;
   }
-  const current = view.participants.players.find(
-    (player) => player.playerId === view.turn.currentPlayerId,
-  );
-  const team = view.participants.teams.find(
-    (candidate) => candidate.teamId === current.teamId,
-  );
   container.replaceChildren();
   container.classList.toggle("is-turn-feedback", emphasize);
-  const heading = document.createElement("strong");
-  heading.textContent = view.roundStatus.phase === "finished"
-    ? "Ronda cerrada"
-    : `${current.displayName} · ${team.displayName}`;
-  container.append(heading);
+  for (const player of view.participants.players) {
+    const teamIndex = view.participants.teams.findIndex(
+      (team) => team.teamId === player.teamId,
+    );
+    const item = document.createElement("div");
+    item.className = "player-status";
+    item.classList.toggle("is-current", player.playerId === view.turn.currentPlayerId);
+    item.dataset.teamIndex = String(teamIndex);
+    const avatar = document.createElement("span");
+    avatar.className = "player-status__avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = player.displayName.slice(0, 1).toLocaleUpperCase("es");
+    const identity = document.createElement("span");
+    identity.className = "player-status__identity";
+    const name = document.createElement("strong");
+    name.textContent = player.displayName;
+    const team = document.createElement("small");
+    team.textContent = view.participants.teams[teamIndex]?.displayName ?? player.teamId;
+    identity.append(name, team);
+    const remaining = document.createElement("span");
+    remaining.className = "player-status__remaining";
+    remaining.setAttribute(
+      "aria-label",
+      `${player.remainingDominoCount} fichas restantes`,
+    );
+    remaining.innerHTML = `<span aria-hidden="true">▰</span>${player.remainingDominoCount}`;
+    item.append(avatar, identity, remaining);
+    container.append(item);
+  }
   if (
     view.roundStatus.phase !== "finished" &&
     view.turn.consecutivePasses > 0
   ) {
     const detail = document.createElement("span");
+    detail.className = "turn-pass-streak";
     detail.textContent = `${view.turn.consecutivePasses} ${view.turn.consecutivePasses === 1 ? "pase" : "pases"} seguidos`;
     container.append(detail);
   }

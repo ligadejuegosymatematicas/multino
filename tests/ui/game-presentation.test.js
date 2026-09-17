@@ -92,11 +92,12 @@ test("PASS no inventa puntos ni un mensaje estructural", () => {
 });
 
 test("la jerarquía game-first compacta chrome y acerca tablero y mano", async () => {
-  const [html, layoutCss, componentsCss, boardCss, traditionalCss, portsCss, mainSource, turnSource] =
+  const [html, layoutCss, componentsCss, themeCss, boardCss, traditionalCss, portsCss, mainSource, turnSource] =
     await Promise.all([
       readFile(new URL("../../index.html", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/layout.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/components.css", import.meta.url), "utf8"),
+      readFile(new URL("../../src/css/theme.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/board.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/traditional.css", import.meta.url), "utf8"),
       readFile(new URL("../../src/css/ports.css", import.meta.url), "utf8"),
@@ -108,7 +109,12 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(layoutCss, /@media \(max-width: 58rem\) and \(orientation: portrait\)[\s\S]+?"board"[\s\S]+?"action"[\s\S]+?"hand"/);
   assert.match(layoutCss, /\.play-layout:has\(\.round-result:not\(\[hidden\]\)\)[\s\S]+?grid-template-areas:\s*"board sidebar"/);
   assert.match(layoutCss, /\.play-layout:has\(\.round-result:not\(\[hidden\]\)\) \.round-actions[\s\S]+?grid-template-columns:\s*1fr 1fr/);
-  assert.match(componentsCss, /\.player-counts \{[\s\S]+?display:\s*flex/);
+  assert.match(themeCss, /\.turn-panel \{[\s\S]+?repeat\(4/);
+  assert.match(themeCss, /\.player-status\.is-current \{[\s\S]+?var\(--playable\)/);
+  assert.match(themeCss, /--club-felt:/);
+  assert.match(themeCss, /--club-wood:/);
+  assert.match(themeCss, /--club-ivory:/);
+  assert.match(themeCss, /--club-brass:/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
   assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
@@ -121,6 +127,9 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*none[\s\S]+?stroke-width:\s*32[\s\S]+?pointer-events:\s*stroke/);
   assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);
+  assert.match(html, /src\/css\/theme\.css/);
+  assert.match(html, /brand-lockup/);
+  assert.doesNotMatch(html, /id="player-counts"/);
   assert.doesNotMatch(traditionalCss, /rgb\(255 255 255 \/ 0\.24\)/);
   assert.doesNotMatch(html, /De las demás manos solo se muestra la cantidad/);
   assert.doesNotMatch(html, />Suma abierta<|>Marcador<|>Siguiente turno</);
@@ -141,7 +150,9 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
   assert.match(mainSource, /"is-ports-mode"[\s\S]*?mode === BOARD_VIEW_MODES\.PORTS/);
   assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS/);
-  assert.match(layoutCss, /\.app-shell\.is-ports-mode \.round-overview/);
+  assert.match(themeCss, /\.app-shell\.is-ports-mode \.round-overview/);
+  assert.match(turnSource, /player-status__remaining/);
+  assert.match(turnSource, /remainingDominoCount/);
 });
 
 test("el resultado prioriza ganador final y deja vencedor tradicional como explicación", () => {

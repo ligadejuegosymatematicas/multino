@@ -11,12 +11,16 @@
     <link rel="stylesheet" href="./src/css/traditional.css">
     <link rel="stylesheet" href="./src/css/ports.css">
     <link rel="stylesheet" href="./src/css/components.css">
+    <link rel="stylesheet" href="./src/css/theme.css">
   </head>
   <body>
     <a class="skip-link" href="#main-content">Ir al contenido</a>
     <main id="main-content" class="app-shell">
       <header class="app-header">
-        <h1>Dominó <span>×5</span></h1>
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
+          <h1>Dominó <span>×5</span></h1>
+        </div>
         <p id="session-badge" class="session-badge">Múltiplos de 5</p>
       </header>
 
@@ -61,7 +65,7 @@
 
       <div id="game-screen" class="game-screen" hidden>
         <section class="round-overview" aria-label="Estado de la ronda">
-          <div class="overview-card overview-turn">
+          <div class="overview-card overview-players">
             <div id="turn-panel" class="turn-panel" aria-live="polite"></div>
           </div>
           <div class="overview-card overview-score">
@@ -109,9 +113,6 @@
           </section>
 
           <aside class="round-sidebar" aria-label="Información local">
-            <section class="side-card counts-strip" aria-label="Fichas restantes">
-              <ul id="player-counts" class="player-counts"></ul>
-            </section>
             <section id="round-result" class="round-result" aria-live="polite" hidden></section>
             <section id="round-actions" class="round-actions" aria-label="Siguiente partida" hidden>
               <button id="play-again-action" type="button" class="primary-action">Jugar otra</button>

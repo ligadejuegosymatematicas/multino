@@ -18,7 +18,6 @@ import {
   renderScoringPanel,
 } from "./ui/ScorePanel.js";
 import {
-  renderPlayerCounts,
   renderTurnPanel,
 } from "./ui/TurnIndicator.js";
 import {
@@ -218,10 +217,6 @@ function renderRound(presentation, mode, feedback) {
     presentation.view,
     { emphasize: feedback !== null && !feedback.endedRound },
   );
-  renderPlayerCounts(
-    document.querySelector("#player-counts"),
-    presentation.view,
-  );
   renderScorePanel(
     document.querySelector("#score-panel"),
     presentation.view,
@@ -280,7 +275,9 @@ function renderSession(session) {
   }
   sessionBadge.textContent = isConfiguring
     ? "Múltiplos de 5"
-    : `${session.config.roundMode === ROUND_STRUCTURE_MODES.BRANCHED ? "Ramificado" : "Lineal"} · ${session.viewMode === BOARD_VIEW_MODES.GRAPH ? "Grafo" : session.viewMode === BOARD_VIEW_MODES.PORTS ? "Puertos" : "Tradicional"}`;
+    : session.config.roundMode === ROUND_STRUCTURE_MODES.BRANCHED
+      ? "Ramificado"
+      : "Lineal";
   if (!isConfiguring) {
     const nextFeedback = getGameFeedback(session.round.view);
     const feedback = nextFeedback?.sequence !== lastFeedbackSequence
