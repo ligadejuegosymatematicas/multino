@@ -10,6 +10,7 @@ import {
 } from "../../src/js/game/index.js";
 import {
   analyzePortSceneDensity,
+  createPortScoringMultiplicity,
   createPortScene,
   PORT_SCENE_LAYOUTS,
 } from "../../src/js/ui/PortScene.js";
@@ -214,7 +215,7 @@ test("sin selección los badges hacen visibles extremos reales sin exponer incid
   assert.doesNotMatch(markup, /port-open-target__option/);
 });
 
-test("n/7 se conserva en detalle y desaparece del reposo", () => {
+test("n/7 permanece visible y el doble cuenta una sola ficha", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
   state = playDomino(state, "2-4", targetAt("placement-1", "main:1"));
@@ -232,10 +233,121 @@ test("n/7 se conserva en detalle y desaparece del reposo", () => {
   assert.equal(four.playedTileCount, 2);
   assert.equal(two.playedTileCount, 1);
   assert.equal(four.totalTileCount, 7);
-  assert.doesNotMatch(markup, />2\/7</);
-  assert.doesNotMatch(markup, /port-macro-node__played/);
+  assert.match(markup, />2\/7</);
+  assert.equal(markup.match(/port-macro-node__played/g)?.length, 7);
   assert.match(detail, /Fichas con 4 jugadas:<\/strong> 2\/7/);
   assert.match(detail, /Destinos abiertos:/);
+
+  const doubleOnly = createPortScene(projectPortView(
+    playDomino(
+      createBoardScenario({ K: 0, firstDominoId: "5-5" }),
+      "5-5",
+    ),
+  ));
+  assert.equal(
+    doubleOnly.nodes.find((node) => node.value === 5).playedTileCount,
+    1,
+  );
+});
+
+test("cada medallón separa destinos, multiplicidad de S y fichas jugadas", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
+  const scene = createPortScene(projectPortView(state));
+  const four = scene.nodes.find((node) => node.value === 4);
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.equal(four.openTargetCount, 2);
+  assert.equal(four.scoringMultiplicity, 0);
+  assert.equal(four.playedTileCount, 3);
+  assert.equal(four.ramifier.connectionCount, 2);
+  assert.match(markup, /data-node-value="4" data-open-target-count="2" data-scoring-multiplicity="0" data-played-tile-count="3"/);
+});
+
+test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "5-5" });
+  state = playDomino(state, "5-5");
+  const scene = createPortScene(projectPortView(state));
+  const five = scene.nodes.find((node) => node.value === 5);
+  const markup = renderPortSvgMarkup(scene);
+
+  assert.equal(five.openTargetCount, 2);
+  assert.equal(five.scoringMultiplicity, 2);
+  assert.equal(five.playedTileCount, 1);
+  assert.match(markup, /data-scoring-multiplicity="2"/);
+  assert.match(markup, /port-macro-node__scoring-badge/);
+  assert.match(markup, />×2<\/text>/);
+  assert.match(markup, />1\/7<\/text>/);
+});
+
+test("la suma central coincide con Σ m_n n", () => {
+  const empty = createPortScene(projectPortView(createBoardScenario()));
+  const oneTile = createPortScene(projectPortView(playDomino(
+    createBoardScenario({ K: 0, firstDominoId: "1-6" }),
+    "1-6",
+  )));
+  const severalValues = createPortScene(projectPortView(createTwoArmScenario()));
+  const scenes = [empty, oneTile, severalValues];
+
+  assert.ok(empty.nodes.every((node) => node.scoringMultiplicity === 0));
+  assert.equal(
+    oneTile.nodes.find((node) => node.value === 1).scoringMultiplicity,
+    1,
+  );
+  assert.equal(
+    oneTile.nodes.find((node) => node.value === 6).scoringMultiplicity,
+    1,
+  );
+  assert.ok(
+    severalValues.nodes.filter((node) => node.scoringMultiplicity > 0).length > 1,
+  );
+
+  for (const scene of scenes) {
+    const multiplicities = createPortScoringMultiplicity(
+      scene.scoringPresentation?.terms,
+    );
+    const reconstructed = [...multiplicities].reduce(
+      (sum, [value, multiplicity]) => sum + value * multiplicity,
+      0,
+    );
+    assert.equal(reconstructed, scene.scoringPresentation.sum);
+    assert.equal(scene.scoringMultiplicitySum, scene.scoringPresentation.sum);
+    for (const node of scene.nodes) {
+      assert.equal(node.scoringMultiplicity, multiplicities.get(node.value));
+    }
+  }
+});
+
+test("el conteo estratégico recorre 0/7 a 7/7 para un mismo valor", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "0-5" });
+  const sequence = [
+    ["0-5", 5],
+    ["0-1", 0],
+    ["1-5", 1],
+    ["2-5", 5],
+    ["2-3", 2],
+    ["3-5", 3],
+    ["4-5", 5],
+    ["4-6", 4],
+    ["5-6", 6],
+    ["5-5", 5],
+  ];
+  const observed = [
+    createPortScene(projectPortView(state)).nodes.find(
+      (node) => node.value === 5,
+    ).playedTileCount,
+  ];
+  for (const [dominoId, value] of sequence) {
+    state = playDomino(state, dominoId, (target) => target.value === value);
+    if (dominoId.includes("5")) {
+      observed.push(createPortScene(projectPortView(state)).nodes.find(
+        (node) => node.value === 5,
+      ).playedTileCount);
+    }
+  }
+  assert.deepEqual(observed, [0, 1, 2, 3, 4, 5, 6, 7]);
 });
 
 test("la acción directa conserva target exacto cuando un valor ofrece una sola opción", () => {
@@ -269,6 +381,7 @@ test("el ramificador comunica ocupación 0 a 4 y saturación sin filtrar K", () 
     assert.equal(node.ramifier.connectionCount, count);
     assert.equal(node.ramifier.remainingConnections, 4 - count);
     assert.equal(node.ramifier.isSaturated, count === 4);
+    assert.equal(node.scoringMultiplicity, count <= 1 ? 2 : 0);
     assert.equal(markup.match(/port-ramifier__socket is-used/g)?.length ?? 0, count);
     if (count < 4) {
       state = playDomino(
@@ -499,7 +612,8 @@ test("un especial con extremos libres mantiene scoring y targets separados", () 
   assert.equal(scene.openTargets.length, 4);
   assert.equal(scene.openTargets.filter((target) => target.isScoringTerm).length, 0);
   assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 0);
-  assert.equal(scene.nodes.find((node) => node.value === 5).isScoringSource, false);
+  assert.equal(scene.nodes.find((node) => node.value === 5).isScoringSource, true);
+  assert.equal(scene.nodes.find((node) => node.value === 5).scoringMultiplicity, 2);
 });
 
 test("el contrato scoring disabled elimina el centro matemático sin afectar targets", () => {

@@ -271,19 +271,38 @@
 .port-macro-node__hit { fill: transparent; }
 
 .port-macro-node__value,
-.port-macro-node__target-badge text {
+.port-macro-node__target-badge text,
+.port-macro-node__scoring-badge text,
+.port-macro-node__played {
   fill: #0c2940;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
 }
 
-.port-macro-node__value { font-size: 42px; font-weight: 900; }
+.port-macro-node__value { font-size: 39px; font-weight: 900; }
 .port-macro-node__target-badge circle { fill: #76858b; stroke: #fffefb; stroke-width: 3; }
 .port-macro-node__target-badge text { fill: #fff; font-size: 12px; font-weight: 900; }
-.port-macro-node__target-badge.has-targets circle { fill: #536976; }
+.port-macro-node__target-badge.has-targets circle { fill: #078b7d; }
 .port-macro-node__target-badge.is-compatible circle { fill: #078b7d; }
 .port-macro-node__target-badge.is-zero { opacity: 0.7; }
+.port-macro-node__scoring-badge circle {
+  fill: #8c630d;
+  stroke: #ffe49b;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px rgb(212 163 49 / 0.38));
+}
+.port-macro-node__scoring-badge text {
+  fill: #fff7dc;
+  font-size: 11px;
+  font-weight: 950;
+}
+.port-macro-node__played {
+  fill: #526970;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
 .port-macro-node:focus-visible .port-macro-node__hit { stroke: var(--focus); stroke-width: 5; }
 
 .port-ramifier__mark {
@@ -551,11 +570,18 @@
   filter: drop-shadow(0 0 7px rgb(243 196 79 / 0.55));
 }
 .port-macro-node-shell.is-strategic-inspected .port-macro-node__rim { stroke: #f4ead2; }
-.port-macro-node__value,
-.port-macro-node__target-badge text { fill: #12282c; }
+.port-macro-node__value { fill: #12282c; }
+.port-macro-node__target-badge text { fill: #effffb; }
 .port-macro-node__target-badge circle { fill: #233d3e; stroke: #d7c293; }
-.port-macro-node__target-badge.has-targets circle { fill: #193c3c; }
+.port-macro-node__target-badge.has-targets circle { fill: var(--playable-deep); stroke: #83eadd; }
 .port-macro-node__target-badge.is-compatible circle { fill: var(--playable-deep); stroke: #8ffff0; }
+.port-macro-node__scoring-badge circle {
+  fill: #855d0d;
+  stroke: var(--scoring);
+  filter: drop-shadow(0 0 7px rgb(243 196 79 / 0.56));
+}
+.port-macro-node__scoring-badge text { fill: #fff3c4; }
+.port-macro-node__played { fill: #5a6967; }
 
 .port-ramifier__mark { stroke: #526b6a; }
 .port-ramifier__socket { fill: #f4ead2; stroke: #526b6a; }

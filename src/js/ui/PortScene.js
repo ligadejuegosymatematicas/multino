@@ -124,6 +124,34 @@ function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
 }
 
+function scoringTermMultiplicity(term) {
+  return Number.isSafeInteger(term.factor) && term.factor > 0
+    ? term.factor
+    : 0;
+}
+
+export function createPortScoringMultiplicity(terms = []) {
+  const multiplicityByValue = new Map(
+    Array.from({ length: 7 }, (_, value) => [value, 0]),
+  );
+  for (const term of terms) {
+    const multiplicity = scoringTermMultiplicity(term);
+    if (
+      !Number.isSafeInteger(term.value) ||
+      term.value < 0 ||
+      term.value > 6 ||
+      multiplicity === 0
+    ) {
+      continue;
+    }
+    multiplicityByValue.set(
+      term.value,
+      multiplicityByValue.get(term.value) + multiplicity,
+    );
+  }
+  return multiplicityByValue;
+}
+
 function openTargetTail(node, endpoint, topology) {
   const angle = Math.atan2(endpoint.y - node.y, endpoint.x - node.x);
   const end = pointAt(node, angle, NODE_RADIUS + 27);
@@ -413,7 +441,10 @@ export function createPortScene(
     ? view.scoringPresentation
     : null;
   const currentScoringTerms = (scoringPresentation?.terms ?? []).filter(
-    (term) => term.isContributing ?? term.contribution > 0,
+    (term) => scoringTermMultiplicity(term) > 0,
+  );
+  const scoringMultiplicityByValue = createPortScoringMultiplicity(
+    currentScoringTerms,
   );
   const highlightedScoringTerms = (
     scoringResolution?.terms ?? currentScoringTerms
@@ -469,6 +500,7 @@ export function createPortScene(
       playedTileCount: valueState.playedTileCount,
       totalTileCount: valueState.totalTileCount,
       openTargetCount: valueState.openTargetCount,
+      scoringMultiplicity: scoringMultiplicityByValue.get(node.value),
       compatibleTargetCount,
       isCompatible: hasSelection && compatibleTargetCount > 0,
       isInSelectedDomino: hasSelection && selectedValues.has(node.value),
@@ -651,7 +683,8 @@ export function createPortScene(
   ]);
   const projectedNodes = nodes.map((node) => ({
     ...node,
-    isScoringSource: scoringValues.has(node.value),
+    isScoringSource:
+      scoringValues.has(node.value) || node.scoringMultiplicity > 0,
     isStrategicInspected: strategicNodeValue === node.value,
   }));
   const targetChoice = selectedTargetValue === null
@@ -673,6 +706,7 @@ export function createPortScene(
         totalTileCount: strategicNode.totalTileCount,
         openTargetCount: strategicNode.openTargetCount,
         isScoringSource: strategicNode.isScoringSource,
+        scoringMultiplicity: strategicNode.scoringMultiplicity,
         scoringTerms: currentScoringTerms
           .filter((term) => term.value === strategicNode.value)
           .map((term) => ({ ...term })),
@@ -749,6 +783,10 @@ export function createPortScene(
             ? currentScoringTerms.map((term) => term.label).join(" + ")
             : "0",
         },
+    scoringMultiplicitySum: projectedNodes.reduce(
+      (sum, node) => sum + node.value * node.scoringMultiplicity,
+      0,
+    ),
     selectedDominoId,
     selectedTargetValue,
     selectedDomino,

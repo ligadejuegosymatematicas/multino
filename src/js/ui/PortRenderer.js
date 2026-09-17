@@ -130,11 +130,20 @@ function renderRamifierStatus(node) {
     return "";
   }
   const dots = [-12, -4, 4, 12].map((offset, index) => `
-    <circle class="port-ramifier__socket${index < node.ramifier.connectionCount ? " is-used" : ""}" cx="${node.x + offset}" cy="${node.y + 39}" r="2.8"></circle>`).join("");
+    <circle class="port-ramifier__socket${index < node.ramifier.connectionCount ? " is-used" : ""}" cx="${node.x + offset}" cy="${node.y + 52}" r="2.8"></circle>`).join("");
   return `
     <g class="port-ramifier" aria-hidden="true">
-      <path class="port-ramifier__mark" d="M ${node.x - 17} ${node.y + 31} Q ${node.x} ${node.y + 24} ${node.x + 17} ${node.y + 31}"></path>
+      <path class="port-ramifier__mark" d="M ${node.x - 17} ${node.y + 47} Q ${node.x} ${node.y + 42} ${node.x + 17} ${node.y + 47}"></path>
       ${dots}
+    </g>`;
+}
+
+function renderScoringMultiplicity(node) {
+  if (node.scoringMultiplicity === 0) return "";
+  return `
+    <g class="port-macro-node__scoring-badge" data-scoring-multiplicity="${node.scoringMultiplicity}" aria-hidden="true">
+      <circle cx="${node.x - 49}" cy="${node.y - 43}" r="15"></circle>
+      <text x="${node.x - 49}" y="${node.y - 43}">×${node.scoringMultiplicity}</text>
     </g>`;
 }
 
@@ -148,14 +157,19 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
   const ramifierLabel = node.ramifier
     ? `; chancho ramificador con ${node.ramifier.connectionCount} de 4 conexiones${node.ramifier.isSaturated ? "; saturado" : ""}`
     : "";
+  const scoringLabel = node.scoringMultiplicity > 0
+    ? `; aporta ${node.scoringMultiplicity} ${node.scoringMultiplicity === 1 ? "vez" : "veces"} a S`
+    : "; no aporta actualmente a S";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${compatibilityLabel}${ramifierLabel}">
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
-      <text class="port-macro-node__value" x="${node.x}" y="${node.y}">${node.value}</text>
+      <text class="port-macro-node__value" x="${node.x}" y="${node.y - 5}">${node.value}</text>
       <g class="port-macro-node__target-badge${node.openTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}">
         <circle cx="${node.x + 49}" cy="${node.y - 43}" r="15"></circle>
         <text x="${node.x + 49}" y="${node.y - 43}">${node.openTargetCount}</text>
       </g>
+      ${renderScoringMultiplicity(node)}
+      <text class="port-macro-node__played" x="${node.x}" y="${node.y + 34}">${node.playedTileCount}/${node.totalTileCount}</text>
       ${renderRamifierStatus(node)}
       <g class="port-incidences">${incidences}</g>
     </g>`;

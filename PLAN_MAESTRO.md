@@ -145,6 +145,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 18 — Puertos como lectura matemática de S: COMPLETADO.** La vista normal separa destinos reglamentarios y términos de puntuación: badge/halo teal significa dónde puede jugarse, anillo/chips dorados significa qué aporta ahora a S. El centro presenta términos agrupados, expresión y suma desde `scoringPresentation`; `n/7` y ocupación del ramificador pasan a inspección. No se anticipan resultados futuros ni se reconstruye scoring desde targets.
 
+**Bloque 19 — Estabilidad Tradicional y medallones estratégicos: COMPLETADO.** Tradicional crece de forma incremental y congela posición, orientación y giros previos; cámara y geometría quedan separadas. Puertos muestra simultáneamente targets teal, multiplicidad dorada de S y `n/7` neutro. Queda documentada, sin implementar, la posible convergencia futura Puertos + Grafo como **Estratégico / Jugar ↔ Analizar**.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

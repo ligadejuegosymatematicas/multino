@@ -183,6 +183,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - los badges siguen reconciliados con targets exactos y el selector conserva `placementId + portId` solo en memoria; no hay preview de S ni puntos futuros;
 - revisión manual: Ramificado completo de 24 acciones con un PASS, ramificador 0/4→4/4, Lineal, terminalidad, 390×844, 844×390 y 1366×768 sin overflow horizontal ni errores de consola.
 
+### Fase 2, Bloque 19 — estabilidad Tradicional y lectura estratégica de Puertos
+
+- `tests/ui/traditional-renderer.test.js` comprueba que cada prefijo incremental conserva exactamente posición, dirección y orientación de placements anteriores en Lineal y en Ramificado con dos, tres y cuatro brazos;
+- `tests/ui/port-renderer.test.js` presenta permanentemente y por separado targets teal, multiplicidad dorada de `scoringPresentation.terms` y conteo neutro `n/7`;
+- se verifican el invariante `S = Σ m_n·n`, el recorrido `0/7…7/7`, el doble contado una sola vez y el caso crítico de dos targets abiertos con multiplicidad de scoring cero;
+- la validación manual cubre ronda Ramificada completa, selector de targets repetidos, capa **Ver estructura**, terminalidad, las tres vistas y 1366×768, 390×844 y 844×390 sin overflow horizontal ni errores de consola.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

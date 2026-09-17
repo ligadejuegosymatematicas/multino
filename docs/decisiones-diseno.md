@@ -719,3 +719,13 @@ Un medallón con un solo target compatible ejecuta el target canónico directame
 **Motivo:** El badge de un valor y su término de puntuación responden preguntas distintas. Un doble ramificador puede tener sockets abiertos y aportar cero tras dos conexiones; compartir color o inferir S desde targets comunicaría una regla falsa.
 
 **Consecuencias:** No hay preview de puntuación futura. El selector humano sigue despachando el target canónico exacto. No cambian snapshot v6, motor, schema, reglas, persistencia, scoring, bonus, PASS, privacidad ni terminalidad.
+
+## DEC-053 — Tres lecturas permanentes por medallón estratégico
+
+**Estado:** Aceptada; sustituye únicamente la decisión de ocultar `n/7` en DEC-052.
+
+**Decisión:** Cada medallón de Puertos muestra simultáneamente valor, cantidad teal de targets abiertos, multiplicidad dorada `×m` derivada de `scoringPresentation.terms` y conteo histórico neutro `n/7`. La multiplicidad suma los factores que entrega la proyección de scoring; nunca se calcula desde targets. Se mantiene el invariante visible `S = Σ m_n·n`. La capacidad `c/4` del ramificador permanece neutral.
+
+**Motivo:** Puertos debe ofrecer una ventaja estratégica inmediata frente a Tradicional. Ocultar el agotamiento `n/7` obligaba a abrir un inspector, y un simple anillo dorado no comunicaba si un valor aportaba una o dos veces. El caso crítico es el ramificador con dos conexiones: puede conservar dos targets teal y tener multiplicidad dorada cero.
+
+**Consecuencias:** El inspector continúa como explicación ampliada y **Ver estructura** conserva incidencias y recorridos. Se registra como dirección futura una sola vista **Estratégico** con estados **Jugar / Analizar**: el segundo superpondría K₇, lazos y subgrafo jugado sin mover los siete medallones. No se implementa la fusión ni se modifica Grafo en este bloque.

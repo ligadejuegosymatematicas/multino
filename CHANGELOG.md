@@ -6,6 +6,10 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 
 ### Añadido
 
+- Medallones estratégicos de Puertos con tres datos simultáneos: targets abiertos teal, multiplicidad dorada `×m` de los términos reales de S y conteo histórico neutro `n/7`.
+- Invariante comprobado `S = Σ m_n·n` y caso crítico del ramificador que conserva destinos abiertos después de dejar de aportar a S.
+- Dirección futura documentada para converger Puertos y Grafo en **Estratégico / Jugar ↔ Analizar**, sin modificar todavía ninguna vista.
+- Layout Tradicional incremental: cada jugada conserva posición, orientación y giros de todas las fichas anteriores; resize y ajuste actúan solo sobre la cámara.
 - Cuarta iteración estratégica de Puertos: centro permanente de `scoringPresentation`, términos actuales de S y señales simultáneas independientes para jugabilidad (teal) y puntuación (dorado).
 - Inspector de medallón bajo demanda para `n/7`, targets abiertos y ocupación del único ramificador; la vista normal conserva solo valor y badge de destinos.
 - Gramática cromática estricta: teal para acciones legales, dorado exclusivamente para contribuciones a S y neutro para estructura/ramificador.

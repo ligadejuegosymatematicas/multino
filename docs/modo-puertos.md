@@ -124,7 +124,7 @@ Con la interfaz game-first, en 390×844 el comienzo del tablero pasó aproximada
 
 ## Presentación estratégica vigente
 
-La iteración posterior a DEC-050 conserva intacto el grafo de incidencias, pero cambia el primer nivel de lectura. Los siete `B_n` se presentan como medallones estables que muestran el valor y cuántos targets reglamentarios siguen abiertos. El conteo de fichas distintas `n/7` continúa derivado —un doble cuenta una ficha, no dos apariciones—, pero aparece solo al inspeccionar el medallón. Los badges de targets nunca representan términos de S.
+La iteración posterior a DEC-052 conserva intacto el grafo de incidencias, pero fija tres lecturas permanentes y separadas en cada `B_n`: badge teal para targets reglamentarios abiertos, indicador dorado `×m` para la multiplicidad real del valor en `scoringPresentation.terms` y conteo neutro `n/7` de fichas distintas jugadas. Un doble cuenta una ficha en `n/7`, aunque aporte `×2` a S. Ninguno de esos datos se infiere de otro.
 
 Al seleccionar una ficha, solo los valores compatibles adquieren halo y grosor adicional. Un valor con un único target despacha directamente ese target; con varios se abre un selector humano `Destino 1…q`, cuya asociación exacta a `placementId + portId` permanece en memoria y no se imprime en HTML. No se muestran S futuro, divisibilidad ni puntos anticipados.
 
@@ -135,18 +135,23 @@ En Ramificado, el medallón que contiene el único chancho ramificador integra c
 La vista normal responde a dos consultas distintas sin fusionarlas:
 
 - **teal exterior:** el valor posee uno o más targets exactos compatibles con la ficha seleccionada; el badge conserva la multiplicidad reglamentaria;
-- **dorado interior:** al menos un `scoringTerm` contribuyente posee ese valor y forma parte de S ahora.
+- **dorado interior:** `×m` expresa cuántas veces aparece el valor en los términos actuales de S;
+- **neutro inferior:** `n/7` expresa cuántas fichas distintas que contienen el valor ya salieron.
 
 Ambas señales pueden coexistir. El ejemplo decisivo es un ramificador que todavía ofrece sockets: después de su segunda conexión puede conservar dos targets y, sin embargo, deja de aportar `2N`. El medallón mantiene badge/estado estructural neutro o teal, pero pierde su anillo dorado. El renderer nunca deriva ese resultado de sockets: consume `scoringPresentation` y filtra únicamente términos con contribución positiva para el rótulo «SUMAN AHORA».
 
 El centro muestra chips agrupados (`2×N` para el doble cuando corresponde), la expresión y `S`. La resolución «múltiplo/no múltiplo» y los puntos aparecen solo durante el feedback posterior a una acción aceptada. Si el contrato futuro declara `enabled: false`, el centro matemático desaparece sin tocar targets ni topología.
 
-El ramificador usa una marca neutral de cuatro ocupaciones y `n/7` queda en un inspector estratégico junto con targets abiertos y, si aplica, ocupación `c/4`. El dorado queda reservado por contrato visual a scoring; la estructura analítica emplea neutros y teal.
+El ramificador usa una marca neutral de cuatro ocupaciones. Puede conservar badge teal `2` y mostrar multiplicidad dorada cero después de su segunda conexión: capacidad y puntuación son contratos distintos. El inspector sigue disponible para explicación ampliada, pero las tres cifras estratégicas necesarias ya se leen sin abrirlo. El dorado queda reservado por contrato visual a scoring; la estructura analítica emplea neutros y teal.
 
 ## Comparación
 
 - frente a Tradicional, Puertos conserva mejor las visitas repetidas a un valor y los mecanismos de dobles, pero exige aprender hilo ↔ puente y usar foco en densidad alta;
 - frente a Grafo, aporta información distintiva suficiente: identifica qué entrada continúa con qué salida y representa dobles como hubs explícitos; a cambio es visualmente más complejo;
-- Tradicional sigue siendo la vista físicamente más inmediata; Puertos ofrece la lectura estratégica más compacta de valores disponibles, multiplicidad de targets y composición actual de S, con agotamiento `n/7` bajo demanda; Grafo conserva la lectura matemática más simple de valores/aristas. El reglamento vigente solo expone Ramificado y Lineal; las comparaciones K anteriores permanecen exclusivamente como registro histórico del prototipo.
+- Tradicional sigue siendo la vista físicamente más inmediata; Puertos ofrece la lectura estratégica más compacta de valores disponibles, multiplicidad de targets, composición actual de S y agotamiento `n/7`; Grafo conserva por ahora la lectura matemática de valores/aristas. El reglamento vigente solo expone Ramificado y Lineal; las comparaciones K anteriores permanecen exclusivamente como registro histórico del prototipo.
+
+### Dirección de producto: Estratégico / Analizar
+
+Como estudio futuro, Puertos y Grafo podrían converger en una sola vista **Estratégico**. Su estado **Jugar** mantendría estos mismos siete medallones, posiciones y semánticas. La acción **Analizar** superpondría, sin moverlos, `K₇`, sus siete lazos y el subgrafo realmente jugado. Esta dirección no elimina ni renombra hoy ninguna vista y no altera el renderer de Grafo; únicamente exige mantener separables los overlays analíticos.
 
 Una visualización postpartida por pisos o carriles de ramas queda registrada como posibilidad futura. No forma parte de v3 ni se persiste en el snapshot.
