@@ -74,6 +74,7 @@ const scoringCard = document.querySelector("#scoring-card");
 let sessionController;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
+let hasShownScoringLesson = false;
 
 function setMessage(text) {
   message.textContent = text;
@@ -145,6 +146,10 @@ function renderRound(presentation, mode, feedback) {
   boardRoot.classList.toggle(
     "is-ports-view",
     mode === BOARD_VIEW_MODES.PORTS,
+  );
+  boardRoot.classList.toggle(
+    "is-scoring-feedback",
+    feedback?.scoring != null,
   );
   boardHeading.textContent = mode === BOARD_VIEW_MODES.GRAPH
     ? "Grafo de valores"
@@ -232,16 +237,7 @@ function renderRound(presentation, mode, feedback) {
     document.querySelector("#round-result"),
     presentation.view,
   );
-  const sharedFeedback = mode === BOARD_VIEW_MODES.PORTS && feedback?.scoring
-    ? feedback.openedBranchFamily
-      ? {
-          ...feedback,
-          scoring: null,
-          message: `${feedback.openedBranchFamily} abierta`,
-        }
-      : null
-    : feedback;
-  renderGameFeedback(playFeedback, sharedFeedback);
+  renderGameFeedback(playFeedback, feedback);
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;
@@ -283,9 +279,13 @@ function renderSession(session) {
       : "Lineal";
   if (!isConfiguring) {
     const nextFeedback = getGameFeedback(session.round.view);
-    const feedback = nextFeedback?.sequence !== lastFeedbackSequence
+    let feedback = nextFeedback?.sequence !== lastFeedbackSequence
       ? nextFeedback
       : null;
+    if (feedback?.scoring && !hasShownScoringLesson) {
+      feedback = { ...feedback, showScoringLesson: true };
+      hasShownScoringLesson = true;
+    }
     renderRound(session.round, session.viewMode, feedback);
     scheduleFeedbackHide(feedback);
     lastFeedbackSequence = nextFeedback?.sequence ?? null;

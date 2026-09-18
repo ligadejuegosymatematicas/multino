@@ -89,6 +89,10 @@ export function createScoringPresentation({
         divisor: policy.divisor,
         isDivisible:
           latestAction.openEndsSum % policy.divisor === 0,
+        divisionQuotient: Math.floor(
+          latestAction.openEndsSum / policy.divisor,
+        ),
+        remainder: latestAction.openEndsSum % policy.divisor,
         quotient:
           latestAction.openEndsSum % policy.divisor === 0
             ? latestAction.openEndsSum / policy.divisor

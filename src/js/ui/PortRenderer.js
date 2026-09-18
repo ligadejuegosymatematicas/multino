@@ -113,6 +113,7 @@ function renderNodeShell(node) {
     node.ramifier ? "has-ramifier" : "",
     node.ramifier?.isSaturated ? "is-ramifier-saturated" : "",
     node.isScoringSource ? "is-scoring-source" : "",
+    node.isScoringFeedbackSource ? "is-scoring-feedback-source" : "",
   ].filter(Boolean).join(" ");
   return `
     <g class="port-macro-node-shell ${stateClasses}" aria-hidden="true">
@@ -177,7 +178,7 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
     ? `; aporta ${node.scoringMultiplicity} ${node.scoringMultiplicity === 1 ? "vez" : "veces"} a S`
     : "; no aporta actualmente a S";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}${node.isScoringFeedbackSource ? " is-scoring-feedback-source" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
       <text class="port-macro-node__value" x="${node.x}" y="${node.y - 5}">${node.value}</text>
       <g class="port-macro-node__target-badge${node.displayTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}">
@@ -290,19 +291,6 @@ export function renderPortStrategicInspectorMarkup(inspector) {
     </aside>`;
 }
 
-function renderCoverScoring(scoring, cover) {
-  if (!scoring) {
-    return "";
-  }
-  return `
-    <g class="port-cover__scoring" role="status" aria-label="${escapeAttribute(scoring.expression)} da S igual a ${scoring.sum}; ${scoring.scoreAwarded > 0 ? `${scoring.scoreAwarded} puntos` : "sin puntos"}">
-      <text class="port-cover__expression" x="${cover.cx}" y="${cover.cy - 30}">${escapeAttribute(scoring.expression)}</text>
-      <text class="port-cover__sum" x="${cover.cx}" y="${cover.cy + 4}">S = ${scoring.sum}</text>
-      <text class="port-cover__division" x="${cover.cx}" y="${cover.cy + 32}">${scoring.isDivisible ? `${scoring.sum} = ${scoring.divisor} × ${scoring.quotient}` : `${scoring.sum} no es múltiplo de ${scoring.divisor}`}</text>
-      <text class="port-cover__outcome${scoring.scoreAwarded > 0 ? " is-award" : ""}" x="${cover.cx}" y="${cover.cy + 62}">${scoring.scoreAwarded > 0 ? `+${scoring.scoreAwarded} puntos` : "Sin puntos"}</text>
-    </g>`;
-}
-
 function renderCurrentScoring(scoring, cover) {
   if (!scoring) {
     return "";
@@ -360,10 +348,9 @@ function renderCover(scene) {
       <circle class="port-cover__shadow" cx="${scene.cover.cx}" cy="${scene.cover.cy + 5}" r="${radius + 4}"></circle>
       <circle class="port-cover__rim" cx="${scene.cover.cx}" cy="${scene.cover.cy}" r="${radius}"></circle>
       <circle class="port-cover__body" cx="${scene.cover.cx}" cy="${scene.cover.cy}" r="${Math.max(radius - 10, 48)}"></circle>
-      ${renderCoverScoring(scene.scoringResolution, scene.cover) ||
-        (title
+      ${title
           ? `<text class="port-cover__title" x="${scene.cover.cx}" y="${scene.cover.cy - 7}">${escapeAttribute(title)}</text><text class="port-cover__action" x="${scene.cover.cx}" y="${scene.cover.cy + 20}">${escapeAttribute(action)}</text>`
-          : renderCurrentScoring(scene.scoringPresentation, scene.cover))}
+          : renderCurrentScoring(scene.scoringPresentation, scene.cover)}
     </g>`;
 }
 
@@ -456,7 +443,7 @@ export function renderPortSvgMarkup(scene) {
   const showIncidences = fullStructure || routeOnly;
   const showOpenTargetDetails = fullStructure || routeOnly || focusActive;
   return `
-    <svg class="port-graph is-${scene.visualState}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
+    <svg class="port-graph is-${scene.visualState}${scene.scoringResolution ? " is-scoring-feedback" : ""}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
       <title id="port-title">Vista Puertos</title>
       <desc id="port-description">Siete valores fijos. Cada medallón muestra cuántos destinos siguen abiertos; el centro distingue los términos reglamentarios que forman S. La estructura completa está disponible bajo demanda.</desc>
       <g class="port-scene-base">

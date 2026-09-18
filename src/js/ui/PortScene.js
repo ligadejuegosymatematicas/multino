@@ -468,7 +468,7 @@ export function createPortScene(
   );
   const highlightedScoringTerms = (
     scoringResolution?.terms ?? currentScoringTerms
-  ).filter((term) => term.isContributing ?? term.contribution > 0);
+  ).filter((term) => term.isDouble !== true || scoringTermMultiplicity(term) > 0);
   const legalEndpointIds = new Set(
     view.portGraph.openTargets
       .filter((target) => legalTargetIds.has(target.id))
@@ -718,10 +718,15 @@ export function createPortScene(
       .filter((hub) => hub.isScoringTerm)
       .map((hub) => hub.value),
   ]);
+  const scoringFeedbackValues = new Set(
+    highlightedScoringTerms.map((term) => term.value),
+  );
   const projectedNodes = nodes.map((node) => ({
     ...node,
     isScoringSource:
       scoringValues.has(node.value) || node.scoringMultiplicity > 0,
+    isScoringFeedbackSource:
+      scoringResolution !== null && scoringFeedbackValues.has(node.value),
     isStrategicInspected: strategicNodeValue === node.value,
   }));
   const targetChoiceTargets = selectedTargetValue === null

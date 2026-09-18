@@ -50,6 +50,7 @@ function renderTile(tile) {
       <span class="traditional-domino__divider" aria-hidden="true"></span>
       <span class="traditional-domino__half">${renderPips(tile.secondValue)}</span>
       ${tile.isSpecialDouble ? '<span class="traditional-domino__special" aria-hidden="true"></span>' : ""}
+      ${tile.isScoringTerm ? `<span class="traditional-domino__scoring-value" aria-hidden="true">2×${tile.firstValue}</span>` : ""}
     </div>`;
 }
 
@@ -90,7 +91,10 @@ function renderTarget(target) {
   const option = target.optionIndex === null
     ? ""
     : `<span class="traditional-target__option" aria-hidden="true">${target.optionIndex}</span>`;
-  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${option}</button>`;
+  const scoringValue = target.isScoringTerm
+    ? `<span class="traditional-target__scoring-value" aria-hidden="true">${target.value}</span>`
+    : "";
+  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${scoringValue}${option}</button>`;
 }
 
 function renderLockedRamifierSocket(socket) {
@@ -103,7 +107,7 @@ export function renderTraditionalTableMarkup(scene) {
     ? '<div class="traditional-start"><button type="button" class="primary-action" data-start-action>Jugar</button></div>'
     : "";
   return `
-    <div class="traditional-table" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
+    <div class="traditional-table${scene.scoringResolution ? " is-scoring-feedback" : ""}" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
       <div class="traditional-camera-controls">
         <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">${scene.isFinished ? "Centrar mesa" : "Ajustar tablero"}</button>
       </div>

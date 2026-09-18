@@ -83,7 +83,10 @@ export function createTraditionalScene(
   );
   const scoringDoublePlacementIds = new Set(
     (scoringResolution?.terms ?? [])
-      .filter((term) => term.isDouble)
+      .filter((term) =>
+        term.isDouble &&
+        (term.isContributing ?? term.contribution > 0)
+      )
       .map((term) => term.placementId),
   );
   const layout = createTraditionalSnakeLayout(view.table, {
@@ -189,6 +192,7 @@ export function createTraditionalScene(
     connections,
     openTargets,
     lockedRamifierSockets,
+    scoringResolution,
     layoutStats,
     contentBounds,
     layoutState: layout,

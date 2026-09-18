@@ -3,7 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { projectGraphView } from "../../src/js/game/index.js";
-import { getGameFeedback } from "../../src/js/ui/GameFeedback.js";
+import {
+  createScoringFeedbackPresentation,
+  getGameFeedback,
+} from "../../src/js/ui/GameFeedback.js";
 import { renderPipsMarkup } from "../../src/js/ui/DominoPips.js";
 import { getRoundResultPresentation } from "../../src/js/ui/ScorePanel.js";
 import {
@@ -37,7 +40,10 @@ test("el feedback puntuable deriva equipo y puntos de la acción aceptada", () =
       latestResolution: {
         sequence: 1,
         placementId: "placement-1",
-        terms: [],
+        terms: [
+          { value: 5, factor: 1, contribution: 5, isDouble: false, label: "5" },
+          { value: 5, factor: 1, contribution: 5, isDouble: false, label: "5" },
+        ],
         expression: "5 + 5",
         sum: 10,
         divisor: 5,
@@ -54,6 +60,57 @@ test("el feedback puntuable deriva equipo y puntos de la acción aceptada", () =
   assert.equal(feedback.scoring.expression, "5 + 5");
   assert.equal(feedback.scoring.quotient, 2);
   assert.equal(feedback.openedBranchFamily, null);
+  assert.equal(feedback.scoringFeedback.divisionText, "10 = 5 × 2");
+  assert.equal(feedback.scoringFeedback.outcomeText, "+2 Órbita");
+});
+
+test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar reglas", () => {
+  const terms = [
+    { value: 5, factor: 2, contribution: 10, isDouble: true, label: "2×5" },
+    { value: 3, factor: 1, contribution: 3, isDouble: false, label: "3" },
+  ];
+  const scored = createScoringFeedbackPresentation({
+    terms,
+    expression: "2×5 + 5 + 5",
+    sum: 20,
+    divisor: 5,
+    isDivisible: true,
+    quotient: 4,
+    divisionQuotient: 4,
+    remainder: 0,
+    scoreAwarded: 4,
+  }, "Vector");
+  const missed = createScoringFeedbackPresentation({
+    terms,
+    expression: "2×5 + 3 + 5",
+    sum: 18,
+    divisor: 5,
+    isDivisible: false,
+    quotient: null,
+    divisionQuotient: 3,
+    remainder: 3,
+    scoreAwarded: 0,
+  }, "Órbita");
+  const zero = createScoringFeedbackPresentation({
+    terms: [{ value: 5, factor: 0, contribution: 0, isDouble: true, label: "0" }],
+    expression: "0",
+    sum: 0,
+    divisor: 5,
+    isDivisible: true,
+    quotient: 0,
+    divisionQuotient: 0,
+    remainder: 0,
+    scoreAwarded: 0,
+  }, "Órbita");
+
+  assert.deepEqual(scored.terms.map((term) => term.label), ["2×5", "3"]);
+  assert.equal(scored.divisionText, "20 = 5 × 4");
+  assert.equal(scored.outcomeText, "+4 Vector");
+  assert.equal(missed.divisionText, "18 = 5 × 3 + 3");
+  assert.equal(missed.outcomeText, "No puntúa");
+  assert.deepEqual(zero.terms, []);
+  assert.equal(zero.divisionText, "0 puntos");
+  assert.equal(zero.outcomeText, "0 puntos");
 });
 
 test("la primera ficha lateral produce feedback de nueva ramificación", () => {

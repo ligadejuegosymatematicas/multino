@@ -759,8 +759,12 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     scene.openTargets.length,
   );
   assert.match(markup, />Centrar mesa<\/button>/);
-  assert.ok(scene.tiles.some((tile) => tile.isScoringTerm));
-  assert.match(markup, /traditional-domino [^"]*is-scoring-term/);
+  const sourceCount = scene.tiles.filter((tile) => tile.isScoringTerm).length +
+    scene.openTargets.filter((target) => target.isScoringTerm).length;
+  const expectedSourceCount = view.scoringPresentation.latestResolution.terms
+    .filter((term) => term.isDouble ? term.factor > 0 : true).length;
+  assert.equal(sourceCount, expectedSourceCount);
+  assert.match(markup, /traditional-(?:domino|target) [^"]*is-scoring-term/);
 });
 
 test("renderer, responsive y accesibilidad no dependen del board ni de overflow global", async () => {

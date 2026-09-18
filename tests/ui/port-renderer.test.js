@@ -627,13 +627,15 @@ test("jugar, decisión, recorrido y estructura exponen revelado progresivo", () 
   assert.match(renderPortStructureToggleMarkup(structure), /Volver a jugar/);
 });
 
-test("la tapa presenta scoring real y desaparece cuando no hay resolución", () => {
+test("Puertos intensifica las fuentes reales y deja la resolución a la banda común", () => {
   const view = projectPortView(createTwoArmScenario());
   const contributingTarget = view.portGraph.openTargets[0];
   const scoringResolution = {
     terms: [{
       placementId: contributingTarget.placementId,
       portId: contributingTarget.portId,
+      value: contributingTarget.value,
+      factor: 1,
       isDouble: false,
       contribution: contributingTarget.value,
     }],
@@ -649,10 +651,9 @@ test("la tapa presenta scoring real y desaparece cuando no hay resolución", () 
   }));
   const currentMarkup = renderPortSvgMarkup(createPortScene(view));
 
-  assert.match(scoredMarkup, /port-cover__scoring/);
-  assert.match(scoredMarkup, />5 \+ 3 \+ 2</);
-  assert.match(scoredMarkup, />10 = 5 × 2</);
-  assert.match(scoredMarkup, />\+2 puntos</);
+  assert.match(scoredMarkup, /port-graph is-play is-scoring-feedback/);
+  assert.doesNotMatch(scoredMarkup, /port-cover__scoring/);
+  assert.match(scoredMarkup, /port-cover__current-score/);
   const scoredScene = createPortScene(view, { scoringResolution });
   assert.equal(
     scoredScene.openTargets.filter((target) => target.isScoringTerm).length,
@@ -663,32 +664,23 @@ test("la tapa presenta scoring real y desaparece cuando no hay resolución", () 
   assert.doesNotMatch(currentMarkup, /múltiplo de/);
 });
 
-test("un especial con extremos libres mantiene scoring y targets separados", () => {
-  let state = createBoardScenario({ K: 7, firstDominoId: "5-5" });
+test("el ramificador 2\/4 conserva laterales jugables pero no se ilumina como scoring", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "5-5" });
   state = playDomino(state, "5-5");
+  state = playDomino(state, "1-5", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "2-5", targetAt("placement-1", "main:2"));
   const view = projectPortView(state);
   const scene = createPortScene(view, {
-    scoringResolution: {
-      terms: [{
-        placementId: "placement-1",
-        portId: null,
-        isDouble: true,
-        contribution: 0,
-      }],
-      expression: "0",
-      sum: 0,
-      divisor: 5,
-      isDivisible: true,
-      quotient: 0,
-      scoreAwarded: 0,
-    },
+    scoringResolution: view.scoringPresentation.latestResolution,
   });
 
-  assert.equal(scene.openTargets.length, 2);
-  assert.equal(scene.openTargets.filter((target) => target.isScoringTerm).length, 0);
+  assert.equal(
+    scene.openTargets.filter((target) => target.placementId === "placement-1").length,
+    2,
+  );
   assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 0);
-  assert.equal(scene.nodes.find((node) => node.value === 5).isScoringSource, true);
-  assert.equal(scene.nodes.find((node) => node.value === 5).scoringMultiplicity, 2);
+  assert.equal(scene.nodes.find((node) => node.value === 5).isScoringFeedbackSource, false);
+  assert.equal(scene.nodes.find((node) => node.value === 5).scoringMultiplicity, 0);
 });
 
 test("el contrato scoring disabled elimina el centro matemático sin afectar targets", () => {

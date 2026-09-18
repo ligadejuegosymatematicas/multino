@@ -53,6 +53,8 @@ test("la presentación puntuable deriva S, divisor y cociente de una sola polít
   );
   assert.equal(presentation.latestResolution.sum, 10);
   assert.equal(presentation.latestResolution.isDivisible, true);
+  assert.equal(presentation.latestResolution.divisionQuotient, 2);
+  assert.equal(presentation.latestResolution.remainder, 0);
   assert.equal(presentation.latestResolution.quotient, 2);
   assert.equal(presentation.latestResolution.scoreAwarded, 2);
   assert.equal(
@@ -73,6 +75,8 @@ test("una jugada no múltiplo produce resolución explícita sin puntos", () => 
   assert.equal(resolution.sum, 12);
   assert.equal(resolution.divisor, 5);
   assert.equal(resolution.isDivisible, false);
+  assert.equal(resolution.divisionQuotient, 2);
+  assert.equal(resolution.remainder, 2);
   assert.equal(resolution.quotient, null);
   assert.equal(resolution.scoreAwarded, 0);
 });

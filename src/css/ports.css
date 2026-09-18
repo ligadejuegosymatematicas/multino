@@ -263,6 +263,16 @@
   filter: drop-shadow(0 0 4px rgb(212 163 49 / 0.32));
 }
 
+.port-graph.is-scoring-feedback .port-macro-node-shell:not(.is-scoring-feedback-source),
+.port-graph.is-scoring-feedback .port-macro-node:not(.is-scoring-feedback-source) {
+  opacity: 0.42;
+}
+
+.port-graph.is-scoring-feedback .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
+.port-graph.is-scoring-feedback .port-macro-node.is-scoring-feedback-source .port-macro-node__scoring-badge {
+  animation: port-scoring-source 1.75s ease-out both;
+}
+
 .port-macro-node-shell.is-strategic-inspected .port-macro-node__rim {
   stroke: #0c2940;
   stroke-width: 4;
@@ -675,6 +685,7 @@
 
 @keyframes port-target-pulse { 0%, 100% { opacity: 0.74; } 50% { opacity: 1; } }
 @keyframes port-cover-score { 0% { opacity: 0; transform: translateY(8px) scale(0.96); transform-origin: center; } 16%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
+@keyframes port-scoring-source { 0%, 100% { opacity: 1; filter: none; } 18%, 74% { opacity: 1; filter: drop-shadow(0 0 11px #ffd261); } }
 
 @media (prefers-reduced-motion: reduce) {
   .port-thread,
@@ -685,6 +696,8 @@
   .port-macro-node-shell { transition: none; }
   .port-open-target.is-legal,
   .port-cover__scoring,
+  .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
+  .port-macro-node.is-scoring-feedback-source .port-macro-node__scoring-badge,
   .port-ramifier-hint { animation: none; }
 }
 
