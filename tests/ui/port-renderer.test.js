@@ -17,6 +17,7 @@ import {
   PORT_SCENE_LAYOUTS,
 } from "../../src/js/ui/PortScene.js";
 import {
+  createPortDecisionPresentations,
   getPortValueAction,
   renderPortNodeInspectorMarkup,
   renderPortStrategicInspectorMarkup,
@@ -26,6 +27,7 @@ import {
 } from "../../src/js/ui/PortRenderer.js";
 import {
   createBoardScenario,
+  ensureDominoInHand,
   findDominoOwner,
   playDomino,
 } from "../fixtures/board-scenarios.js";
@@ -51,6 +53,36 @@ function playCurrent(state, dominoId, targetMatcher = () => true) {
   );
   assert.ok(action, `Debe existir una jugada legal para ${dominoId}.`);
   return applyTurnAction(state, action);
+}
+
+function giveCurrentAndPlay(state, dominoId, targetMatcher = () => true) {
+  return playCurrent(
+    ensureDominoInHand(state, state.currentPlayerId, dominoId),
+    dominoId,
+    targetMatcher,
+  );
+}
+
+function createOrdinaryAndCrossDecisionState() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "6-6" });
+  state = giveCurrentAndPlay(state, "6-6");
+  state = giveCurrentAndPlay(
+    state,
+    "4-6",
+    (target) => target.placementId === "placement-1" &&
+      target.portId === "main:1",
+  );
+  state = giveCurrentAndPlay(
+    state,
+    "2-4",
+    (target) => target.placementId === "placement-2",
+  );
+  state = giveCurrentAndPlay(
+    state,
+    "2-6",
+    (target) => target.placementId === "placement-3",
+  );
+  return ensureDominoInHand(state, state.currentPlayerId, "1-6");
 }
 
 function createTwoArmScenario() {
@@ -249,10 +281,59 @@ test("las decisiones distintas usan efectos legibles y nunca Destino 1 o 2", () 
   };
   const markup = renderPortTargetChooserMarkup(targetChoice);
 
-  assert.match(markup, />Continuar</);
+  assert.match(markup, />Continuar brazo</);
   assert.match(markup, />Abrir brazo</);
-  assert.match(markup, />2 lugares equivalentes</);
+  assert.match(markup, />×2 lugares equivalentes</);
   assert.doesNotMatch(markup, /Destino \d|placement-|side:|branch:/);
+});
+
+test("continuar y completar cruce son opciones inequívocas para el mismo valor", () => {
+  const state = createOrdinaryAndCrossDecisionState();
+  const groups = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const presentations = createPortDecisionPresentations(groups);
+  const scene = createPortScene(projectPortView(state, state.currentPlayerId), {
+    selectedDominoId: "1-6",
+    legalTargets: getLegalTargetsForDomino(
+      state,
+      state.currentPlayerId,
+      "1-6",
+    ),
+    strategicDecisions: groups,
+    selectedTargetValue: 6,
+  });
+  const markup = renderPortTargetChooserMarkup(scene.targetChoice);
+
+  assert.equal(new Set(
+    presentations.map((presentation) => presentation.visibleSignature),
+  ).size, 2);
+  assert.match(markup, />Continuar brazo</);
+  assert.match(markup, />Completar cruce</);
+  assert.match(markup, /Chancho 6 ×2 → 0 en S/);
+  assert.match(markup, />\+2 brazos</);
+  assert.doesNotMatch(markup, />Continuar<\/span>[\s\S]*?>Continuar<\/span>/);
+  assert.doesNotMatch(markup, /placement-|main:|side:/);
+});
+
+test("la salvaguarda rechaza grupos distintos visualmente idénticos", () => {
+  const repeated = {
+    decisionKind: "continue",
+    physicalTargetCount: 1,
+    effects: {
+      scoringMultiplicityChanges: [],
+      openTargetChangesByValue: [],
+      branchingConnectionCountBefore: null,
+      branchingConnectionCountAfter: null,
+      endsRound: false,
+    },
+  };
+  assert.throws(
+    () => createPortDecisionPresentations([repeated, structuredClone(repeated)]),
+    /indistinguibles/,
+  );
 });
 
 test("sin selección los badges hacen visibles extremos reales sin exponer incidencias", () => {

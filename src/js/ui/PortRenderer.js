@@ -363,6 +363,103 @@ export function renderPortStructureToggleMarkup(scene) {
     </button>`;
 }
 
+const PORT_DECISION_META = Object.freeze({
+  start: { icon: "▶", title: "Jugar" },
+  continue: { icon: "→", title: "Continuar brazo" },
+  "complete-cross": { icon: "┼", title: "Completar cruce" },
+  "open-arm": { icon: "↗", title: "Abrir brazo" },
+});
+
+function scoringChangeText(change) {
+  if (change.after === 0) {
+    return `${change.value} ×${change.before} → 0 en S`;
+  }
+  if (change.before === 0) {
+    return `${change.value} ×${change.after} entra en S`;
+  }
+  return `${change.value} ×${change.before}→×${change.after} en S`;
+}
+
+function openTargetChangeText(changes) {
+  const parts = changes.map((change) =>
+    `${change.delta > 0 ? "+" : "−"}${change.value}${Math.abs(change.delta) > 1 ? `×${Math.abs(change.delta)}` : ""}`
+  );
+  return parts.length > 0 ? `Puntas ${parts.join(" · ")}` : null;
+}
+
+export function createPortDecisionPresentation(decision) {
+  const meta = PORT_DECISION_META[decision.decisionKind] ??
+    PORT_DECISION_META.continue;
+  const effects = decision.effects ?? {};
+  const badges = [];
+  const ramifierScoringChange = effects.ramifierScoringChange ?? null;
+  for (const change of effects.scoringMultiplicityChanges ?? []) {
+    if (change.value === ramifierScoringChange?.value) continue;
+    badges.push({ kind: "scoring", text: scoringChangeText(change) });
+  }
+  if (ramifierScoringChange) {
+    badges.push({
+      kind: "scoring-off",
+      text: `Chancho ${ramifierScoringChange.value} ×${ramifierScoringChange.before} → 0 en S`,
+    });
+  }
+  if ((effects.unlockedLateralCount ?? 0) > 0) {
+    badges.push({
+      kind: "playable",
+      text: `+${effects.unlockedLateralCount} brazos`,
+    });
+  }
+  if (
+    effects.branchingConnectionCountAfter !== null &&
+    effects.branchingConnectionCountAfter !==
+      effects.branchingConnectionCountBefore
+  ) {
+    badges.push({
+      kind: "structure",
+      text: `${effects.branchingConnectionCountAfter}/4`,
+    });
+  }
+  const openTargets = openTargetChangeText(
+    effects.openTargetChangesByValue ?? [],
+  );
+  if (openTargets) {
+    badges.push({ kind: "structure", text: openTargets });
+  }
+  if (effects.endsRound) {
+    badges.push({ kind: "structure", text: "Cierra ronda" });
+  }
+  if (decision.physicalTargetCount > 1) {
+    badges.push({
+      kind: "places",
+      text: `×${decision.physicalTargetCount} lugares equivalentes`,
+    });
+  }
+  return {
+    icon: meta.icon,
+    title: meta.title,
+    badges,
+    visibleSignature: JSON.stringify({
+      icon: meta.icon,
+      title: meta.title,
+      badges: badges.map(({ kind, text }) => ({ kind, text })),
+    }),
+  };
+}
+
+export function createPortDecisionPresentations(decisions) {
+  const presentations = decisions.map(createPortDecisionPresentation);
+  const signatures = new Set();
+  for (const presentation of presentations) {
+    if (signatures.has(presentation.visibleSignature)) {
+      throw new Error(
+        "Dos decisiones estratégicas distintas resultaron visualmente indistinguibles.",
+      );
+    }
+    signatures.add(presentation.visibleSignature);
+  }
+  return presentations;
+}
+
 function renderK7Background(scene) {
   const edges = scene.k7Edges.map((edge) => `
     <line class="port-k7__edge" x1="${edge.first.x}" y1="${edge.first.y}" x2="${edge.second.x}" y2="${edge.second.y}"></line>`).join("");
@@ -375,19 +472,24 @@ export function renderPortTargetChooserMarkup(targetChoice) {
   if (!targetChoice || targetChoice.decisions.length < 2) {
     return "";
   }
-  const labels = {
-    start: "Jugar",
-    continue: "Continuar",
-    "complete-cross": "Completar cruce",
-    "open-arm": "Abrir brazo",
-  };
-  const options = targetChoice.decisions.map((decision, index) => `
-    <button type="button" class="port-target-choice__option" data-port-choice-index="${index}">
-      <span>${labels[decision.decisionKind] ?? "Continuar"}</span>
-      ${decision.physicalTargetCount > 1
-        ? `<small>${decision.physicalTargetCount} lugares equivalentes</small>`
-        : ""}
-    </button>`).join("");
+  const presentations = createPortDecisionPresentations(
+    targetChoice.decisions,
+  );
+  const options = targetChoice.decisions.map((decision, index) => {
+    const presentation = presentations[index];
+    const badges = presentation.badges.map((badge) =>
+      `<small class="port-target-choice__effect is-${badge.kind}">${escapeAttribute(badge.text)}</small>`
+    ).join("");
+    const accessibleEffects = presentation.badges.length > 0
+      ? `; ${presentation.badges.map((badge) => badge.text).join("; ")}`
+      : "";
+    return `
+    <button type="button" class="port-target-choice__option" data-port-choice-index="${index}" aria-label="${escapeAttribute(presentation.title + accessibleEffects)}">
+      <span class="port-target-choice__icon" aria-hidden="true">${presentation.icon}</span>
+      <span class="port-target-choice__title">${presentation.title}</span>
+      <span class="port-target-choice__effects">${badges}</span>
+    </button>`;
+  }).join("");
   return `
     <section class="port-target-choice" aria-label="Elegir destino de valor ${targetChoice.value}">
       <div>

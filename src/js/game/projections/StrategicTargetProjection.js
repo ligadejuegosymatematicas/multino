@@ -112,6 +112,29 @@ function openEndCounts(openEnds) {
   return counts;
 }
 
+function scoringMultiplicities(scoring) {
+  const multiplicities = Array.from({ length: 7 }, () => 0);
+  for (const term of scoring.terms) {
+    if (
+      Number.isSafeInteger(term.value) &&
+      term.value >= 0 &&
+      term.value <= 6 &&
+      Number.isSafeInteger(term.factor) &&
+      term.factor > 0
+    ) {
+      multiplicities[term.value] += term.factor;
+    }
+  }
+  return multiplicities;
+}
+
+function valueChanges(before, after) {
+  return before.flatMap((count, value) => count === after[value]
+    ? []
+    : [{ value, before: count, after: after[value], delta: after[value] - count }]
+  );
+}
+
 function branchingSignature(structure) {
   const branchingDouble = structure.branchingDouble;
   return branchingDouble === null
@@ -142,6 +165,56 @@ function targetValue(projection) {
   return projection.target.kind === "START" ? null : projection.target.value;
 }
 
+function publicEffects({
+  beforeScoring,
+  afterScoring,
+  beforeTargets,
+  afterTargets,
+  beforeStructure,
+  afterStructure,
+  endsRound,
+}) {
+  const beforeBranching = beforeStructure.branchingDouble;
+  const afterBranching = afterStructure.branchingDouble;
+  const completesCross = beforeBranching?.connectionCount === 1 &&
+    afterBranching?.connectionCount === 2;
+  const unlockedLateralCount =
+    beforeBranching?.lateralPortsUnlocked === false &&
+      afterBranching?.lateralPortsUnlocked === true
+      ? afterBranching.lateralPortsRemaining
+      : 0;
+  const beforeRamifierScoring = beforeBranching?.contributesToScoring
+    ? 2
+    : 0;
+  const afterRamifierScoring = afterBranching?.contributesToScoring
+    ? 2
+    : 0;
+  return {
+    scoringMultiplicityChanges: valueChanges(
+      scoringMultiplicities(beforeScoring),
+      scoringMultiplicities(afterScoring),
+    ),
+    openTargetChangesByValue: valueChanges(
+      openEndCounts(beforeTargets),
+      openEndCounts(afterTargets),
+    ),
+    completesCross,
+    unlockedLateralCount,
+    ramifierScoringChange:
+      beforeBranching?.value === afterBranching?.value &&
+        beforeRamifierScoring !== afterRamifierScoring
+        ? {
+            value: afterBranching.value,
+            before: beforeRamifierScoring,
+            after: afterRamifierScoring,
+          }
+        : null,
+    branchingConnectionCountBefore: beforeBranching?.connectionCount ?? null,
+    branchingConnectionCountAfter: afterBranching?.connectionCount ?? null,
+    endsRound,
+  };
+}
+
 /**
  * Anticipa, sin mutar ni persistir, las consecuencias exactas de cada target
  * legal para una ficha del jugador actual. La UI normal no consume el bloque
@@ -165,6 +238,7 @@ export function getStrategicTargetProjections(
 
   const beforeTargets = projectOpenTargets(state);
   const beforeStructure = getRoundStructureProjection(state);
+  const beforeScoring = getScoringPresentation(state);
   const beforeTargetById = new Map(
     beforeTargets.map((target) => [target.id, target]),
   );
@@ -192,6 +266,16 @@ export function getStrategicTargetProjections(
         { dominoId, target: action.target },
       );
 
+      const effects = publicEffects({
+        beforeScoring,
+        afterScoring: scoring,
+        beforeTargets,
+        afterTargets: resultingOpenEnds,
+        beforeStructure,
+        afterStructure: resultingStructure,
+        endsRound: nextState.phase === "finished",
+      });
+
       return {
         playerId,
         dominoId,
@@ -207,6 +291,7 @@ export function getStrategicTargetProjections(
           projectedTarget.topology.region === "branch" &&
           projectedTarget.topology.branchState === "POTENTIAL",
         scoring: structuredClone(scoring),
+        effects,
         resultingOpenEnds,
         resultingStructure,
         openEndChanges: getTargetChanges(beforeTargets, resultingOpenEnds),
@@ -244,6 +329,7 @@ export function getStrategicDecisionGroups(state, playerId, dominoId) {
       value,
       decisionKind: projection.decisionKind,
       outcome,
+      effects: projection.effects,
       projections: [projection],
     });
   }
@@ -263,6 +349,7 @@ export function getStrategicDecisionGroups(state, playerId, dominoId) {
         structuredClone(projection.action.target)
       ),
       outcome: structuredClone(group.outcome),
+      effects: structuredClone(group.effects),
     };
   });
 }

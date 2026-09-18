@@ -197,6 +197,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/ui/traditional-renderer.test.js` comprueba sockets laterales bloqueados a 0/4 y 1/4, desbloqueo a 2/4, preservación pura de cámara y pan mínimo sin cambio de zoom;
 - el renderer conserva cámara durante handoff, scoring, turno y cierre; solo carga, orientación real y control explícito permiten fit completo.
 
+### Fase 2, Bloque 21 — feedback pedagógico y decisiones inequívocas
+
+- la banda transversal deriva términos, cociente y resto de `scoringPresentation`, intensifica las fuentes reales en Tradicional/Puertos y transfiere `+q` al equipo sin duplicar el cálculo reglamentario;
+- `tests/projections/strategic-target-projection.test.js` reproduce un valor con extremo ordinario y continuidad del ramificador en `1/4`, y verifica además tres lugares físicamente equivalentes agrupados bajo un target canónico;
+- `tests/ui/port-renderer.test.js` exige títulos, iconos y microefectos distintos para grupos diferentes: **Continuar brazo** frente a **Completar cruce**, desaparición neutralizada del `×2` dorado y desbloqueo de dos brazos teal;
+- una salvaguarda rechaza dos decisiones separadas si su representación visible resulta idéntica; los IDs de placement/port siguen fuera del marcado mostrado al jugador.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

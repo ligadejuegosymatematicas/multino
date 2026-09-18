@@ -10,7 +10,10 @@ import {
   getStrategicTargetProjections,
   STRATEGIC_DECISION_KINDS,
 } from "../../src/js/game/index.js";
-import { createBoardScenario } from "../fixtures/board-scenarios.js";
+import {
+  createBoardScenario,
+  ensureDominoInHand,
+} from "../fixtures/board-scenarios.js";
 import { createValidParticipantInput } from "../fixtures/participants.js";
 import { createExitTurnState } from "../fixtures/turn-scenarios.js";
 
@@ -35,6 +38,59 @@ function playMatching(state, dominoId, targetMatcher = () => true) {
   );
   assert.ok(action, `Debe existir una jugada legal para ${dominoId}.`);
   return applyTurnAction(state, action);
+}
+
+function giveCurrentPlayerAndPlay(
+  state,
+  dominoId,
+  targetMatcher = () => true,
+) {
+  const prepared = ensureDominoInHand(
+    state,
+    state.currentPlayerId,
+    dominoId,
+  );
+  return playMatching(prepared, dominoId, targetMatcher);
+}
+
+function createOrdinaryAndCrossDecisionState() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "6-6" });
+  state = giveCurrentPlayerAndPlay(state, "6-6");
+  state = giveCurrentPlayerAndPlay(
+    state,
+    "4-6",
+    (target) => target.placementId === "placement-1" &&
+      target.portId === "main:1",
+  );
+  state = giveCurrentPlayerAndPlay(
+    state,
+    "2-4",
+    (target) => target.placementId === "placement-2",
+  );
+  state = giveCurrentPlayerAndPlay(
+    state,
+    "2-6",
+    (target) => target.placementId === "placement-3",
+  );
+  return ensureDominoInHand(state, state.currentPlayerId, "1-6");
+}
+
+function createThreeEquivalentTargetsState() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "6-6" });
+  const sequence = [
+    ["6-6", () => true],
+    ["0-6", (target) => target.portId === "main:1"],
+    ["1-6", (target) => target.portId === "main:2"],
+    ["2-6", (target) => target.portId === "branch:1"],
+    ["3-6", (target) => target.portId === "branch:2"],
+    ["0-5", (target) => target.placementId === "placement-2"],
+    ["1-5", (target) => target.placementId === "placement-3"],
+    ["2-5", (target) => target.placementId === "placement-4"],
+  ];
+  for (const [dominoId, matcher] of sequence) {
+    state = giveCurrentPlayerAndPlay(state, dominoId, matcher);
+  }
+  return ensureDominoInHand(state, state.currentPlayerId, "4-5");
 }
 
 function createOrdinaryAndArmDecisionState() {
@@ -185,6 +241,58 @@ test("separa continuar un extremo de abrir dos brazos equivalentes", () => {
   assert.equal(openArm.outcome.branchingDouble.connectionCount, 3);
   assert.notDeepEqual(continuation.outcome.scoring, openArm.outcome.scoring);
   assert.deepEqual(state, before);
+});
+
+test("distingue continuar un extremo ordinario de completar el cruce 1\/4", () => {
+  const state = createOrdinaryAndCrossDecisionState();
+  const groups = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const continuation = groups.find(
+    ({ decisionKind }) => decisionKind === STRATEGIC_DECISION_KINDS.CONTINUE,
+  );
+  const cross = groups.find(
+    ({ decisionKind }) =>
+      decisionKind === STRATEGIC_DECISION_KINDS.COMPLETE_CROSS,
+  );
+
+  assert.equal(groups.length, 2);
+  assert.ok(continuation);
+  assert.ok(cross);
+  assert.equal(continuation.effects.unlockedLateralCount, 0);
+  assert.equal(continuation.effects.ramifierScoringChange, null);
+  assert.equal(cross.effects.completesCross, true);
+  assert.equal(cross.effects.unlockedLateralCount, 2);
+  assert.deepEqual(cross.effects.ramifierScoringChange, {
+    value: 6,
+    before: 2,
+    after: 0,
+  });
+  assert.notDeepEqual(continuation.outcome, cross.outcome);
+});
+
+test("agrupa tres extremos ordinarios equivalentes en una sola decisión", () => {
+  const state = createThreeEquivalentTargetsState();
+  const groups = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "4-5",
+  );
+
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].value, 5);
+  assert.equal(groups[0].physicalTargetCount, 3);
+  assert.equal(groups[0].isEquivalentGroup, true);
+  assert.deepEqual(
+    groups[0].canonicalTarget,
+    groups[0].targets.toSorted((first, second) =>
+      `${first.placementId}:${first.portId}`.localeCompare(
+        `${second.placementId}:${second.portId}`,
+      )
+    )[0],
+  );
 });
 
 test("la proyección puntuable usa los términos agrupados del motor", () => {
