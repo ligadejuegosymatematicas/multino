@@ -4,10 +4,12 @@ import {
   TRADITIONAL_FINAL_MIN_SCALE,
 } from "./TraditionalScene.js";
 import {
+  createTraditionalAutoPanPlan,
   createTraditionalFitCamera,
   isTraditionalOrientationChange,
   preserveTraditionalCamera,
   revealTraditionalWorldBounds,
+  sampleTraditionalAutoPan,
 } from "./TraditionalCamera.js";
 import { traditionalTileBounds } from "./TraditionalSnakeLayout.js";
 import { renderPipsMarkup } from "./DominoPips.js";
@@ -109,7 +111,10 @@ export function renderTraditionalTableMarkup(scene) {
   return `
     <div class="traditional-table${scene.scoringResolution ? " is-scoring-feedback" : ""}" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
       <div class="traditional-camera-controls">
-        <button type="button" data-fit-table aria-label="Ajustar y centrar la mesa">${scene.isFinished ? "Centrar mesa" : "Ajustar tablero"}</button>
+        <button type="button" data-fit-table aria-label="Ajustar tablero" title="Ajustar tablero">
+          <span class="traditional-camera-controls__icon" aria-hidden="true">⛶</span>
+          <span class="traditional-camera-controls__label">${scene.isFinished ? "Centrar mesa" : "Ajustar tablero"}</span>
+        </button>
       </div>
       <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Ventana desplazable sobre la mesa; arrastra para recorrerla">
         <div class="traditional-table__canvas" data-table-canvas>
@@ -136,19 +141,22 @@ export class TraditionalRenderer {
     this.resizeObserver = null;
     this.viewportSize = null;
     this.autoPanTarget = null;
+    this.autoPanFrame = null;
+    this.autoPanToken = 0;
   }
 
   render(presentation, { onTarget, onStart } = {}) {
     const previousViewport = this.container.querySelector(
       "[data-table-viewport]",
     );
-    if (previousViewport && this.cameraState && this.autoPanTarget === null) {
+    if (previousViewport && this.cameraState) {
       this.cameraState = {
         ...this.cameraState,
         left: previousViewport.scrollLeft,
         top: previousViewport.scrollTop,
       };
     }
+    this.#cancelAutoPan();
     const previousPlacementIds = new Set(
       this.layoutState?.tiles?.map((tile) => tile.placementId) ?? [],
     );
@@ -174,7 +182,7 @@ export class TraditionalRenderer {
     if (!continuesWorld) {
       this.cameraState = null;
       this.viewportSize = null;
-      this.autoPanTarget = null;
+      this.#cancelAutoPan();
     }
     const addedTiles = scene.tiles.filter(
       (tile) => !previousPlacementIds.has(tile.placementId),
@@ -187,23 +195,22 @@ export class TraditionalRenderer {
       width: Math.max(viewport.clientWidth, 1),
       height: Math.max(viewport.clientHeight, 1),
     });
-    const applyCamera = (camera, { smooth = false } = {}) => {
+    const applyCamera = (camera, { animate = false } = {}) => {
       canvas.style.setProperty("--table-scale", String(camera.scale));
       canvas.style.setProperty("--scaled-table-width", `${scene.width * camera.scale}px`);
       canvas.style.setProperty("--scaled-table-height", `${scene.height * camera.scale}px`);
-      if (smooth && typeof viewport.scrollTo === "function") {
-        this.autoPanTarget = { left: camera.left, top: camera.top };
-        viewport.scrollTo({ left: camera.left, top: camera.top, behavior: "smooth" });
-      } else {
-        this.autoPanTarget = null;
-        viewport.scrollLeft = camera.left;
-        viewport.scrollTop = camera.top;
-      }
-      this.cameraState = { ...camera };
       this.viewportSize = {
         width: camera.viewportWidth,
         height: camera.viewportHeight,
       };
+      if (animate) {
+        this.#animateAutoPan(viewport, camera);
+        return;
+      }
+      this.#cancelAutoPan();
+      viewport.scrollLeft = camera.left;
+      viewport.scrollTop = camera.top;
+      this.cameraState = { ...camera };
     };
     const fitAndPosition = () => {
       const dimensions = viewportDimensions();
@@ -254,7 +261,7 @@ export class TraditionalRenderer {
       const reduceMotion = globalThis.matchMedia?.(
         "(prefers-reduced-motion: reduce)",
       ).matches ?? false;
-      applyCamera(camera, { smooth: moved && addedTiles.length === 1 && !reduceMotion });
+      applyCamera(camera, { animate: moved && addedTiles.length === 1 && !reduceMotion });
     }
     this.container.querySelector("[data-fit-table]")?.addEventListener(
       "click",
@@ -263,6 +270,9 @@ export class TraditionalRenderer {
     this.resizeObserver?.disconnect();
     if (typeof ResizeObserver === "function") {
       this.resizeObserver = new ResizeObserver(() => {
+        if (this.autoPanTarget !== null) {
+          return;
+        }
         const nextSize = viewportDimensions();
         if (
           this.viewportSize?.width === nextSize.width &&
@@ -283,15 +293,6 @@ export class TraditionalRenderer {
       });
       this.resizeObserver.observe(viewport);
     }
-    viewport.addEventListener("scrollend", () => {
-      if (this.autoPanTarget === null) return;
-      this.cameraState = {
-        ...this.cameraState,
-        left: viewport.scrollLeft,
-        top: viewport.scrollTop,
-      };
-      this.autoPanTarget = null;
-    });
     this.#enableMousePan(viewport);
     const targetById = new Map(
       scene.openTargets.map((target) => [target.id, target]),
@@ -309,6 +310,61 @@ export class TraditionalRenderer {
     return scene;
   }
 
+  #cancelAutoPan() {
+    this.autoPanToken += 1;
+    if (this.autoPanFrame !== null) {
+      if (typeof globalThis.cancelAnimationFrame === "function") {
+        globalThis.cancelAnimationFrame(this.autoPanFrame);
+      } else {
+        globalThis.clearTimeout?.(this.autoPanFrame);
+      }
+    }
+    this.autoPanFrame = null;
+    this.autoPanTarget = null;
+  }
+
+  #animateAutoPan(viewport, requestedCamera) {
+    this.#cancelAutoPan();
+    const currentCamera = {
+      ...requestedCamera,
+      left: this.cameraState?.left ?? viewport.scrollLeft,
+      top: this.cameraState?.top ?? viewport.scrollTop,
+    };
+    const plan = createTraditionalAutoPanPlan(currentCamera, requestedCamera);
+    if (plan === null) {
+      this.cameraState = { ...requestedCamera };
+      return;
+    }
+    const token = this.autoPanToken;
+    const duration = 240;
+    let startedAt = null;
+    viewport.scrollLeft = plan.from.left;
+    viewport.scrollTop = plan.from.top;
+    this.autoPanTarget = { ...plan.to };
+    this.cameraState = { ...requestedCamera };
+    const requestFrame = typeof globalThis.requestAnimationFrame === "function"
+      ? globalThis.requestAnimationFrame.bind(globalThis)
+      : (callback) => globalThis.setTimeout(() => callback(Date.now()), 16);
+    const step = (timestamp) => {
+      if (token !== this.autoPanToken) return;
+      startedAt ??= timestamp;
+      const progress = Math.min(1, (timestamp - startedAt) / duration);
+      const sample = sampleTraditionalAutoPan(plan, progress);
+      viewport.scrollLeft = sample.left;
+      viewport.scrollTop = sample.top;
+      if (progress < 1) {
+        this.autoPanFrame = requestFrame(step);
+        return;
+      }
+      viewport.scrollLeft = requestedCamera.left;
+      viewport.scrollTop = requestedCamera.top;
+      this.autoPanFrame = null;
+      this.autoPanTarget = null;
+      this.cameraState = { ...requestedCamera };
+    };
+    this.autoPanFrame = requestFrame(step);
+  }
+
   #enableMousePan(viewport) {
     let drag = null;
     viewport.addEventListener("pointerdown", (event) => {
@@ -319,7 +375,12 @@ export class TraditionalRenderer {
       ) {
         return;
       }
-      this.autoPanTarget = null;
+      this.#cancelAutoPan();
+      this.cameraState = {
+        ...this.cameraState,
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+      };
       drag = {
         pointerId: event.pointerId,
         x: event.clientX,

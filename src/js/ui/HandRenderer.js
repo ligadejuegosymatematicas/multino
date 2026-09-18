@@ -58,13 +58,14 @@ export function renderTurnAction(container, presentation) {
   const title = document.createElement("strong");
   title.textContent = selected
     ? `${selected.a}|${selected.b}`
-    : "Elige una ficha";
+    : "";
   const detail = document.createElement("span");
   detail.className = "turn-action__detail";
   detail.textContent = selected
     ? `${presentation.selectedLegalTargets.length} ${presentation.selectedLegalTargets.length === 1 ? "destino legal" : "destinos legales"}`
     : "";
-  copy.append(kicker, title);
+  copy.append(kicker);
+  if (title.textContent !== "") copy.append(title);
   if (detail.textContent !== "") copy.append(detail);
   if (selected) {
     const visual = createDominoTile(selected);

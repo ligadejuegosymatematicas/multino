@@ -98,6 +98,39 @@ export function revealTraditionalWorldBounds(camera, bounds, {
   };
 }
 
+export function createTraditionalAutoPanPlan(currentCamera, requestedCamera) {
+  if (
+    currentCamera.left === requestedCamera.left &&
+    currentCamera.top === requestedCamera.top
+  ) {
+    return null;
+  }
+  return {
+    from: {
+      left: currentCamera.left,
+      top: currentCamera.top,
+    },
+    to: {
+      left: requestedCamera.left,
+      top: requestedCamera.top,
+    },
+    delta: {
+      left: requestedCamera.left - currentCamera.left,
+      top: requestedCamera.top - currentCamera.top,
+    },
+    scale: currentCamera.scale,
+  };
+}
+
+export function sampleTraditionalAutoPan(plan, progress) {
+  const clampedProgress = clamp(progress, 0, 1);
+  const easedProgress = 1 - ((1 - clampedProgress) ** 3);
+  return {
+    left: plan.from.left + plan.delta.left * easedProgress,
+    top: plan.from.top + plan.delta.top * easedProgress,
+  };
+}
+
 export function isTraditionalOrientationChange(previous, next) {
   if (
     !previous ||

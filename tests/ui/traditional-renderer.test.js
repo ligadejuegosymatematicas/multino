@@ -12,10 +12,12 @@ import {
   renderTraditionalTableMarkup,
 } from "../../src/js/ui/TraditionalRenderer.js";
 import {
+  createTraditionalAutoPanPlan,
   createTraditionalFitCamera,
   isTraditionalOrientationChange,
   preserveTraditionalCamera,
   revealTraditionalWorldBounds,
+  sampleTraditionalAutoPan,
 } from "../../src/js/ui/TraditionalCamera.js";
 import {
   calculateTraditionalFitScale,
@@ -758,7 +760,7 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     markup.match(/class="traditional-target [^"]+"[^>]+ disabled/g)?.length,
     scene.openTargets.length,
   );
-  assert.match(markup, />Centrar mesa<\/button>/);
+  assert.match(markup, /traditional-camera-controls__label">Centrar mesa<\/span>/);
   const sourceCount = scene.tiles.filter((tile) => tile.isScoringTerm).length +
     scene.openTargets.filter((target) => target.isScoringTerm).length;
   const expectedSourceCount = view.scoringPresentation.latestResolution.terms
@@ -787,11 +789,27 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*auto/);
   assert.match(css, /touch-action:\s*pan-x pan-y/);
   assert.match(rendererSource, /data-fit-table/);
+  assert.match(rendererSource, /aria-label="Ajustar tablero"/);
+  assert.match(rendererSource, /cancelAnimationFrame/);
+  assert.doesNotMatch(rendererSource, /behavior:\s*["']smooth["']/);
+  assert.doesNotMatch(rendererSource, /scrollend/);
+  assert.match(
+    rendererSource,
+    /ResizeObserver\(\(\) => \{[\s\S]+?this\.autoPanTarget !== null[\s\S]+?return;/,
+  );
   assert.match(rendererSource, /pointermove/);
   assert.doesNotMatch(rendererSource, /scene\.isFinished\s*\|\|\s*this\.sceneSignature/);
   assert.match(rendererSource, /revealTraditionalWorldBounds/);
   assert.match(rendererSource, /isTraditionalOrientationChange/);
   assert.match(css, /@media \(max-width: 36rem\)/);
+  assert.match(
+    css,
+    /@media \(max-width: 36rem\)[\s\S]+?\.traditional-camera-controls \{[\s\S]+?inset:\s*0\.45rem auto auto 0\.45rem/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 36rem\)[\s\S]+?\.traditional-camera-controls__label \{[\s\S]+?clip-path:\s*inset\(50%\)/,
+  );
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
@@ -858,6 +876,50 @@ test("solo un cambio real de orientación autoriza el fit automático", () => {
     ),
     true,
   );
+});
+
+test("el autopan usa una sola trayectoria monotónica, sin zoom ni overshoot", () => {
+  const before = {
+    scale: 0.9,
+    left: 120,
+    top: 80,
+    viewportWidth: 390,
+    viewportHeight: 430,
+  };
+  const requested = {
+    ...before,
+    left: 155,
+    top: 56,
+  };
+  const plan = createTraditionalAutoPanPlan(before, requested);
+
+  assert.ok(plan);
+  assert.equal(plan.scale, before.scale);
+  assert.deepEqual(plan.delta, { left: 35, top: -24 });
+  const samples = [0, 0.25, 0.5, 0.75, 1]
+    .map((progress) => sampleTraditionalAutoPan(plan, progress));
+  assert.deepEqual(samples[0], { left: before.left, top: before.top });
+  assert.deepEqual(samples.at(-1), {
+    left: requested.left,
+    top: requested.top,
+  });
+  for (let index = 1; index < samples.length; index += 1) {
+    assert.ok(samples[index].left >= samples[index - 1].left);
+    assert.ok(samples[index].left <= requested.left);
+    assert.ok(samples[index].top <= samples[index - 1].top);
+    assert.ok(samples[index].top >= requested.top);
+  }
+});
+
+test("el autopan no se programa si la ficha nueva ya está visible", () => {
+  const camera = {
+    scale: 1,
+    left: 100,
+    top: 80,
+    viewportWidth: 390,
+    viewportHeight: 430,
+  };
+  assert.equal(createTraditionalAutoPanPlan(camera, { ...camera }), null);
 });
 
 test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo legible", () => {

@@ -203,6 +203,8 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - `tests/projections/strategic-target-projection.test.js` reproduce un valor con extremo ordinario y continuidad del ramificador en `1/4`, y verifica además tres lugares físicamente equivalentes agrupados bajo un target canónico;
 - `tests/ui/port-renderer.test.js` exige títulos, iconos y microefectos distintos para grupos diferentes: **Continuar brazo** frente a **Completar cruce**, desaparición neutralizada del `×2` dorado y desbloqueo de dos brazos teal;
 - una salvaguarda rechaza dos decisiones separadas si su representación visible resulta idéntica; los IDs de placement/port siguen fuera del marcado mostrado al jugador.
+- la cámara de Tradicional reemplaza el `smooth scroll` nativo y sus correcciones concurrentes por un único autopan cancelable, mínimo y monotónico, sin alterar el zoom ni reaccionar a feedback/handoff;
+- en teléfono, **Ajustar tablero** conserva su nombre accesible pero se reduce a un control iconográfico situado en el rincón opuesto al selector de vistas.
 
 ## Convenciones
 
