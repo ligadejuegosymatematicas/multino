@@ -739,3 +739,15 @@ Un medallón con un solo target compatible ejecuta el target canónico directame
 **Motivo:** La secuencia punta → cruce → brazos reproduce el comportamiento esperado de un spinner, enseña visualmente cuándo deja de sumar y elimina la posibilidad de abrir un lateral antes de completar la continuidad.
 
 **Consecuencias:** Scoring permanece intacto: 0/1 conexiones aportan `2N`; 2/3/4 aportan cero. Snapshot y schema siguen en v6; la información nueva es derivada. Lineal y los dobles ordinarios no cambian.
+
+## DEC-055 — Decisiones estratégicas equivalentes en Puertos
+
+**Estado:** Aceptada.
+
+**Decisión:** Puertos agrupa targets legales de una misma ficha y valor cuando producen la misma firma estratégica pública: términos y resultado de scoring, multiconjunto de extremos abiertos por valor, fase/capacidad del ramificador y terminalidad. El grupo conserva todas las acciones exactas y elige como representante el target canónico de menor identidad estable. La vista normal solo consume cantidad, efecto y target canónico; no presenta el outcome futuro.
+
+Cuando las firmas difieren, se conservan decisiones separadas con lenguaje de consecuencia: **Continuar**, **Completar cruce** o **Abrir brazo**. El badge teal prioriza decisiones distintas y puede indicar aparte cuántos lugares físicos equivalentes representa una opción. `placementId + portId` continúa siendo la acción enviada al motor, pero nunca se expone al jugador.
+
+**Motivo:** Numerar `Destino 1…q` obligaba a distinguir geometría sin significado estratégico. Dos laterales simétricos pueden ser intercambiables, mientras que un extremo ordinario y un lateral del ramificador pueden compartir valor y producir scoring o capacidad futuros distintos.
+
+**Consecuencias:** La proyección completa sigue disponible para futuras ayudas opcionales, pero S y puntos anticipados permanecen ocultos. La futura convergencia **Estratégico / Jugar ↔ Analizar** puede reutilizar la disposición y las decisiones sin eliminar todavía Grafo. No cambian snapshot, schema, reglas, motor, persistencia ni scoring.

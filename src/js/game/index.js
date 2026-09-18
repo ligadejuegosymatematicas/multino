@@ -87,7 +87,9 @@ export {
 } from "./projections/ScoringPresentation.js";
 export { getLatestActionProjection } from "./projections/ActionProjection.js";
 export {
+  getStrategicDecisionGroups,
   getStrategicTargetProjections,
+  STRATEGIC_DECISION_KINDS,
 } from "./projections/StrategicTargetProjection.js";
 export { getBoardTopologyProjection } from "./projections/TopologyProjection.js";
 export { projectRoundView } from "./projections/RoundViewProjection.js";

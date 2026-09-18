@@ -132,6 +132,7 @@ test("la barrera local oculta la mano entre turnos sin modificar el snapshot", (
   assert.equal(presentation.round.handPrivacy.isRevealed, false);
   assert.deepEqual(presentation.round.view.hand, []);
   assert.deepEqual(presentation.round.view.legalPlays, []);
+  assert.deepEqual(presentation.round.strategicDecisionGroups, []);
   assert.equal(presentation.round.canPass, false);
   assert.throws(
     () => session.selectDomino(initial.hands[initial.currentPlayerId][0]),
@@ -151,6 +152,7 @@ test("la barrera local oculta la mano entre turnos sin modificar el snapshot", (
   assert.equal(presentation.round.handPrivacy.isRevealed, false);
   assert.deepEqual(presentation.round.view.hand, []);
   assert.equal(presentation.round.selectedDominoId, null);
+  assert.deepEqual(presentation.round.strategicDecisionGroups, []);
   assert.notEqual(session.getRoundState().currentPlayerId, initial.currentPlayerId);
 });
 

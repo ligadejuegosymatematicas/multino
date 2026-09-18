@@ -171,7 +171,7 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 
 - `tests/ui/port-renderer.test.js` valida exactamente siete medallones, `n/7` por fichas distintas, doble contado una vez, badges `0/1/2…`, compatibilidad por valor y target canónico exacto;
 - el único chancho ramificador se prueba con `0/4` a `4/4`, saturación y ausencia completa en Lineal;
-- los destinos repetidos no aparecen numerados en reposo: al elegir el valor se ofrecen `Destino 1…q` y la asociación a `placementId + portId` permanece solo en memoria;
+- los destinos repetidos se agrupan cuando su firma estratégica coincide; el medallón muestra una decisión y sus lugares equivalentes, mientras las diferencias reales se nombran **Continuar**, **Completar cruce** o **Abrir brazo** y `placementId + portId` permanece solo en memoria;
 - la vista normal omite incidencias, hilos y hubs técnicos; **Ver estructura** conserva el renderer analítico y el feedback sigue consumiendo `scoringPresentation` sin anticipar puntos;
 - `tests/ui/game-presentation.test.js` cubre acción contextual, mano compacta y composición específica para retrato y paisaje;
 - la prueba manual cubre 1366×768, 390×844, 844×390, selección múltiple, scoring, cambio de vista, ronda completa, tranque, terminalidad y consola limpia.

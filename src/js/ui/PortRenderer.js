@@ -129,12 +129,28 @@ function renderRamifierStatus(node) {
   if (!node.ramifier) {
     return "";
   }
-  const dots = [-12, -4, 4, 12].map((offset, index) => `
-    <circle class="port-ramifier__socket${index < node.ramifier.connectionCount ? " is-used" : ""}" cx="${node.x + offset}" cy="${node.y + 52}" r="2.8"></circle>`).join("");
+  const socketPosition = {
+    "main:1": { x: -13, y: 49, axis: "continuity" },
+    "main:2": { x: 13, y: 49, axis: "continuity" },
+    "branch:1": { x: 0, y: 38, axis: "lateral" },
+    "branch:2": { x: 0, y: 60, axis: "lateral" },
+  };
+  const sockets = node.ramifier.sockets.map((socket) => {
+    const position = socketPosition[socket.portId];
+    const classes = [
+      "port-ramifier__socket",
+      `is-${position.axis}`,
+      socket.isUsed ? "is-used" : "",
+      socket.isAvailable ? "is-available" : "",
+      socket.isLocked ? "is-locked" : "",
+    ].filter(Boolean).join(" ");
+    return `<circle class="${classes}" cx="${node.x + position.x}" cy="${node.y + position.y}" r="3.2"></circle>`;
+  }).join("");
   return `
-    <g class="port-ramifier" aria-hidden="true">
-      <path class="port-ramifier__mark" d="M ${node.x - 17} ${node.y + 47} Q ${node.x} ${node.y + 42} ${node.x + 17} ${node.y + 47}"></path>
-      ${dots}
+    <g class="port-ramifier" aria-hidden="true" data-ramifier-phase="${node.ramifier.phase}">
+      <path class="port-ramifier__mark is-continuity" d="M ${node.x - 13} ${node.y + 49} L ${node.x + 13} ${node.y + 49}"></path>
+      <path class="port-ramifier__mark is-lateral${node.ramifier.lateralPortsUnlocked ? " is-unlocked" : " is-locked"}" d="M ${node.x} ${node.y + 38} L ${node.x} ${node.y + 60}"></path>
+      ${sockets}
     </g>`;
 }
 
@@ -152,7 +168,7 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
     ? node.ordinaryPorts.map((port) => renderIncidence(port)).join("")
     : "";
   const compatibilityLabel = node.isCompatible
-    ? `; ${node.compatibleTargetCount} ${node.compatibleTargetCount === 1 ? "destino compatible" : "destinos compatibles"}`
+    ? `; ${node.strategicDecisionCount} ${node.strategicDecisionCount === 1 ? "decisión compatible" : "decisiones compatibles"} en ${node.physicalCompatibleTargetCount} ${node.physicalCompatibleTargetCount === 1 ? "lugar" : "lugares"}`
     : "";
   const ramifierLabel = node.ramifier
     ? `; chancho ramificador con ${node.ramifier.connectionCount} de 4 conexiones${node.ramifier.isSaturated ? "; saturado" : ""}`
@@ -161,13 +177,16 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
     ? `; aporta ${node.scoringMultiplicity} ${node.scoringMultiplicity === 1 ? "vez" : "veces"} a S`
     : "; no aporta actualmente a S";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
       <text class="port-macro-node__value" x="${node.x}" y="${node.y - 5}">${node.value}</text>
-      <g class="port-macro-node__target-badge${node.openTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}">
+      <g class="port-macro-node__target-badge${node.displayTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}">
         <circle cx="${node.x + 49}" cy="${node.y - 43}" r="15"></circle>
-        <text x="${node.x + 49}" y="${node.y - 43}">${node.openTargetCount}</text>
+        <text x="${node.x + 49}" y="${node.y - 43}">${node.displayTargetCount}</text>
       </g>
+      ${node.isCompatible && node.physicalCompatibleTargetCount > node.strategicDecisionCount
+        ? `<text class="port-macro-node__equivalent-places" x="${node.x + 49}" y="${node.y - 22}">×${node.physicalCompatibleTargetCount} lugares</text>`
+        : ""}
       ${renderScoringMultiplicity(node)}
       <text class="port-macro-node__played" x="${node.x}" y="${node.y + 34}">${node.playedTileCount}/${node.totalTileCount}</text>
       ${renderRamifierStatus(node)}
@@ -366,12 +385,21 @@ function renderK7Background(scene) {
 }
 
 export function renderPortTargetChooserMarkup(targetChoice) {
-  if (!targetChoice || targetChoice.targets.length < 2) {
+  if (!targetChoice || targetChoice.decisions.length < 2) {
     return "";
   }
-  const options = targetChoice.targets.map((target, index) => `
+  const labels = {
+    start: "Jugar",
+    continue: "Continuar",
+    "complete-cross": "Completar cruce",
+    "open-arm": "Abrir brazo",
+  };
+  const options = targetChoice.decisions.map((decision, index) => `
     <button type="button" class="port-target-choice__option" data-port-choice-index="${index}">
-      <span>Destino ${index + 1}</span>
+      <span>${labels[decision.decisionKind] ?? "Continuar"}</span>
+      ${decision.physicalTargetCount > 1
+        ? `<small>${decision.physicalTargetCount} lugares equivalentes</small>`
+        : ""}
     </button>`).join("");
   return `
     <section class="port-target-choice" aria-label="Elegir destino de valor ${targetChoice.value}">
@@ -385,6 +413,15 @@ export function renderPortTargetChooserMarkup(targetChoice) {
 }
 
 export function getPortValueAction(scene, value) {
+  const decisions = scene.strategicDecisions.filter(
+    (decision) => decision.value === value,
+  );
+  if (decisions.length === 1) {
+    return { type: "PLAY", target: decisions[0].canonicalTarget };
+  }
+  if (decisions.length > 1) {
+    return { type: "CHOOSE", value, decisions };
+  }
   const targets = scene.openTargets.filter(
     (target) => target.value === value && target.isLegal,
   );
@@ -469,6 +506,7 @@ export class PortRenderer {
     this.targetChoiceValue = null;
     this.lastSelectedDominoId = null;
     this.lastBoardSignature = null;
+    this.hasShownRamifierHint = false;
   }
 
   render(presentation, options = {}) {
@@ -493,6 +531,7 @@ export class PortRenderer {
     const scene = createPortScene(presentation.portView, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
+      strategicDecisions: presentation.strategicDecisionGroups ?? [],
       inspectedStructureId: presentation.inspectedStructureId,
       inspectedPlacementId: presentation.inspectedPlacementId,
       inspectedRouteId: this.inspectedRouteId,
@@ -506,9 +545,15 @@ export class PortRenderer {
       scoringResolution: presentation.scoringResolution ?? null,
     });
     const startMarkup = scene.canStart
-      ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
+      ? `<div class="start-action"><button type="button" class="primary-action" data-start-action>Jugar</button></div>`
       : "";
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${startMarkup}${renderPortTargetChooserMarkup(scene.targetChoice)}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    const showRamifierHint = !this.hasShownRamifierHint &&
+      scene.nodes.some((node) => node.ramifier !== null);
+    const ramifierHint = showRamifierHint
+      ? `<p class="port-ramifier-hint" role="status">Completa el cruce antes de abrir brazos.</p>`
+      : "";
+    if (showRamifierHint) this.hasShownRamifierHint = true;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${startMarkup}${ramifierHint}${renderPortTargetChooserMarkup(scene.targetChoice)}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
     const activateNode = (value) => {
@@ -608,9 +653,11 @@ export class PortRenderer {
     );
     for (const element of this.container.querySelectorAll("[data-port-choice-index]")) {
       element.addEventListener("click", () => {
-        const target = scene.targetChoice?.targets[Number(element.dataset.portChoiceIndex)];
-        if (target?.isLegal) {
-          options.onTarget?.(target);
+        const decision = scene.targetChoice?.decisions[
+          Number(element.dataset.portChoiceIndex)
+        ];
+        if (decision?.canonicalTarget) {
+          options.onTarget?.(decision.canonicalTarget);
         }
       });
     }

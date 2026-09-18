@@ -7,6 +7,7 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 ### Añadido
 
 - Orden local del chancho ramificador: completa sus dos continuidades opuestas antes de desbloquear los laterales, con fase pública derivada y validación histórica del orden.
+- Agrupación pura de targets equivalentes en Puertos mediante firma de scoring, extremos, ramificador y terminalidad; las alternativas distintas se nombran por efecto en lugar de `Destino 1…q`.
 - Medallones estratégicos de Puertos con tres datos simultáneos: targets abiertos teal, multiplicidad dorada `×m` de los términos reales de S y conteo histórico neutro `n/7`.
 - Invariante comprobado `S = Σ m_n·n` y caso crítico del ramificador que conserva destinos abiertos después de dejar de aportar a S.
 - Dirección futura documentada para converger Puertos y Grafo en **Estratégico / Jugar ↔ Analizar**, sin modificar todavía ninguna vista.

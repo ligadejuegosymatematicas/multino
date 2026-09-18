@@ -279,6 +279,12 @@
   dominant-baseline: middle;
   pointer-events: none;
 }
+.port-macro-node__equivalent-places {
+  fill: #087a70;
+  font-size: 8px;
+  font-weight: 900;
+  text-anchor: middle;
+}
 
 .port-macro-node__value { font-size: 39px; font-weight: 900; }
 .port-macro-node__target-badge circle { fill: #76858b; stroke: #fffefb; stroke-width: 3; }
@@ -311,9 +317,13 @@
   stroke-width: 2.5;
   stroke-linecap: round;
 }
+.port-ramifier__mark.is-lateral.is-locked { opacity: 0.28; stroke-dasharray: 2 3; }
+.port-ramifier__mark.is-lateral.is-unlocked { opacity: 0.82; }
 
 .port-ramifier__socket { fill: #fffefb; stroke: #536976; stroke-width: 1.5; }
 .port-ramifier__socket.is-used { fill: #536976; }
+.port-ramifier__socket.is-available { fill: #d7fff5; stroke: #087a70; stroke-width: 2.2; }
+.port-ramifier__socket.is-locked { fill: #d8ddda; opacity: 0.42; }
 
 .port-incidence { fill: #3f6971; stroke: #fffefb; stroke-width: 1.5; }
 .port-incidence.is-potential { opacity: 0.1; pointer-events: none; }
@@ -387,8 +397,26 @@
   font-weight: 850;
   cursor: pointer;
 }
-.port-target-choice__option { padding-inline: 0.8rem; }
+.port-target-choice__option { display: grid; gap: 0.1rem; padding: 0.4rem 0.8rem; }
+.port-target-choice__option small { font-size: 0.62rem; font-weight: 750; opacity: 0.76; }
 .port-target-choice__cancel { width: 2.55rem; border-color: #c7cecb; color: #536976; background: #fff; font-size: 1.15rem; }
+
+.port-ramifier-hint {
+  position: absolute;
+  z-index: 42;
+  inset: auto 50% 0.65rem auto;
+  max-width: calc(100% - 1rem);
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #70847e;
+  border-radius: 999px;
+  color: #effffb;
+  background: rgb(5 31 29 / 0.94);
+  box-shadow: 0 0.55rem 1.25rem rgb(0 0 0 / 0.28);
+  font-size: 0.76rem;
+  font-weight: 800;
+  transform: translateX(50%);
+}
 
 .port-structure-toggle {
   position: absolute;
@@ -582,10 +610,13 @@
 }
 .port-macro-node__scoring-badge text { fill: #fff3c4; }
 .port-macro-node__played { fill: #5a6967; }
+.port-macro-node__equivalent-places { fill: #7ce7da; }
 
 .port-ramifier__mark { stroke: #526b6a; }
 .port-ramifier__socket { fill: #f4ead2; stroke: #526b6a; }
 .port-ramifier__socket.is-used { fill: #526b6a; }
+.port-ramifier__socket.is-available { fill: #cafff3; stroke: var(--playable); }
+.port-ramifier__socket.is-locked { fill: #80908b; stroke: #526b6a; }
 .port-incidence { fill: #355d5b; stroke: #f5ecd7; }
 .port-incidence.is-played { fill: #b8dfd6; stroke: #0a5f58; opacity: 0.95; }
 .port-incidence.is-live,
@@ -653,7 +684,8 @@
   .port-incidence-wrap,
   .port-macro-node-shell { transition: none; }
   .port-open-target.is-legal,
-  .port-cover__scoring { animation: none; }
+  .port-cover__scoring,
+  .port-ramifier-hint { animation: none; }
 }
 
 @media (max-width: 36rem) {

@@ -247,13 +247,18 @@ function renderRound(presentation, mode, feedback) {
   passButton.hidden = !presentation.canPass || presentation.isFinished;
   roundActions.hidden = !presentation.isFinished;
   const selectedCount = presentation.selectedLegalTargets.length;
+  const strategicDecisionCount = presentation.strategicDecisionGroups?.length ?? 0;
   const selectionHint = document.querySelector("#selection-hint");
   selectionHint.textContent = presentation.isFinished ||
       !presentation.handPrivacy.isRevealed ||
       presentation.selectedDominoId === null
       ? ""
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
-        ? "Inicia el tablero con la ficha seleccionada."
+        ? mode === BOARD_VIEW_MODES.PORTS
+          ? ""
+          : "Inicia el tablero con la ficha seleccionada."
+        : mode === BOARD_VIEW_MODES.PORTS && strategicDecisionCount > 1
+          ? `${strategicDecisionCount} decisiones distintas: elige una.`
         : selectedCount > 1
           ? `${selectedCount} destinos: elige un valor y luego el destino concreto.`
           : "Elige el valor iluminado para jugar.";

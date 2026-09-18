@@ -4,6 +4,8 @@ import test from "node:test";
 
 import {
   applyTurnAction,
+  createMatch,
+  getStrategicDecisionGroups,
   getLegalPlays,
   getLegalTargetsForDomino,
   projectPortView,
@@ -28,10 +30,27 @@ import {
   playDomino,
 } from "../fixtures/board-scenarios.js";
 import { createExitTurnState } from "../fixtures/turn-scenarios.js";
+import { createValidParticipantInput } from "../fixtures/participants.js";
 
 function targetAt(placementId, portId) {
   return (target) =>
     target.placementId === placementId && target.portId === portId;
+}
+
+function createDeterministicMatch() {
+  return createMatch({
+    ...createValidParticipantInput(),
+    randomSource: () => 0.999999,
+  });
+}
+
+function playCurrent(state, dominoId, targetMatcher = () => true) {
+  const action = getLegalPlays(state, state.currentPlayerId).find(
+    (candidate) =>
+      candidate.dominoId === dominoId && targetMatcher(candidate.target),
+  );
+  assert.ok(action, `Debe existir una jugada legal para ${dominoId}.`);
+  return applyTurnAction(state, action);
 }
 
 function createTwoArmScenario() {
@@ -154,20 +173,27 @@ test("el ramificador se resume en el medallón y conserva su hub bajo demanda", 
   assert.equal(structureMarkup.match(/port-double-hub__socket is-open/g)?.length, 2);
 });
 
-test("targets repetidos mantienen placementId + portId y numeración temporal", () => {
-  let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
-  state = playDomino(state, "4-4");
-  const playerId = findDominoOwner(state, "4-5");
-  const legalTargets = getLegalTargetsForDomino(state, playerId, "4-5");
+test("targets equivalentes se presentan como una decisión y conservan el target canónico", () => {
+  let state = createDeterministicMatch();
+  state = playCurrent(state, "6-6");
+  const playerId = state.currentPlayerId;
+  const legalTargets = getLegalTargetsForDomino(state, playerId, "4-6");
+  const strategicDecisions = getStrategicDecisionGroups(
+    state,
+    playerId,
+    "4-6",
+  );
   const scene = createPortScene(projectPortView(state, playerId), {
-    selectedDominoId: "4-5",
+    selectedDominoId: "4-6",
     legalTargets,
+    strategicDecisions,
   });
   const markup = renderPortSvgMarkup(scene);
   const choiceScene = createPortScene(projectPortView(state, playerId), {
-    selectedDominoId: "4-5",
+    selectedDominoId: "4-6",
     legalTargets,
-    selectedTargetValue: 4,
+    strategicDecisions,
+    selectedTargetValue: 6,
   });
   const choiceMarkup = renderPortTargetChooserMarkup(choiceScene.targetChoice);
 
@@ -186,17 +212,47 @@ test("targets repetidos mantienen placementId + portId y numeración temporal", 
     scene.openTargets.map(({ optionIndex }) => optionIndex),
     [1, 2],
   );
-  assert.equal(scene.nodes.find((node) => node.value === 4).compatibleTargetCount, 2);
+  assert.equal(scene.nodes.find((node) => node.value === 6).compatibleTargetCount, 1);
+  assert.equal(scene.nodes.find((node) => node.value === 6).physicalCompatibleTargetCount, 2);
   assert.match(markup, /port-macro-node-shell is-compatible is-in-selected-domino has-open-targets has-ramifier/);
   assert.doesNotMatch(markup, /port-open-target__option/);
-  assert.equal(choiceMarkup.match(/class="port-target-choice__option"/g)?.length, 2);
-  assert.doesNotMatch(choiceMarkup, /placement-|main:|branch:/);
-  const valueAction = getPortValueAction(scene, 4);
-  assert.equal(valueAction.type, "CHOOSE");
-  assert.deepEqual(
-    valueAction.targets.map(({ placementId, portId }) => ({ placementId, portId })),
-    legalTargets.map(({ placementId, portId }) => ({ placementId, portId })),
-  );
+  assert.match(markup, />×2 lugares</);
+  assert.equal(choiceMarkup, "");
+  const valueAction = getPortValueAction(scene, 6);
+  assert.equal(valueAction.type, "PLAY");
+  assert.deepEqual(valueAction.target, strategicDecisions[0].canonicalTarget);
+});
+
+test("las decisiones distintas usan efectos legibles y nunca Destino 1 o 2", () => {
+  const targetChoice = {
+    value: 6,
+    decisions: [
+      {
+        decisionKind: "continue",
+        physicalTargetCount: 1,
+        canonicalTarget: {
+          kind: "OPEN_END",
+          placementId: "placement-8",
+          portId: "side:b",
+        },
+      },
+      {
+        decisionKind: "open-arm",
+        physicalTargetCount: 2,
+        canonicalTarget: {
+          kind: "OPEN_END",
+          placementId: "placement-1",
+          portId: "branch:1",
+        },
+      },
+    ],
+  };
+  const markup = renderPortTargetChooserMarkup(targetChoice);
+
+  assert.match(markup, />Continuar</);
+  assert.match(markup, />Abrir brazo</);
+  assert.match(markup, />2 lugares equivalentes</);
+  assert.doesNotMatch(markup, /Destino \d|placement-|side:|branch:/);
 });
 
 test("sin selección los badges hacen visibles extremos reales sin exponer incidencias", () => {
@@ -264,7 +320,7 @@ test("cada medallón separa destinos, multiplicidad de S y fichas jugadas", () =
   assert.equal(four.scoringMultiplicity, 0);
   assert.equal(four.playedTileCount, 3);
   assert.equal(four.ramifier.connectionCount, 2);
-  assert.match(markup, /data-node-value="4" data-open-target-count="2" data-scoring-multiplicity="0" data-played-tile-count="3"/);
+  assert.match(markup, /data-node-value="4" data-open-target-count="2" data-decision-count="0" data-physical-target-count="0" data-scoring-multiplicity="0" data-played-tile-count="3"/);
 });
 
 test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", () => {
@@ -383,7 +439,24 @@ test("el ramificador comunica ocupación 0 a 4 y saturación sin filtrar K", () 
     assert.equal(node.ramifier.remainingConnections, 4 - count);
     assert.equal(node.ramifier.isSaturated, count === 4);
     assert.equal(node.scoringMultiplicity, count <= 1 ? 2 : 0);
-    assert.equal(markup.match(/port-ramifier__socket is-used/g)?.length ?? 0, count);
+    assert.equal(
+      markup.match(/port-ramifier__socket[^\"]* is-used/g)?.length ?? 0,
+      count,
+    );
+    assert.equal(
+      markup.match(/port-ramifier__socket[^\"]* is-available/g)?.length ?? 0,
+      count === 0 ? 2 : count === 1 ? 1 : Math.max(0, 4 - count),
+    );
+    assert.equal(
+      markup.match(/port-ramifier__socket[^\"]* is-locked/g)?.length ?? 0,
+      count < 2 ? 2 : 0,
+    );
+    if (count === 1) {
+      assert.match(markup, /port-ramifier__mark is-lateral is-locked/);
+    }
+    if (count === 2) {
+      assert.match(markup, /port-ramifier__mark is-lateral is-unlocked/);
+    }
     if (count < 4) {
       state = playDomino(
         state,

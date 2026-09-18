@@ -258,6 +258,9 @@ export class LocalGameSessionController {
       traditionalView: protectView(round.traditionalView),
       selectedDominoId: isRevealed ? round.selectedDominoId : null,
       selectedLegalTargets: isRevealed ? round.selectedLegalTargets : [],
+      strategicDecisionGroups: isRevealed
+        ? round.strategicDecisionGroups
+        : [],
       canPass: isRevealed ? round.canPass : false,
       handPrivacy: {
         isRevealed,

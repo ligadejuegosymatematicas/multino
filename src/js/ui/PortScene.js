@@ -395,6 +395,7 @@ export function createPortScene(
   {
     selectedDominoId = null,
     legalTargets = [],
+    strategicDecisions = [],
     inspectedStructureId = null,
     inspectedPlacementId = null,
     inspectedRouteId = null,
@@ -418,6 +419,20 @@ export function createPortScene(
   );
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const hasSelection = selectedDominoId !== null;
+  const decisionCountsByValue = new Map();
+  const physicalDecisionTargetsByValue = new Map();
+  for (const decision of strategicDecisions) {
+    if (decision.value === null) continue;
+    decisionCountsByValue.set(
+      decision.value,
+      (decisionCountsByValue.get(decision.value) ?? 0) + 1,
+    );
+    physicalDecisionTargetsByValue.set(
+      decision.value,
+      (physicalDecisionTargetsByValue.get(decision.value) ?? 0) +
+        decision.physicalTargetCount,
+    );
+  }
   const compatibleCountsByValue = new Map();
   for (const target of view.portGraph.openTargets) {
     if (legalTargetIds.has(target.id)) {
@@ -437,6 +452,11 @@ export function createPortScene(
     view.structure.values.map((valueState) => [valueState.value, valueState]),
   );
   const branchingDouble = view.structure.branchingDouble;
+  const branchingHub = branchingDouble === null
+    ? null
+    : view.portGraph.doubleHubs.find(
+        (hub) => hub.placementId === branchingDouble.placementId,
+      ) ?? null;
   const scoringPresentation = view.scoringPresentation?.enabled
     ? view.scoringPresentation
     : null;
@@ -470,6 +490,10 @@ export function createPortScene(
     const position = nodePositions.get(node.value);
     const valueState = structureByValue.get(node.value);
     const compatibleTargetCount = compatibleCountsByValue.get(node.value) ?? 0;
+    const strategicDecisionCount = decisionCountsByValue.get(node.value) ??
+      compatibleTargetCount;
+    const physicalCompatibleTargetCount =
+      physicalDecisionTargetsByValue.get(node.value) ?? compatibleTargetCount;
     const ordinaryPorts = node.ordinaryPorts.map((port) => {
       const projected = {
         ...port,
@@ -500,13 +524,26 @@ export function createPortScene(
       playedTileCount: valueState.playedTileCount,
       totalTileCount: valueState.totalTileCount,
       openTargetCount: valueState.openTargetCount,
+      displayTargetCount: hasSelection
+        ? strategicDecisionCount
+        : valueState.openTargetCount,
       scoringMultiplicity: scoringMultiplicityByValue.get(node.value),
-      compatibleTargetCount,
+      compatibleTargetCount: strategicDecisionCount,
+      strategicDecisionCount,
+      physicalCompatibleTargetCount,
       isCompatible: hasSelection && compatibleTargetCount > 0,
       isInSelectedDomino: hasSelection && selectedValues.has(node.value),
       isTargetChoiceOpen: selectedTargetValue === node.value,
       ramifier: branchingDouble?.value === node.value
-        ? { ...branchingDouble }
+        ? {
+            ...branchingDouble,
+            sockets: (branchingHub?.sockets ?? []).map((socket) => ({
+              portId: socket.boardPortId,
+              isUsed: socket.connectionId !== null,
+              isAvailable: socket.connectionId === null && socket.isOpenEnd,
+              isLocked: socket.connectionId === null && !socket.isOpenEnd,
+            })),
+          }
         : null,
     };
   });
@@ -687,13 +724,37 @@ export function createPortScene(
       scoringValues.has(node.value) || node.scoringMultiplicity > 0,
     isStrategicInspected: strategicNodeValue === node.value,
   }));
+  const targetChoiceTargets = selectedTargetValue === null
+    ? []
+    : openTargets.filter(
+        (target) => target.value === selectedTargetValue && target.isLegal,
+      );
   const targetChoice = selectedTargetValue === null
     ? null
     : {
         value: selectedTargetValue,
-        targets: openTargets.filter(
-          (target) => target.value === selectedTargetValue && target.isLegal,
-        ),
+        decisions: strategicDecisions.length > 0
+          ? strategicDecisions.filter(
+              (decision) => decision.value === selectedTargetValue,
+            )
+          : targetChoiceTargets.map((target, index) => ({
+              id: `physical-target:${index + 1}`,
+              value: selectedTargetValue,
+              decisionKind: "continue",
+              physicalTargetCount: 1,
+              isEquivalentGroup: false,
+              canonicalTarget: {
+                kind: "OPEN_END",
+                placementId: target.placementId,
+                portId: target.portId,
+              },
+              targets: [{
+                kind: "OPEN_END",
+                placementId: target.placementId,
+                portId: target.portId,
+              }],
+            })),
+        targets: targetChoiceTargets,
       };
   const strategicNode = strategicNodeValue === null
     ? null
@@ -761,7 +822,7 @@ export function createPortScene(
       ? "structure"
       : inspectionActive
         ? "route"
-      : targetChoice?.targets.length > 1
+      : (targetChoice?.decisions.length ?? targetChoice?.targets.length) > 1
         ? "target-choice"
       : hasSelection
         ? "decision"
@@ -790,6 +851,11 @@ export function createPortScene(
     selectedDominoId,
     selectedTargetValue,
     selectedDomino,
+    strategicDecisions: strategicDecisions.map((decision) => ({
+      ...decision,
+      canonicalTarget: { ...decision.canonicalTarget },
+      targets: decision.targets.map((target) => ({ ...target })),
+    })),
     targetChoice,
     inspectedStructureId,
     inspectedPlacementId,

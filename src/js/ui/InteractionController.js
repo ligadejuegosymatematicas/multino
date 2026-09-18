@@ -2,6 +2,7 @@ import {
   applyTurnAction,
   getAvailableActions,
   getLegalTargetsForDomino,
+  getStrategicDecisionGroups,
   projectGraphView,
   projectPortView,
   projectTraditionalView,
@@ -54,6 +55,13 @@ export class InteractionController {
           this.selectedDominoId,
         )
       : [];
+    const strategicDecisionGroups = this.selectedDominoId
+      ? getStrategicDecisionGroups(
+          this.state,
+          this.state.currentPlayerId,
+          this.selectedDominoId,
+        )
+      : [];
 
     return {
       view,
@@ -69,6 +77,7 @@ export class InteractionController {
       inspectedStructureId: this.inspectedStructureId,
       inspectedPlacementId: this.inspectedPlacementId,
       selectedLegalTargets,
+      strategicDecisionGroups,
       canPass: availableActions.some((action) => action.type === "PASS"),
       isFinished: this.state.phase === "finished",
     };
