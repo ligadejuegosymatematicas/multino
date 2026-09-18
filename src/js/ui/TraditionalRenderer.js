@@ -3,6 +3,13 @@ import {
   createTraditionalScene,
   TRADITIONAL_FINAL_MIN_SCALE,
 } from "./TraditionalScene.js";
+import {
+  createTraditionalFitCamera,
+  isTraditionalOrientationChange,
+  preserveTraditionalCamera,
+  revealTraditionalWorldBounds,
+} from "./TraditionalCamera.js";
+import { traditionalTileBounds } from "./TraditionalSnakeLayout.js";
 import { renderPipsMarkup } from "./DominoPips.js";
 
 function escapeAttribute(value) {
@@ -86,13 +93,14 @@ function renderTarget(target) {
   return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${option}</button>`;
 }
 
+function renderLockedRamifierSocket(socket) {
+  return `<span class="traditional-ramifier-socket is-locked points-${socket.side}" style="--target-x:${socket.x}px;--target-y:${socket.y}px" data-locked-port="${escapeAttribute(socket.portId)}" aria-hidden="true"><span></span></span>`;
+}
+
 /** Serialización comprobable sin incorporar un DOM a la suite. */
 export function renderTraditionalTableMarkup(scene) {
-  const emptyMessage = scene.tiles.length === 0
-    ? '<p class="traditional-table__empty">La mesa está vacía. Selecciona una ficha para comenzar.</p>'
-    : "";
   const startMarkup = scene.canStart
-    ? '<div class="traditional-start"><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>'
+    ? '<div class="traditional-start"><button type="button" class="primary-action" data-start-action>Jugar</button></div>'
     : "";
   return `
     <div class="traditional-table" style="--table-width:${scene.width}px;--table-height:${scene.height}px" role="group" aria-label="Mesa tradicional de dominó">
@@ -104,8 +112,8 @@ export function renderTraditionalTableMarkup(scene) {
           <div class="traditional-table__surface">
             ${scene.connections.map(renderConnection).join("")}
             ${scene.tiles.map(renderTile).join("")}
+            ${scene.lockedRamifierSockets.map(renderLockedRamifierSocket).join("")}
             ${scene.openTargets.map(renderTarget).join("")}
-            ${emptyMessage}
             ${startMarkup}
           </div>
         </div>
@@ -119,22 +127,27 @@ export class TraditionalRenderer {
       throw new TypeError("TraditionalRenderer requiere un contenedor.");
     }
     this.container = container;
-    this.scrollPosition = null;
-    this.sceneSignature = null;
+    this.cameraState = null;
     this.layoutState = null;
     this.resizeObserver = null;
+    this.viewportSize = null;
+    this.autoPanTarget = null;
   }
 
   render(presentation, { onTarget, onStart } = {}) {
     const previousViewport = this.container.querySelector(
       "[data-table-viewport]",
     );
-    if (previousViewport) {
-      this.scrollPosition = {
+    if (previousViewport && this.cameraState && this.autoPanTarget === null) {
+      this.cameraState = {
+        ...this.cameraState,
         left: previousViewport.scrollLeft,
         top: previousViewport.scrollTop,
       };
     }
+    const previousPlacementIds = new Set(
+      this.layoutState?.tiles?.map((tile) => tile.placementId) ?? [],
+    );
     const scene = createTraditionalScene(presentation.traditionalView, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
@@ -142,58 +155,139 @@ export class TraditionalRenderer {
       scoringResolution: presentation.scoringResolution ?? null,
       previousLayout: this.layoutState,
     });
+    const currentPlacementIds = new Set(
+      scene.tiles.map((tile) => tile.placementId),
+    );
+    const continuesWorld =
+      (previousPlacementIds.size === 0 && currentPlacementIds.size <= 1) ||
+      (
+        currentPlacementIds.size >= previousPlacementIds.size &&
+        currentPlacementIds.size <= previousPlacementIds.size + 1 &&
+        [...previousPlacementIds].every((placementId) =>
+          currentPlacementIds.has(placementId)
+        )
+      );
+    if (!continuesWorld) {
+      this.cameraState = null;
+      this.viewportSize = null;
+      this.autoPanTarget = null;
+    }
+    const addedTiles = scene.tiles.filter(
+      (tile) => !previousPlacementIds.has(tile.placementId),
+    );
     this.layoutState = scene.layoutState;
     this.container.innerHTML = renderTraditionalTableMarkup(scene);
     const viewport = this.container.querySelector("[data-table-viewport]");
-    const nextSignature = `${scene.width}:${scene.height}`;
-    const shouldRecenter = scene.isFinished ||
-      this.sceneSignature === null;
-    this.sceneSignature = nextSignature;
-    const fitAndPosition = ({ recenter = false } = {}) => {
+    const canvas = viewport.querySelector("[data-table-canvas]");
+    const viewportDimensions = () => ({
+      width: Math.max(viewport.clientWidth, 1),
+      height: Math.max(viewport.clientHeight, 1),
+    });
+    const applyCamera = (camera, { smooth = false } = {}) => {
+      canvas.style.setProperty("--table-scale", String(camera.scale));
+      canvas.style.setProperty("--scaled-table-width", `${scene.width * camera.scale}px`);
+      canvas.style.setProperty("--scaled-table-height", `${scene.height * camera.scale}px`);
+      if (smooth && typeof viewport.scrollTo === "function") {
+        this.autoPanTarget = { left: camera.left, top: camera.top };
+        viewport.scrollTo({ left: camera.left, top: camera.top, behavior: "smooth" });
+      } else {
+        this.autoPanTarget = null;
+        viewport.scrollLeft = camera.left;
+        viewport.scrollTop = camera.top;
+      }
+      this.cameraState = { ...camera };
+      this.viewportSize = {
+        width: camera.viewportWidth,
+        height: camera.viewportHeight,
+      };
+    };
+    const fitAndPosition = () => {
+      const dimensions = viewportDimensions();
       const scale = calculateTraditionalFitScale({
         contentWidth: scene.contentBounds.width,
         contentHeight: scene.contentBounds.height,
-        viewportWidth: viewport.clientWidth,
-        viewportHeight: viewport.clientHeight,
+        viewportWidth: dimensions.width,
+        viewportHeight: dimensions.height,
         minScale: scene.isFinished
           ? TRADITIONAL_FINAL_MIN_SCALE
           : undefined,
       });
-      const canvas = viewport.querySelector("[data-table-canvas]");
-      canvas.style.setProperty("--table-scale", String(scale));
-      canvas.style.setProperty("--scaled-table-width", `${scene.width * scale}px`);
-      canvas.style.setProperty("--scaled-table-height", `${scene.height * scale}px`);
-      if (recenter || this.scrollPosition === null) {
-        viewport.scrollLeft = Math.max(
-          0,
-          scene.contentBounds.centerX * scale - viewport.clientWidth / 2,
-        );
-        viewport.scrollTop = Math.max(
-          0,
-          scene.contentBounds.centerY * scale - viewport.clientHeight / 2,
-        );
-      } else {
-        viewport.scrollLeft = this.scrollPosition.left;
-        viewport.scrollTop = this.scrollPosition.top;
-      }
-      this.scrollPosition = {
-        left: viewport.scrollLeft,
-        top: viewport.scrollTop,
-      };
-      return scale;
+      const camera = createTraditionalFitCamera({
+        scale,
+        contentBounds: scene.contentBounds,
+        tableWidth: scene.width,
+        tableHeight: scene.height,
+        viewportWidth: dimensions.width,
+        viewportHeight: dimensions.height,
+      });
+      applyCamera(camera);
+      return camera;
     };
-    fitAndPosition({ recenter: shouldRecenter });
+    if (this.cameraState === null) {
+      fitAndPosition();
+    } else {
+      const dimensions = viewportDimensions();
+      let camera = preserveTraditionalCamera(this.cameraState, {
+        tableWidth: scene.width,
+        tableHeight: scene.height,
+        viewportWidth: dimensions.width,
+        viewportHeight: dimensions.height,
+      });
+      if (addedTiles.length === 1) {
+        camera = revealTraditionalWorldBounds(
+          camera,
+          traditionalTileBounds(addedTiles[0]),
+          {
+            tableWidth: scene.width,
+            tableHeight: scene.height,
+            viewportWidth: dimensions.width,
+            viewportHeight: dimensions.height,
+          },
+        );
+      }
+      const moved = camera.left !== this.cameraState.left ||
+        camera.top !== this.cameraState.top;
+      const reduceMotion = globalThis.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      ).matches ?? false;
+      applyCamera(camera, { smooth: moved && addedTiles.length === 1 && !reduceMotion });
+    }
     this.container.querySelector("[data-fit-table]")?.addEventListener(
       "click",
-      () => fitAndPosition({ recenter: true }),
+      fitAndPosition,
     );
     this.resizeObserver?.disconnect();
     if (typeof ResizeObserver === "function") {
       this.resizeObserver = new ResizeObserver(() => {
-        fitAndPosition({ recenter: true });
+        const nextSize = viewportDimensions();
+        if (
+          this.viewportSize?.width === nextSize.width &&
+          this.viewportSize?.height === nextSize.height
+        ) {
+          return;
+        }
+        if (isTraditionalOrientationChange(this.viewportSize, nextSize)) {
+          fitAndPosition();
+          return;
+        }
+        applyCamera(preserveTraditionalCamera(this.cameraState, {
+          tableWidth: scene.width,
+          tableHeight: scene.height,
+          viewportWidth: nextSize.width,
+          viewportHeight: nextSize.height,
+        }));
       });
       this.resizeObserver.observe(viewport);
     }
+    viewport.addEventListener("scrollend", () => {
+      if (this.autoPanTarget === null) return;
+      this.cameraState = {
+        ...this.cameraState,
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
+      };
+      this.autoPanTarget = null;
+    });
     this.#enableMousePan(viewport);
     const targetById = new Map(
       scene.openTargets.map((target) => [target.id, target]),
@@ -221,6 +315,7 @@ export class TraditionalRenderer {
       ) {
         return;
       }
+      this.autoPanTarget = null;
       drag = {
         pointerId: event.pointerId,
         x: event.clientX,
@@ -242,7 +337,8 @@ export class TraditionalRenderer {
       if (!drag || event.pointerId !== drag.pointerId) {
         return;
       }
-      this.scrollPosition = {
+      this.cameraState = {
+        ...this.cameraState,
         left: viewport.scrollLeft,
         top: viewport.scrollTop,
       };

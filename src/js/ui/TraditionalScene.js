@@ -44,6 +44,25 @@ function createTargetScene(
   };
 }
 
+function createLockedRamifierSockets(view, tileByPlacementId) {
+  const ramifier = view.structure.branchingDouble;
+  if (!ramifier || ramifier.lateralPortsUnlocked) {
+    return [];
+  }
+  const tile = tileByPlacementId.get(ramifier.placementId);
+  if (!tile) return [];
+  const sides = tile.orientation === "vertical"
+    ? ["top", "bottom"]
+    : ["left", "right"];
+  return sides.map((side, index) => ({
+    id: `${ramifier.placementId}:branch:${index + 1}:locked`,
+    placementId: ramifier.placementId,
+    portId: `branch:${index + 1}`,
+    side,
+    ...pointOutsideTraditionalTile(tile, { side }, 8),
+  }));
+}
+
 /** Geometría descartable de la mesa tradicional; nunca se persiste. */
 export function createTraditionalScene(
   view,
@@ -150,6 +169,11 @@ export function createTraditionalScene(
     target.isScoringTerm = scoringPortIds.has(target.id);
   }
 
+  const lockedRamifierSockets = createLockedRamifierSockets(
+    view,
+    sceneTileByPlacementId,
+  );
+
   return {
     width,
     height,
@@ -164,6 +188,7 @@ export function createTraditionalScene(
     tiles: sceneTiles,
     connections,
     openTargets,
+    lockedRamifierSockets,
     layoutStats,
     contentBounds,
     layoutState: layout,

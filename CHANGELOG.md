@@ -8,6 +8,8 @@ Todos los cambios relevantes del proyecto se documentan aquí. El formato sigue 
 
 - Orden local del chancho ramificador: completa sus dos continuidades opuestas antes de desbloquear los laterales, con fase pública derivada y validación histórica del orden.
 - Agrupación pura de targets equivalentes en Puertos mediante firma de scoring, extremos, ramificador y terminalidad; las alternativas distintas se nombran por efecto en lugar de `Destino 1…q`.
+- Cámara Tradicional estable: una jugada conserva zoom/encuadre y solo aplica el pan mínimo para revelar la ficha nueva; fit completo queda reservado a carga, orientación y acción explícita.
+- Laterales bloqueados del ramificador visibles como sockets inactivos hasta completar la continuidad, junto con instrucciones persistentes reducidas a una sola señal contextual.
 - Medallones estratégicos de Puertos con tres datos simultáneos: targets abiertos teal, multiplicidad dorada `×m` de los términos reales de S y conteo histórico neutro `n/7`.
 - Invariante comprobado `S = Σ m_n·n` y caso crítico del ramificador que conserva destinos abiertos después de dejar de aportar a S.
 - Dirección futura documentada para converger Puertos y Grafo en **Estratégico / Jugar ↔ Analizar**, sin modificar todavía ninguna vista.

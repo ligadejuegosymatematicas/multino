@@ -149,7 +149,7 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 20 — Orden local y decisiones equivalentes: COMPLETADO.** El ramificador completa sus dos continuidades antes de habilitar laterales. Puertos agrupa lugares físicamente distintos solo cuando scoring, extremos, estado del ramificador y terminalidad coinciden; los efectos diferentes conservan opciones semánticas sin IDs técnicos.
 
-**Bloque 20 — Orden local del ramificador: COMPLETADO.** El único chancho ramificador ofrece primero sus dos continuidades opuestas y desbloquea laterales únicamente al formar el cruce. La proyección pública deriva fase, capacidad restante y contribución vigente; no cambia schema ni scoring.
+**Bloque 21 — Cámara Tradicional estable: COMPLETADO.** Una jugada ordinaria conserva escala y pan, revela la ficha nueva con el desplazamiento mínimo y nunca dispara fit por handoff, feedback o terminalidad. Solo la carga inicial, un cambio real de orientación y el control explícito ajustan toda la mesa. Los laterales bloqueados del ramificador permanecen visibles como sockets inactivos.
 
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 

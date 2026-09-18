@@ -152,6 +152,30 @@
   animation: traditional-scoring-source 1.75s ease-out;
 }
 
+.traditional-ramifier-socket {
+  position: absolute;
+  z-index: 12;
+  left: var(--target-x);
+  top: var(--target-y);
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px dashed rgb(226 236 228 / 0.58);
+  border-radius: 50%;
+  background: rgb(20 70 58 / 0.68);
+  opacity: 0.62;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.traditional-ramifier-socket > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(226 236 228 / 0.65);
+}
+
 .traditional-domino__half {
   display: grid;
   flex: 1 1 50%;

@@ -254,14 +254,12 @@ function renderRound(presentation, mode, feedback) {
       presentation.selectedDominoId === null
       ? ""
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
-        ? mode === BOARD_VIEW_MODES.PORTS
-          ? ""
-          : "Inicia el tablero con la ficha seleccionada."
+        ? ""
         : mode === BOARD_VIEW_MODES.PORTS && strategicDecisionCount > 1
           ? `${strategicDecisionCount} decisiones distintas: elige una.`
         : selectedCount > 1
-          ? `${selectedCount} destinos: elige un valor y luego el destino concreto.`
-          : "Elige el valor iluminado para jugar.";
+          ? `${selectedCount} destinos disponibles.`
+          : "";
   selectionHint.hidden = selectionHint.textContent === "";
 }
 

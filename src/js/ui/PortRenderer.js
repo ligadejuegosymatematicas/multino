@@ -548,7 +548,9 @@ export class PortRenderer {
       ? `<div class="start-action"><button type="button" class="primary-action" data-start-action>Jugar</button></div>`
       : "";
     const showRamifierHint = !this.hasShownRamifierHint &&
-      scene.nodes.some((node) => node.ramifier !== null);
+      scene.nodes.some((node) =>
+        node.ramifier !== null && !node.ramifier.lateralPortsUnlocked
+      );
     const ramifierHint = showRamifierHint
       ? `<p class="port-ramifier-hint" role="status">Completa el cruce antes de abrir brazos.</p>`
       : "";

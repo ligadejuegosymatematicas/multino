@@ -12,6 +12,12 @@ import {
   renderTraditionalTableMarkup,
 } from "../../src/js/ui/TraditionalRenderer.js";
 import {
+  createTraditionalFitCamera,
+  isTraditionalOrientationChange,
+  preserveTraditionalCamera,
+  revealTraditionalWorldBounds,
+} from "../../src/js/ui/TraditionalCamera.js";
+import {
   calculateTraditionalFitScale,
   createTraditionalScene,
   TRADITIONAL_CONNECTION_CLEARANCE,
@@ -566,6 +572,41 @@ test("un brazo iniciado y uno potencial se distinguen sin alterar sus puertos", 
   assert.match(markup, /traditional-target is-neutral points-down is-branch is-potential/);
 });
 
+test("los laterales del ramificador permanecen visibles y bloqueados hasta completar el cruce", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  const emptyCross = createTraditionalScene(projectTraditionalView(state));
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  const halfCross = createTraditionalScene(projectTraditionalView(state));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
+  const completeCross = createTraditionalScene(projectTraditionalView(state));
+
+  assert.equal(emptyCross.lockedRamifierSockets.length, 2);
+  assert.equal(halfCross.lockedRamifierSockets.length, 2);
+  assert.equal(
+    halfCross.openTargets.filter(
+      (target) => target.placementId === "placement-1",
+    ).length,
+    1,
+  );
+  assert.equal(completeCross.lockedRamifierSockets.length, 0);
+  assert.deepEqual(
+    completeCross.openTargets
+      .filter((target) => target.placementId === "placement-1")
+      .map((target) => target.portId),
+    ["branch:1", "branch:2"],
+  );
+  const lockedMarkup = renderTraditionalTableMarkup(halfCross);
+  assert.equal(
+    lockedMarkup.match(/traditional-ramifier-socket is-locked/g)?.length,
+    2,
+  );
+  assert.doesNotMatch(
+    lockedMarkup,
+    /data-target-id="placement-1:branch:/,
+  );
+});
+
 test("la selección destaca solo extremos legales y conserva targets concretos", () => {
   const state = createTraditionalScenario();
   const playerId = state.currentPlayerId;
@@ -743,8 +784,76 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.match(css, /touch-action:\s*pan-x pan-y/);
   assert.match(rendererSource, /data-fit-table/);
   assert.match(rendererSource, /pointermove/);
+  assert.doesNotMatch(rendererSource, /scene\.isFinished\s*\|\|\s*this\.sceneSignature/);
+  assert.match(rendererSource, /revealTraditionalWorldBounds/);
+  assert.match(rendererSource, /isTraditionalOrientationChange/);
   assert.match(css, /@media \(max-width: 36rem\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("la cámara conserva zoom y pan salvo el mínimo necesario para revelar la nueva ficha", () => {
+  const initial = createTraditionalFitCamera({
+    scale: 1,
+    contentBounds: {
+      centerX: 250,
+      centerY: 180,
+    },
+    tableWidth: 1000,
+    tableHeight: 800,
+    viewportWidth: 400,
+    viewportHeight: 300,
+  });
+  const preserved = preserveTraditionalCamera(initial, {
+    tableWidth: 1000,
+    tableHeight: 800,
+    viewportWidth: 360,
+    viewportHeight: 280,
+  });
+  const alreadyVisible = revealTraditionalWorldBounds(
+    preserved,
+    { left: 180, right: 220, top: 140, bottom: 180 },
+    {
+      tableWidth: 1000,
+      tableHeight: 800,
+      viewportWidth: 360,
+      viewportHeight: 280,
+    },
+  );
+  const revealed = revealTraditionalWorldBounds(
+    preserved,
+    { left: 620, right: 692, top: 140, bottom: 178 },
+    {
+      tableWidth: 1000,
+      tableHeight: 800,
+      viewportWidth: 360,
+      viewportHeight: 280,
+    },
+  );
+
+  assert.equal(preserved.scale, initial.scale);
+  assert.equal(alreadyVisible.scale, initial.scale);
+  assert.equal(alreadyVisible.left, preserved.left);
+  assert.equal(alreadyVisible.top, preserved.top);
+  assert.equal(revealed.scale, initial.scale);
+  assert.ok(revealed.left > preserved.left);
+  assert.equal(revealed.top, preserved.top);
+});
+
+test("solo un cambio real de orientación autoriza el fit automático", () => {
+  assert.equal(
+    isTraditionalOrientationChange(
+      { width: 700, height: 500 },
+      { width: 620, height: 500 },
+    ),
+    false,
+  );
+  assert.equal(
+    isTraditionalOrientationChange(
+      { width: 700, height: 500 },
+      { width: 390, height: 700 },
+    ),
+    true,
+  );
 });
 
 test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo legible", () => {

@@ -190,6 +190,13 @@ Los tests usan `node:test`, se ejecutan sin navegador y citan los IDs normativos
 - se verifican el invariante `S = Σ m_n·n`, el recorrido `0/7…7/7`, el doble contado una sola vez y el caso crítico de dos targets abiertos con multiplicidad de scoring cero;
 - la validación manual cubre ronda Ramificada completa, selector de targets repetidos, capa **Ver estructura**, terminalidad, las tres vistas y 1366×768, 390×844 y 844×390 sin overflow horizontal ni errores de consola.
 
+### Fase 2, Bloque 20 — orden, equivalencias y cámara estable
+
+- `tests/projections/strategic-target-projection.test.js` valida agrupación por scoring, multiconjunto de extremos, estado del ramificador y terminalidad, incluido el contraste entre un extremo ordinario y dos laterales equivalentes;
+- `tests/ui/port-renderer.test.js` verifica target canónico, lenguaje **Continuar / Completar cruce / Abrir brazo**, lugares equivalentes y mecanismo continuidad/laterales sin IDs visibles;
+- `tests/ui/traditional-renderer.test.js` comprueba sockets laterales bloqueados a 0/4 y 1/4, desbloqueo a 2/4, preservación pura de cámara y pan mínimo sin cambio de zoom;
+- el renderer conserva cámara durante handoff, scoring, turno y cierre; solo carga, orientación real y control explícito permiten fit completo.
+
 ## Convenciones
 
 - Tests de modelo: forma y material de las entidades.

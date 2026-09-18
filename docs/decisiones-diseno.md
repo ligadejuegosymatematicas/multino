@@ -751,3 +751,15 @@ Cuando las firmas difieren, se conservan decisiones separadas con lenguaje de co
 **Motivo:** Numerar `Destino 1…q` obligaba a distinguir geometría sin significado estratégico. Dos laterales simétricos pueden ser intercambiables, mientras que un extremo ordinario y un lateral del ramificador pueden compartir valor y producir scoring o capacidad futuros distintos.
 
 **Consecuencias:** La proyección completa sigue disponible para futuras ayudas opcionales, pero S y puntos anticipados permanecen ocultos. La futura convergencia **Estratégico / Jugar ↔ Analizar** puede reutilizar la disposición y las decisiones sin eliminar todavía Grafo. No cambian snapshot, schema, reglas, motor, persistencia ni scoring.
+
+## DEC-056 — Cámara Tradicional independiente del render
+
+**Estado:** Aceptada.
+
+**Decisión:** Conservar una cámara efímera explícita —escala y scroll— separada de `TraditionalSnakeLayout`. Renderizar por selección, handoff, feedback, turno o cierre reaplica esa cámara sin recalcular fit. Al agregar exactamente una ficha, se mantienen escala y posiciones previas y solo se desplaza el mínimo necesario si el nuevo bounding box queda fuera del margen seguro. Carga/restauración no incremental, cambio real entre retrato y paisaje y el botón **Ajustar tablero** pueden crear una cámara ajustada y centrada.
+
+Los laterales todavía ilegales del ramificador se derivan de su fase pública y se dibujan como dos sockets bloqueados no interactivos. Al completar ambas continuidades desaparecen esos marcadores y los targets reglamentarios reales ocupan su lugar.
+
+**Motivo:** El renderer anterior recalculaba la escala en cada render y `ResizeObserver` recentraba incluso ante cambios del panel común; además, terminar la ronda forzaba otro recentrado. Aunque la geometría mundial ya era incremental, esas transformaciones hacían parecer que toda la mesa se recolocaba.
+
+**Consecuencias:** La geometría continúa derivada y descartable; cámara, pan y zoom no entran al snapshot. El texto de inicio se reduce a un único CTA **Jugar** y las ayudas de selección solo aparecen cuando existe una decisión real que distinguir. Motor, schema, persistencia y reglas permanecen intactos.

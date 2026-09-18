@@ -834,6 +834,18 @@ test("la proyección y renderer de Puertos no leen board ni contienen reglas", a
   assert.doesNotMatch(projectionSource, /\bx\s*:|\by\s*:|angle|coordinate/i);
 });
 
+test("la ayuda del ramificador solo aparece mientras el cruce sigue incompleto", async () => {
+  const rendererSource = await readFile(
+    new URL("../../src/js/ui/PortRenderer.js", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    rendererSource,
+    /node\.ramifier !== null && !node\.ramifier\.lateralPortsUnlocked/,
+  );
+});
+
 test("la vista terminal conserva Puertos y elimina jugadas", () => {
   const active = createExitTurnState();
   const terminal = applyTurnAction(
