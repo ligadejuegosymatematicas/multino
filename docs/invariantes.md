@@ -65,6 +65,7 @@ Estos invariantes están autorizados por R-001 a R-035 y por las decisiones arqu
 - El chancho ramificador dispone de exactamente esos cuatro puertos lógicos, todos con valor N (R-032).
 - `main:1` y `main:2` participan exclusivamente en continuidad principal.
 - `branch:1` y `branch:2` participan exclusivamente como orígenes de ramas.
+- Ningún `branch:*` puede usarse antes de que `main:1` y `main:2` estén ocupados; los IDs secuenciales de conexión deben demostrar ese orden.
 - Un chancho no especial posee solo sus dos lados tradicionales y como máximo dos conexiones.
 - El chancho ramificador posee como máximo cuatro conexiones.
 - Cada puerto admite como máximo una conexión.

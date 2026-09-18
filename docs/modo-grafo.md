@@ -119,7 +119,7 @@ El número total de extremos disponibles no coincide con el número de vértices
 (2p + 2r) - 2(p - 1) = 2 + 2r
 ```
 
-Aquí “destino abierto” significa un puerto libre legalmente prolongable y no un término de puntuación. Lineal conserva dos destinos; Ramificado conserva cuatro desde que aparece su único chancho ramificador. Por ello, el máximo vigente de destinos de un mismo valor es cuatro; ocurre, por ejemplo, al colocar como primera ficha el chancho ramificador `v|v`. Destinos del mismo valor siguen siendo acciones individuales y esos cuatro destinos no equivalen a cuatro términos de puntuación: `openEndTargets` y `scoringTerms` continúan siendo contratos distintos.
+Aquí “destino abierto” significa un puerto libre legalmente prolongable y no un término de puntuación. Lineal conserva dos extremos. En Ramificado, el chancho ofrece primero sus dos continuidades opuestas; tras completar ambas, las sustituye por sus dos laterales. Otros extremos de la mesa pueden compartir el mismo valor, de modo que siguen existiendo varios targets reglamentarios distintos sin que ello implique varios términos de puntuación: `openEndTargets` y `scoringTerms` continúan siendo contratos distintos.
 
 ## Opciones visuales para extremos repetidos
 

@@ -107,12 +107,12 @@ test("varios destinos iguales conservan el puerto individual enviado al motor", 
   controller.submitTarget({ kind: "START" });
   controller.selectDomino("4-6");
   const targets = controller.getPresentation().selectedLegalTargets;
-  const chosenTarget = targets[2];
+  const chosenTarget = targets[1];
 
   controller.submitTarget(chosenTarget);
   const submitted = actions.at(-1);
 
-  assert.equal(targets.length, 4);
+  assert.equal(targets.length, 2);
   assert.deepEqual(submitted.target, {
     kind: "OPEN_END",
     placementId: chosenTarget.placementId,

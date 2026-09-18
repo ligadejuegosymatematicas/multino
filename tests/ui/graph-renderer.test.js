@@ -48,6 +48,11 @@ function createTopologyScenario() {
   state = playDomino(state, "4-4");
   state = playDomino(
     state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  state = playDomino(
+    state,
     "3-4",
     targetAt("placement-1", "main:2"),
   );
@@ -59,13 +64,18 @@ function createTopologyScenario() {
   return playDomino(
     state,
     "2-3",
-    targetAt("placement-3", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
 }
 
 function createTwoArmFamilyScenario() {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(
+    state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
   state = playDomino(
     state,
     "3-4",
@@ -107,6 +117,7 @@ function createDenseScenario() {
       (target) => target.kind === "main" && target.mainLineEnd === "end",
     );
   }
+  state = playDomino(state, "3-6", targetAt("placement-1", "main:1"));
   state = playDomino(state, "1-6", targetAt("placement-1", "branch:1"));
   state = playDomino(state, "2-6", targetAt("placement-1", "branch:2"));
   return state;
@@ -197,7 +208,7 @@ test("el feedback destaca solo términos reales de S en el grafo", () => {
     scene.vertices.find((vertex) => vertex.value === 5).isScoringTerm,
     true,
   );
-  assert.match(markup, /graph-loop is-main is-special-double is-scoring-term/);
+  assert.match(markup, /graph-loop is-main is-special-double[^\"]*is-scoring-term/);
   assert.match(markup, /graph-vertex [^"]*is-scoring-term/);
 });
 
@@ -217,7 +228,7 @@ test("una ficha ordinaria produce una arista identificable sin etiqueta redundan
   assert.doesNotMatch(markup, /graph-edge__label|>0·3<|>0\|3</);
 });
 
-test("un chancho usa un lazo sólido, una familia A y cuatro curvas exactas", () => {
+test("un chancho inicial usa un lazo sólido y solo dos continuidades", () => {
   const state = playFirst(createDeterministicMatch(), "6-6");
   const scene = createGraphScene(projectGraphView(state));
   const markup = renderGraphSvgMarkup(scene);
@@ -225,18 +236,18 @@ test("un chancho usa un lazo sólido, una familia A y cuatro curvas exactas", ()
   assert.equal(scene.edges.length, 0);
   assert.equal(scene.loops.length, 1);
   assert.equal(scene.loops[0].dominoId, "6-6");
-  assert.equal(scene.openTargets.length, 4);
-  assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 4);
-  assert.equal(markup.match(/class="open-target /g)?.length, 4);
-  assert.match(markup, /class="graph-loop is-main is-special-double"[^>]+role="button" tabindex="0"/);
+  assert.equal(scene.openTargets.length, 2);
+  assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 2);
+  assert.equal(markup.match(/class="open-target /g)?.length, 2);
+  assert.match(markup, /class="graph-loop is-main is-special-double[^\"]*"[^>]+role="button" tabindex="0"/);
   assert.doesNotMatch(markup, /graph-special-marker/);
   assert.doesNotMatch(markup, />E<\/text>/);
   assert.doesNotMatch(markup, /graph-loop__label|>6·6<|>6\|6</);
-  assert.equal(markup.match(/class="graph-family-root /g)?.length, 1);
-  assert.match(markup, /data-family-code="A"/);
+  assert.equal(markup.match(/class="graph-family-root /g)?.length ?? 0, 0);
+  assert.doesNotMatch(markup, /data-family-code="A"/);
   assert.deepEqual(
     scene.openTargets.map((target) => target.topology.structureCode),
-    ["P", "P", "A", "A"],
+    ["P", "P"],
   );
   assert.doesNotMatch(markup, /graph-special-summary|Especiales:/);
   assert.match(markup, /class="open-target__curve"/);
@@ -257,12 +268,12 @@ test("q targets del mismo valor conservan q indicadores seleccionables", () => {
   });
   const valueSix = scene.vertices.find((vertex) => vertex.value === 6);
 
-  assert.equal(legalTargets.length, 4);
-  assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 4);
-  assert.equal(valueSix.legalTargetIds.length, 4);
+  assert.equal(legalTargets.length, 2);
+  assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 2);
+  assert.equal(valueSix.legalTargetIds.length, 2);
   const markup = renderGraphSvgMarkup(scene);
-  assert.equal(markup.match(/class="open-target__option-index"/g)?.length, 4);
-  assert.doesNotMatch(markup, /graph-multiplicity|>×4</);
+  assert.equal(markup.match(/class="open-target__option-index"/g)?.length, 2);
+  assert.doesNotMatch(markup, /graph-multiplicity|>×2</);
   assert.deepEqual(view, before);
 });
 
@@ -283,13 +294,13 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
     })),
     [
       {
-        id: "placement-2:side:a",
+        id: "placement-3:side:a",
         region: "main",
         structureId: "main",
         structureCode: "P",
       },
       {
-        id: "placement-4:side:b",
+        id: "placement-5:side:b",
         region: "branch",
         structureId: "placement-1:branch:1",
         structureCode: "A",
@@ -298,11 +309,11 @@ test("targets abiertos del mismo valor distinguen principal y rama", () => {
   );
   assert.match(
     markup,
-    /open-target is-neutral is-main-target[^>]+data-target-id="placement-2:side:a"/,
+    /open-target is-neutral is-main-target[^>]+data-target-id="placement-3:side:a"/,
   );
   assert.match(
     markup,
-    /open-target is-neutral is-branch-target[^>]+data-target-id="placement-4:side:b"/,
+    /open-target is-neutral is-branch-target[^>]+data-target-id="placement-5:side:b"/,
   );
   assert.match(markup, /data-structure-code="P"/);
   assert.match(markup, /data-structure-code="A"/);
@@ -355,7 +366,7 @@ test("una familia cerrada pierde letras redundantes pero conserva inspección", 
   const restMarkup = renderGraphSvgMarkup(createGraphScene(view));
   const inspectedMarkup = renderGraphSvgMarkup(createGraphScene(view, {
     inspectedStructureId: "branch-family:placement-1",
-    inspectedPlacementId: "placement-3",
+    inspectedPlacementId: "placement-4",
   }));
 
   assert.doesNotMatch(restMarkup, /class="graph-family-root /);
@@ -492,7 +503,7 @@ test("la inspección de familia resalta ambos brazos, su raíz y sus extremos", 
   const state = createTwoArmFamilyScenario();
   const scene = createGraphScene(projectGraphView(state), {
     inspectedStructureId: "branch-family:placement-1",
-    inspectedPlacementId: "placement-4",
+    inspectedPlacementId: "placement-5",
   });
   const played = [...scene.edges, ...scene.loops];
   const byPlacementId = new Map(
@@ -502,19 +513,24 @@ test("la inspección de familia resalta ambos brazos, su raíz y sus extremos", 
   const inspector = renderTopologyInspectionMarkup(scene.inspection);
 
   assert.deepEqual(scene.inspection.structurePlacementIds, [
-    "placement-3",
     "placement-4",
+    "placement-5",
   ]);
   assert.deepEqual(
     scene.inspection.arms.map((arm) => arm.isOccupied),
     [true, true],
   );
   assert.equal(scene.inspection.rootPlacementId, "placement-1");
-  assert.equal(byPlacementId.get("placement-3").isTopologyHighlighted, true);
   assert.equal(byPlacementId.get("placement-4").isTopologyHighlighted, true);
+  assert.equal(byPlacementId.get("placement-5").isTopologyHighlighted, true);
   assert.equal(byPlacementId.get("placement-1").isTopologyRoot, true);
   assert.equal(byPlacementId.get("placement-1").isTopologyDimmed, false);
   assert.equal(byPlacementId.get("placement-2").isTopologyDimmed, true);
+  assert.equal(
+    scene.openTargets.find((target) => target.id === "placement-5:side:a")
+      .isTopologyHighlighted,
+    true,
+  );
   assert.equal(
     scene.openTargets.find((target) => target.id === "placement-4:side:a")
       .isTopologyHighlighted,
@@ -522,11 +538,6 @@ test("la inspección de familia resalta ambos brazos, su raíz y sus extremos", 
   );
   assert.equal(
     scene.openTargets.find((target) => target.id === "placement-3:side:a")
-      .isTopologyHighlighted,
-    true,
-  );
-  assert.equal(
-    scene.openTargets.find((target) => target.id === "placement-2:side:a")
       .isTopologyDimmed,
     true,
   );
@@ -584,23 +595,33 @@ test("la inspección de chanchos explica rol, conexiones y ramas", () => {
   branchDoubleState = playDomino(branchDoubleState, "4-4");
   branchDoubleState = playDomino(
     branchDoubleState,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  branchDoubleState = playDomino(
+    branchDoubleState,
+    "1-4",
+    targetAt("placement-1", "main:2"),
+  );
+  branchDoubleState = playDomino(
+    branchDoubleState,
     "2-4",
     targetAt("placement-1", "branch:1"),
   );
   branchDoubleState = playDomino(
     branchDoubleState,
     "2-2",
-    targetAt("placement-2", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
   const branchDoubleMarkup = renderTopologyInspectionMarkup(
     createGraphScene(projectGraphView(branchDoubleState), {
       inspectedStructureId: "branch-family:placement-1",
-      inspectedPlacementId: "placement-3",
+      inspectedPlacementId: "placement-5",
     }).inspection,
   );
 
   assert.match(specialMarkup, /Chancho ramificador/);
-  assert.match(specialMarkup, /Conexiones: 2\/4/);
+  assert.match(specialMarkup, /Conexiones: 3\/4/);
   assert.match(specialMarkup, /Ramas iniciadas: 1\/2/);
   assert.match(ordinaryMainMarkup, /Chancho ordinario/);
   assert.match(ordinaryMainMarkup, /Conexiones: 1\/2/);
@@ -626,24 +647,24 @@ test("un grafo denso conserva fichas, targets e inspección individual", () => {
   const state = createDenseScenario();
   const view = projectGraphView(state);
   const inspectedTopology = view.topology.placements.find(
-    (placement) => placement.placementId === "placement-15",
+    (placement) => placement.placementId === "placement-16",
   );
   const scene = createGraphScene(view, {
     inspectedStructureId: inspectedTopology.familyId,
-    inspectedPlacementId: "placement-15",
+    inspectedPlacementId: "placement-16",
   });
   const markup = renderGraphSvgMarkup(scene);
   const played = [...scene.edges, ...scene.loops];
 
-  assert.equal(played.length, 16);
-  assert.equal(new Set(played.map((edge) => edge.placementId)).size, 16);
+  assert.equal(played.length, 17);
+  assert.equal(new Set(played.map((edge) => edge.placementId)).size, 17);
   assert.equal(scene.vertices.length, 7);
   assert.equal(scene.openTargets.length, 4);
   assert.equal(new Set(scene.openTargets.map((target) => target.id)).size, 4);
   assert.equal(played.filter((edge) => edge.isTopologyHighlighted).length, 2);
   assert.equal(played.filter((edge) => edge.isTopologyRoot).length, 1);
-  assert.equal(played.filter((edge) => edge.isTopologyDimmed).length, 13);
-  assert.equal(markup.match(/data-placement-id=/g)?.length, 16);
+  assert.equal(played.filter((edge) => edge.isTopologyDimmed).length, 14);
+  assert.equal(markup.match(/data-placement-id=/g)?.length, 17);
   assert.equal(markup.match(/class="open-target /g)?.length, 4);
   assert.deepEqual(
     scene.loops

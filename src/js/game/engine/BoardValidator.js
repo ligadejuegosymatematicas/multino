@@ -6,6 +6,8 @@ import {
   getPlacementPorts,
   getPrincipalPortIds,
   isSpecialDoublePlacement,
+  SPECIAL_BRANCH_PORT_IDS,
+  SPECIAL_MAIN_PORT_IDS,
 } from "./BoardPorts.js";
 import {
   getConnectionEndpoints,
@@ -358,6 +360,39 @@ export function validateBoardState(state) {
         { connectionId: connection.id, previous: portUsage.get(key) },
       );
       portUsage.set(key, connection.id);
+    }
+  }
+
+  for (const placementId of specialIds) {
+    const continuationConnectionIds = SPECIAL_MAIN_PORT_IDS
+      .map((portId) => portUsage.get(`${placementId}:${portId}`))
+      .filter(Boolean);
+    const lateralConnectionIds = SPECIAL_BRANCH_PORT_IDS
+      .map((portId) => portUsage.get(`${placementId}:${portId}`))
+      .filter(Boolean);
+    domainAssert(
+      lateralConnectionIds.length === 0 || continuationConnectionIds.length === 2,
+      "SPECIAL_DOUBLE_CONTINUITY_REQUIRED",
+      "El chancho ramificador debe completar su continuidad antes de usar laterales.",
+      { placementId, continuationConnectionIds, lateralConnectionIds },
+    );
+    if (lateralConnectionIds.length > 0) {
+      const latestContinuation = Math.max(
+        ...continuationConnectionIds.map((connectionId) =>
+          parseSequentialId(connectionId, "connection")
+        ),
+      );
+      const firstLateral = Math.min(
+        ...lateralConnectionIds.map((connectionId) =>
+          parseSequentialId(connectionId, "connection")
+        ),
+      );
+      domainAssert(
+        latestContinuation < firstLateral,
+        "SPECIAL_DOUBLE_CONTINUITY_ORDER",
+        "Las dos continuidades del chancho deben preceder a sus conexiones laterales.",
+        { placementId, continuationConnectionIds, lateralConnectionIds },
+      );
     }
   }
 

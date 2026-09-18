@@ -1,5 +1,5 @@
 import { getOpenEndTargets } from "../engine/BoardQueries.js";
-import { getConnectionsForPlacement } from "../engine/BoardTopology.js";
+import { getBranchingDoubleState } from "../engine/BranchingDoubleState.js";
 import { validateBoardState } from "../engine/BoardValidator.js";
 import { getRoundStructureMode } from "../setup/MatchConfig.js";
 
@@ -27,19 +27,19 @@ export function getRoundStructureProjection(state) {
     branchingDouble: branchingPlacementId === null
       ? null
       : (() => {
-          const placement = state.board.placements[branchingPlacementId];
-          const value = state.dominoes[placement.dominoId].sides[0].value;
-          const connectionCount = getConnectionsForPlacement(
-            state,
-            branchingPlacementId,
-          ).length;
+          const ramifier = getBranchingDoubleState(state);
           return {
-            value,
-            placementId: branchingPlacementId,
-            connectionCount,
-            capacity: 4,
-            remainingConnections: 4 - connectionCount,
-            isSaturated: connectionCount === 4,
+            value: ramifier.value,
+            placementId: ramifier.placementId,
+            connectionCount: ramifier.connectionCount,
+            capacity: ramifier.capacity,
+            remainingConnections: ramifier.remainingConnections,
+            phase: ramifier.phase,
+            continuationPortsRemaining: ramifier.continuationPortsRemaining,
+            lateralPortsUnlocked: ramifier.lateralPortsUnlocked,
+            lateralPortsRemaining: ramifier.lateralPortsRemaining,
+            contributesToScoring: ramifier.contributesToScoring,
+            isSaturated: ramifier.isSaturated,
           };
         })(),
   };

@@ -33,11 +33,11 @@ test("los extremos del mismo valor conservan identidad al agruparse", () => {
   const groups = groupOpenEndsByValue(state);
   const visual = getOpenEndVisualProjection(state);
 
-  assert.equal(groups[4].length, 4);
-  assert.equal(new Set(groups[4].map((target) => target.id)).size, 4);
+  assert.equal(groups[4].length, 2);
+  assert.equal(new Set(groups[4].map((target) => target.id)).size, 2);
   assert.deepEqual(groups[4], baseTargets);
   assert.deepEqual(visual, [
-    { value: 4, count: 4, targets: baseTargets },
+    { value: 4, count: 2, targets: baseTargets },
   ]);
 });
 
@@ -53,8 +53,8 @@ test("una ficha jugable conserva todos sus destinos concretos", () => {
     (play) => play.dominoId === "4-5",
   );
 
-  assert.equal(legalTargets.length, 4);
-  assert.equal(groupedPlay.legalTargetCount, 4);
+  assert.equal(legalTargets.length, 2);
+  assert.equal(groupedPlay.legalTargetCount, 2);
   assert.deepEqual(groupedPlay.legalTargets, legalTargets);
   assert.deepEqual(
     legalTargets.map(({ placementId, portId }) => ({ placementId, portId })),

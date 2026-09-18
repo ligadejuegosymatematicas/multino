@@ -25,13 +25,18 @@ function createMainAndBranchesScenario() {
   state = playDomino(state, "4-4");
   state = playDomino(
     state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  state = playDomino(
+    state,
     "3-4",
     targetAt("placement-1", "main:2"),
   );
   state = playDomino(
     state,
     "2-3",
-    targetAt("placement-2", "side:a"),
+    targetAt("placement-3", "side:a"),
   );
   state = playDomino(
     state,
@@ -41,7 +46,7 @@ function createMainAndBranchesScenario() {
   state = playDomino(
     state,
     "2-2",
-    targetAt("placement-4", "side:a"),
+    targetAt("placement-5", "side:a"),
   );
   return playDomino(
     state,
@@ -56,13 +61,15 @@ test("reconstruye mainLine en orden y orienta sus puertos consecutivos", () => {
   );
 
   assert.deepEqual(projection.mainLine.placementIds, [
-    "placement-1",
     "placement-2",
+    "placement-1",
     "placement-3",
+    "placement-4",
   ]);
   assert.deepEqual(projection.mainLine.connectionIds, [
     "connection-1",
     "connection-2",
+    "connection-3",
   ]);
   assert.deepEqual(
     projection.mainLine.tiles.map((tile) => ({
@@ -75,27 +82,35 @@ test("reconstruye mainLine en orden y orienta sus puertos consecutivos", () => {
     })),
     [
       {
-        placementId: "placement-1",
-        dominoId: "4-4",
-        startValue: 4,
+        placementId: "placement-2",
+        dominoId: "0-4",
+        startValue: 0,
         endValue: 4,
         startConnectionId: null,
         endConnectionId: "connection-1",
       },
       {
-        placementId: "placement-2",
-        dominoId: "3-4",
+        placementId: "placement-1",
+        dominoId: "4-4",
         startValue: 4,
-        endValue: 3,
+        endValue: 4,
         startConnectionId: "connection-1",
         endConnectionId: "connection-2",
       },
       {
         placementId: "placement-3",
+        dominoId: "3-4",
+        startValue: 4,
+        endValue: 3,
+        startConnectionId: "connection-2",
+        endConnectionId: "connection-3",
+      },
+      {
+        placementId: "placement-4",
         dominoId: "2-3",
         startValue: 3,
         endValue: 2,
-        startConnectionId: "connection-2",
+        startConnectionId: "connection-3",
         endConnectionId: null,
       },
     ],
@@ -114,7 +129,7 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
       rootPlacementId: family.rootPlacementId,
       rootMainOrder: family.rootMainOrder,
     },
-    { code: "A", rootPlacementId: "placement-1", rootMainOrder: 1 },
+    { code: "A", rootPlacementId: "placement-1", rootMainOrder: 2 },
   );
   assert.deepEqual(
     family.arms.map((arm) => ({
@@ -131,19 +146,19 @@ test("reconstruye ambos brazos desde la raíz hasta su terminal exacto", () => {
         armIndex: 1,
         originPortId: "branch:1",
         originValue: 4,
-        originConnectionId: "connection-3",
-        placementIds: ["placement-4", "placement-5"],
-        connectionIds: ["connection-3", "connection-4"],
-        terminalId: "placement-5:side:b",
+        originConnectionId: "connection-4",
+        placementIds: ["placement-5", "placement-6"],
+        connectionIds: ["connection-4", "connection-5"],
+        terminalId: "placement-6:side:b",
       },
       {
         armIndex: 2,
         originPortId: "branch:2",
         originValue: 4,
-        originConnectionId: "connection-5",
-        placementIds: ["placement-6"],
-        connectionIds: ["connection-5"],
-        terminalId: "placement-6:side:a",
+        originConnectionId: "connection-6",
+        placementIds: ["placement-7"],
+        connectionIds: ["connection-6"],
+        terminalId: "placement-7:side:a",
       },
     ],
   );
@@ -194,29 +209,29 @@ test("los extremos tradicionales conservan identidad y contrato canónico", () =
     })),
     [
       {
-        id: "placement-1:main:1",
-        placementId: "placement-1",
-        portId: "main:1",
-        region: "main",
-        armIndex: null,
-      },
-      {
-        id: "placement-3:side:a",
-        placementId: "placement-3",
+        id: "placement-2:side:a",
+        placementId: "placement-2",
         portId: "side:a",
         region: "main",
         armIndex: null,
       },
       {
-        id: "placement-5:side:b",
-        placementId: "placement-5",
+        id: "placement-4:side:a",
+        placementId: "placement-4",
+        portId: "side:a",
+        region: "main",
+        armIndex: null,
+      },
+      {
+        id: "placement-6:side:b",
+        placementId: "placement-6",
         portId: "side:b",
         region: "branch",
         armIndex: 1,
       },
       {
-        id: "placement-6:side:a",
-        placementId: "placement-6",
+        id: "placement-7:side:a",
+        placementId: "placement-7",
         portId: "side:a",
         region: "branch",
         armIndex: 2,

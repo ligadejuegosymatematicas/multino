@@ -729,3 +729,13 @@ Un medallón con un solo target compatible ejecuta el target canónico directame
 **Motivo:** Puertos debe ofrecer una ventaja estratégica inmediata frente a Tradicional. Ocultar el agotamiento `n/7` obligaba a abrir un inspector, y un simple anillo dorado no comunicaba si un valor aportaba una o dos veces. El caso crítico es el ramificador con dos conexiones: puede conservar dos targets teal y tener multiplicidad dorada cero.
 
 **Consecuencias:** El inspector continúa como explicación ampliada y **Ver estructura** conserva incidencias y recorridos. Se registra como dirección futura una sola vista **Estratégico** con estados **Jugar / Analizar**: el segundo superpondría K₇, lazos y subgrafo jugado sin mover los siete medallones. No se implementa la fusión ni se modifica Grafo en este bloque.
+
+## DEC-054 — Continuidad obligatoria antes de laterales
+
+**Estado:** Aceptada como regla vigente.
+
+**Decisión:** El único chancho ramificador conserva cuatro puertos internos, pero `branch:1/2` no forman parte de `getOpenEndTargets` hasta que `main:1/2` estén ocupados. A 0/4 se ofrecen ambas continuidades; a 1/4 solo la opuesta; a 2/4 se desbloquean ambos laterales. El validador exige además que los IDs de conexión de las continuidades precedan a cualquier lateral. `getRoundStructureProjection` expone fase, continuidades restantes, desbloqueo y laterales restantes sin persistir campos nuevos.
+
+**Motivo:** La secuencia punta → cruce → brazos reproduce el comportamiento esperado de un spinner, enseña visualmente cuándo deja de sumar y elimina la posibilidad de abrir un lateral antes de completar la continuidad.
+
+**Consecuencias:** Scoring permanece intacto: 0/1 conexiones aportan `2N`; 2/3/4 aportan cero. Snapshot y schema siguen en v6; la información nueva es derivada. Lineal y los dobles ordinarios no cambian.

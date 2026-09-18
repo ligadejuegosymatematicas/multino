@@ -179,17 +179,20 @@ El motor debe enumerar todas las jugadas legales. La elección corresponde al ju
 
 Antes de existir un chancho ramificador, el tablero es una cadena simple con dos extremos. En modo Lineal conserva esa forma durante toda la ronda.
 
-En modo Ramificado, el primer chancho colocado puede reunir hasta cuatro cadenas acíclicas. Esas cadenas son brazos equivalentes: ninguna posee prioridad o jerarquía reglamentaria sobre las demás.
+En modo Ramificado, el primer chancho colocado puede reunir hasta cuatro cadenas acíclicas. Primero debe completar localmente sus dos continuidades opuestas; después, las cuatro cadenas conectadas al cruce son brazos equivalentes y ninguna posee prioridad o jerarquía reglamentaria global.
 
 El campo interno `mainLine.placementIds` puede conservar un camino ordenado para compatibilidad del modelo, pero esa clasificación no concede capacidades especiales ni define categorías visibles para el jugador.
 
 ### R-032 — Puertos del chancho ramificador
 
-El chancho ramificador `N|N` dispone de cuatro puertos lógicos, cada uno con valor `N` y capacidad para una sola conexión.
+El chancho ramificador `N|N` dispone de cuatro puertos lógicos, cada uno con valor `N` y capacidad para una sola conexión: dos de continuidad opuestos y dos laterales.
 
-- `main:1`, `main:2`, `branch:1` y `branch:2` son identificadores internos canónicos mantenidos por compatibilidad.
+- `main:1` y `main:2` identifican internamente las continuidades opuestas;
+- `branch:1` y `branch:2` identifican internamente los laterales.
 
-Los cuatro puertos son reglamentariamente equivalentes; sus nombres no representan jerarquía, dirección gráfica ni prioridad. Un chancho ordinario solo dispone de sus dos puertos tradicionales.
+Con cero conexiones pueden usarse cualquiera de las dos continuidades. Con una conexión solo puede usarse la continuidad opuesta. Al completar la segunda conexión se forma el cruce y se habilitan los dos laterales. Con tres conexiones queda un lateral y con cuatro el chancho está saturado. Esta prioridad es local al mecanismo del chancho y no crea una “línea principal” global para el jugador. Un chancho ordinario solo dispone de sus dos puertos tradicionales.
+
+Resumen para el jugador: **completa el cruce antes de abrir nuevos brazos**.
 
 ### R-033 — Capacidad de conexión y aporte a S
 
@@ -203,9 +206,9 @@ Esta regla aclara conjuntamente R-018 y R-019 sin alterar su significado.
 
 ### R-034 — Extensión de brazos
 
-Cada conexión libre del chancho ramificador puede iniciar o continuar un brazo. Después de la ficha adyacente al chancho, ese brazo continúa como una cadena ordinaria desde su único extremo terminal disponible.
+Una vez completadas las dos continuidades, cada lateral libre del chancho ramificador puede iniciar un brazo. Después de la ficha adyacente al chancho, ese brazo continúa como una cadena ordinaria desde su único extremo terminal disponible.
 
-La representación interna puede distinguir dos continuidades heredadas como `main:*` y dos laterales como `branch:*`, pero las cuatro cadenas resultantes son equivalentes para las decisiones reglamentarias del jugador.
+La representación interna distingue dos continuidades heredadas como `main:*` y dos laterales como `branch:*`. Esa distinción impone únicamente el orden local de apertura; una vez formado el cruce, las cadenas resultantes no adquieren jerarquía reglamentaria global.
 
 Diagrama puramente ilustrativo, sin significado geométrico para el motor:
 
@@ -235,11 +238,11 @@ Sobre el extremo 5 del caso A se coloca `5|3`. Es compatible por R-028 y su colo
 
 ### Caso C — Primer chancho en modo Ramificado
 
-El primer chancho colocado adquiere condición ramificadora, se registra internamente en `specialDoublePlacementIds` y dispone de cuatro puertos.
+El primer chancho colocado adquiere condición ramificadora, se registra internamente en `specialDoublePlacementIds` y dispone de dos continuidades y dos laterales bloqueados. Si abre la ronda, cualquiera de las dos continuidades puede recibir la primera conexión. Si se coloca sobre un extremo existente, esa entrada ocupa una continuidad y la siguiente conexión al chancho debe completar la opuesta.
 
 ### Caso D — Nuevo brazo
 
-Desde un puerto libre del chancho ramificador `4|4` se conecta una ficha `4|2`. Esa colocación inicia uno de sus brazos; el identificador interno concreto del puerto no altera su jerarquía reglamentaria.
+Después de completar las dos continuidades del chancho ramificador `4|4`, se conecta una ficha `4|2` a uno de sus laterales. Esa colocación inicia un nuevo brazo; antes de formar el cruce, esa jugada lateral es ilegal.
 
 ### Caso E — Chancho dentro de rama
 
@@ -255,7 +258,7 @@ En modo Ramificado, el primer chancho adquiere capacidad cuatro. Cualquier chanc
 
 ### Caso H — Puntuación del chancho
 
-Para un mismo chancho `N`: con una conexión aporta `2N`; con dos, tres o cuatro conexiones aporta 0. Las conexiones tercera y cuarta solo son posibles si es el chancho ramificador.
+Para un mismo chancho `N`: con una conexión aporta `2N`; con dos, tres o cuatro conexiones aporta 0. Las conexiones tercera y cuarta solo son posibles si es el chancho ramificador y corresponden a sus laterales ya desbloqueados. Pedagógicamente: **se suman las puntas de los brazos, no todos los lugares donde todavía se puede jugar**.
 
 ## Pendientes no bloqueantes para el juego actual
 

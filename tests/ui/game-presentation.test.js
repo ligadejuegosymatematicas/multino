@@ -61,6 +61,16 @@ test("la primera ficha lateral produce feedback de nueva ramificación", () => {
   state = playDomino(state, "4-4");
   state = playDomino(
     state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  state = playDomino(
+    state,
+    "1-4",
+    targetAt("placement-1", "main:2"),
+  );
+  state = playDomino(
+    state,
     "2-4",
     targetAt("placement-1", "branch:1"),
   );

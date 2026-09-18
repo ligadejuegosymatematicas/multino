@@ -196,7 +196,7 @@ test("un chancho especial expone cuatro sockets y targets individuales", () => {
     hub.sockets.map(({ boardPortId }) => boardPortId),
     ["main:1", "main:2", "branch:1", "branch:2"],
   );
-  assert.equal(new Set(projection.openTargets.map(({ id }) => id)).size, 4);
+  assert.equal(new Set(projection.openTargets.map(({ id }) => id)).size, 2);
   assert.ok(projection.openTargets.every((target) => target.value === 4));
   assert.deepEqual(
     projection.openTargets.map(({ actionTarget }) => actionTarget),
@@ -211,19 +211,20 @@ test("un chancho especial expone cuatro sockets y targets individuales", () => {
 test("principal, branch:1 y branch:2 conservan continuidad y raíz exactas", () => {
   let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "4-5", targetAt("placement-1", "main:1"));
   state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
-  state = playDomino(state, "1-2", targetAt("placement-3", "side:a"));
+  state = playDomino(state, "1-2", targetAt("placement-4", "side:a"));
   state = playDomino(state, "0-4", targetAt("placement-1", "branch:2"));
   const projection = getPortGraphProjection(state);
   const mainBridge = projection.internalBridges.find(
     (bridge) => bridge.connectionId === "connection-1",
   );
   const firstArmBridge = projection.internalBridges.find(
-    (bridge) => bridge.connectionId === "connection-2",
+    (bridge) => bridge.connectionId === "connection-3",
   );
   const secondArmBridge = projection.internalBridges.find(
-    (bridge) => bridge.connectionId === "connection-4",
+    (bridge) => bridge.connectionId === "connection-5",
   );
 
   assert.equal(mainBridge.region, "main");
@@ -238,7 +239,7 @@ test("principal, branch:1 y branch:2 conservan continuidad y raíz exactas", () 
   );
   assert.equal(
     projection.internalBridges.find(
-      (bridge) => bridge.connectionId === "connection-3",
+      (bridge) => bridge.connectionId === "connection-4",
     ).structureId,
     "placement-1:branch:1",
   );
@@ -247,8 +248,10 @@ test("principal, branch:1 y branch:2 conservan continuidad y raíz exactas", () 
 test("un chancho dentro de una rama sigue siendo ordinario", () => {
   let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
-  state = playDomino(state, "2-2", targetAt("placement-2", "side:a"));
+  state = playDomino(state, "2-2", targetAt("placement-4", "side:a"));
   const projection = getPortGraphProjection(state);
   const branchHub = projection.doubleHubs.find(
     (hub) => hub.dominoId === "2-2",

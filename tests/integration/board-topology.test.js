@@ -32,8 +32,6 @@ test("Caso C/R-001/R-027/R-032: el primer chancho colocado en Ramificado es el r
     [
       { value: 4, portId: "main:1", kind: "main" },
       { value: 4, portId: "main:2", kind: "main" },
-      { value: 4, portId: "branch:1", kind: "branch-origin" },
-      { value: 4, portId: "branch:2", kind: "branch-origin" },
     ],
   );
 });
@@ -41,24 +39,30 @@ test("Caso C/R-001/R-027/R-032: el primer chancho colocado en Ramificado es el r
 test("Caso D/R-034: un branch:* especial inicia una cadena lateral derivable", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
 
-  assert.deepEqual(state.board.mainLine.placementIds, ["placement-1"]);
+  assert.deepEqual(state.board.mainLine.placementIds, [
+    "placement-2",
+    "placement-1",
+    "placement-3",
+  ]);
   assert.equal(Object.hasOwn(state.board, "branches"), false);
   assert.deepEqual(getDerivedBranches(state), [
     {
       id: "placement-1:branch:1",
       origin: { placementId: "placement-1", portId: "branch:1" },
-      placementIds: ["placement-2"],
-      connectionIds: ["connection-1"],
-      terminal: { placementId: "placement-2", portId: "side:a" },
+      placementIds: ["placement-4"],
+      connectionIds: ["connection-3"],
+      terminal: { placementId: "placement-4", portId: "side:a" },
     },
   ]);
   assert.ok(
     getOpenEndTargets(state).some(
       (target) =>
         target.kind === "branch" &&
-        target.placementId === "placement-2" &&
+        target.placementId === "placement-4" &&
         target.portId === "side:a" &&
         target.value === 2,
     ),
@@ -68,22 +72,24 @@ test("Caso D/R-034: un branch:* especial inicia una cadena lateral derivable", (
 test("Caso E/R-002/R-035: un chancho dentro de rama es ordinario y no bifurca", () => {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
-  state = playDomino(state, "2-2", targetAt("placement-2", "side:a"));
+  state = playDomino(state, "2-2", targetAt("placement-4", "side:a"));
 
   assert.deepEqual(state.board.specialDoublePlacementIds, ["placement-1"]);
   assert.deepEqual(getDerivedBranches(state)[0].placementIds, [
-    "placement-2",
-    "placement-3",
+    "placement-4",
+    "placement-5",
   ]);
   const branchTargets = getOpenEndTargets(state).filter(
-    (target) => target.placementId === "placement-3",
+    (target) => target.placementId === "placement-5",
   );
   assert.deepEqual(branchTargets, [
     {
-      id: "placement-3:side:b",
+      id: "placement-5:side:b",
       value: 2,
-      placementId: "placement-3",
+      placementId: "placement-5",
       portId: "side:b",
       kind: "branch",
       branchOrigin: {
@@ -170,13 +176,13 @@ test("DEC-028: una ficha genera una jugada por cada destino individual del mismo
   const matchingPlays = getLegalPlays(state, playerId).filter(
     (play) => play.dominoId === "4-5",
   );
-  assert.equal(matchingPlays.length, 4);
+  assert.equal(matchingPlays.length, 2);
   assert.equal(
     new Set(
       matchingPlays.map(
         (play) => `${play.target.placementId}:${play.target.portId}`,
       ),
     ).size,
-    4,
+    2,
   );
 });

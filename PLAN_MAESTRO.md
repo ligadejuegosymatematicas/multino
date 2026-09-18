@@ -147,6 +147,8 @@ ARQ-PEND-001 a 005 quedan resueltos sin generalizar participantes ni match. El B
 
 **Bloque 19 — Estabilidad Tradicional y medallones estratégicos: COMPLETADO.** Tradicional crece de forma incremental y congela posición, orientación y giros previos; cámara y geometría quedan separadas. Puertos muestra simultáneamente targets teal, multiplicidad dorada de S y `n/7` neutro. Queda documentada, sin implementar, la posible convergencia futura Puertos + Grafo como **Estratégico / Jugar ↔ Analizar**.
 
+**Bloque 20 — Orden local del ramificador: COMPLETADO.** El único chancho ramificador ofrece primero sus dos continuidades opuestas y desbloquea laterales únicamente al formar el cruce. La proyección pública deriva fase, capacidad restante y contribución vigente; no cambia schema ni scoring.
+
 **Siguiente bloque: NO AUTORIZADO.** Continúan fuera configuración del divisor `n`, multirronda, refinamiento visual premium, panel estructural completo, zoom gestual avanzado, replay y animaciones complejas. No se inicia ninguna de esas capacidades por completar esta iteración.
 
 **Estudio registrado — reversibilidad Grafo/Tradicional: PROYECCIÓN Y PRIMER RENDERER MATERIALIZADOS.** La secuencia lógica se deriva de `mainLine + placements + connections + ports` sin persistencia ni schema nuevo. La orientación física de cadenas rectas ya respeta cada conexión; giros adaptativos, zoom gestual y acabado avanzado continúan pendientes. Véase `docs/reversibilidad-grafo-tradicional.md`.

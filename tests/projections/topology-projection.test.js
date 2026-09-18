@@ -23,6 +23,11 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
   state = playDomino(state, "4-4");
   state = playDomino(
     state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  state = playDomino(
+    state,
     "3-4",
     targetAt("placement-1", "main:2"),
   );
@@ -34,7 +39,7 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
   state = playDomino(
     state,
     "2-5",
-    targetAt("placement-3", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
   const projection = getBoardTopologyProjection(state);
 
@@ -42,11 +47,12 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
     id: "main",
     code: "P",
     label: "Principal",
-    placementIds: ["placement-1", "placement-2"],
+    placementIds: ["placement-2", "placement-1", "placement-3"],
   });
   assert.equal(placementAt(projection, "placement-1").region, "main");
-  assert.equal(placementAt(projection, "placement-1").order, 1);
-  assert.equal(placementAt(projection, "placement-2").order, 2);
+  assert.equal(placementAt(projection, "placement-1").order, 2);
+  assert.equal(placementAt(projection, "placement-2").order, 1);
+  assert.equal(placementAt(projection, "placement-3").order, 3);
   assert.deepEqual(projection.branches, [
     {
       id: "placement-1:branch:1",
@@ -57,21 +63,21 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
       armIndex: 1,
       originPlacementId: "placement-1",
       originPortId: "branch:1",
-      placementIds: ["placement-3", "placement-4"],
+      placementIds: ["placement-4", "placement-5"],
     },
   ]);
   assert.deepEqual(
     {
-      region: placementAt(projection, "placement-3").region,
+      region: placementAt(projection, "placement-4").region,
       structureCode:
-        placementAt(projection, "placement-3").structureCode,
+        placementAt(projection, "placement-4").structureCode,
       structureLabel:
-        placementAt(projection, "placement-3").structureLabel,
-      order: placementAt(projection, "placement-3").order,
+        placementAt(projection, "placement-4").structureLabel,
+      order: placementAt(projection, "placement-4").order,
       originPlacementId:
-        placementAt(projection, "placement-3").originPlacementId,
-      originPortId: placementAt(projection, "placement-3").originPortId,
-      depth: placementAt(projection, "placement-3").depth,
+        placementAt(projection, "placement-4").originPlacementId,
+      originPortId: placementAt(projection, "placement-4").originPortId,
+      depth: placementAt(projection, "placement-4").depth,
     },
     {
       region: "branch",
@@ -83,7 +89,7 @@ test("clasifica línea principal y rama con orden, raíz y profundidad", () => {
       depth: 1,
     },
   );
-  assert.equal(placementAt(projection, "placement-4").depth, 2);
+  assert.equal(placementAt(projection, "placement-5").depth, 2);
 });
 
 test("clasifica el único chancho ramificador", () => {
@@ -134,6 +140,8 @@ test("clasifica un chancho posterior como ordinario", () => {
 test("clasifica un chancho ordinario dentro de un brazo", () => {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(
     state,
     "2-4",
@@ -142,10 +150,10 @@ test("clasifica un chancho ordinario dentro de un brazo", () => {
   state = playDomino(
     state,
     "2-2",
-    targetAt("placement-2", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
   const projection = getBoardTopologyProjection(state);
-  const branchDouble = placementAt(projection, "placement-3");
+  const branchDouble = placementAt(projection, "placement-5");
 
   assert.equal(branchDouble.region, "branch");
   assert.equal(branchDouble.depth, 2);
@@ -162,6 +170,7 @@ test("clasifica un chancho ordinario dentro de un brazo", () => {
 test("clasifica destinos abiertos por identidad exacta aunque compartan valor", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
   state = playDomino(
     state,
     "3-4",
@@ -175,54 +184,55 @@ test("clasifica destinos abiertos por identidad exacta aunque compartan valor", 
   state = playDomino(
     state,
     "2-3",
-    targetAt("placement-3", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
   const projection = getBoardTopologyProjection(state);
   const targetsById = new Map(
     projection.openTargets.map((target) => [target.targetId, target]),
   );
 
-  assert.equal(targetsById.get("placement-2:side:a").region, "main");
-  assert.equal(targetsById.get("placement-2:side:a").structureCode, "P");
+  assert.equal(targetsById.get("placement-3:side:a").region, "main");
+  assert.equal(targetsById.get("placement-3:side:a").structureCode, "P");
   assert.equal(
-    targetsById.get("placement-2:side:a").structureLabel,
+    targetsById.get("placement-3:side:a").structureLabel,
     "Principal",
   );
   assert.equal(
-    targetsById.get("placement-2:side:a").structureId,
+    targetsById.get("placement-3:side:a").structureId,
     "main",
   );
-  assert.equal(targetsById.get("placement-4:side:b").region, "branch");
-  assert.equal(targetsById.get("placement-4:side:b").structureCode, "A");
+  assert.equal(targetsById.get("placement-5:side:b").region, "branch");
+  assert.equal(targetsById.get("placement-5:side:b").structureCode, "A");
   assert.equal(
-    targetsById.get("placement-4:side:b").structureLabel,
+    targetsById.get("placement-5:side:b").structureLabel,
     "Ramificación A",
   );
   assert.equal(
-    targetsById.get("placement-4:side:b").structureId,
+    targetsById.get("placement-5:side:b").structureId,
     "placement-1:branch:1",
   );
   assert.equal(
-    targetsById.get("placement-4:side:b").familyId,
+    targetsById.get("placement-5:side:b").familyId,
     "branch-family:placement-1",
   );
   assert.equal(
-    targetsById.get("placement-4:side:b").armIndex,
+    targetsById.get("placement-5:side:b").armIndex,
     1,
   );
   assert.equal(
-    targetsById.get("placement-4:side:b").branchState,
+    targetsById.get("placement-5:side:b").branchState,
     "STARTED",
   );
   assert.notEqual(
-    targetsById.get("placement-2:side:a").targetId,
-    targetsById.get("placement-4:side:b").targetId,
+    targetsById.get("placement-3:side:a").targetId,
+    targetsById.get("placement-5:side:b").targetId,
   );
 });
 
 test("el único ramificador conserva dos brazos con targets distintos", () => {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
   state = playDomino(
     state,
     "3-4",
@@ -231,7 +241,7 @@ test("el único ramificador conserva dos brazos con targets distintos", () => {
   state = playDomino(
     state,
     "3-3",
-    targetAt("placement-2", "side:a"),
+    targetAt("placement-3", "side:a"),
   );
   const projection = getBoardTopologyProjection(state);
 
@@ -270,7 +280,7 @@ test("el único ramificador conserva dos brazos con targets distintos", () => {
     ],
   );
   assert.equal(placementAt(projection, "placement-1").branchFamily.code, "A");
-  assert.equal(placementAt(projection, "placement-3").branchFamily, null);
+  assert.equal(placementAt(projection, "placement-4").branchFamily, null);
   assert.deepEqual(
     projection.openTargets
       .filter((target) => target.region === "branch")

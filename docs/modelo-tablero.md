@@ -118,13 +118,13 @@ branch:1  valor N
 branch:2  valor N
 ```
 
-- `main:1` y `main:2` se reservan para continuidad del camino principal.
-- `branch:1` y `branch:2` son los únicos orígenes posibles de cadenas laterales.
+- `main:1` y `main:2` son las continuidades opuestas locales del chancho.
+- `branch:1` y `branch:2` son los únicos orígenes posibles de cadenas laterales y permanecen bloqueados hasta ocupar ambas continuidades.
 - Los cuatro nombres son lógicos y neutrales.
 - Todos tienen valor N para R-028.
 - Cada uno acepta como máximo una conexión.
 
-La correspondencia técnica estable es `a → main:1` y `b → main:2`. Si el chancho ramificador se agrega a una cadena existente, `main:1` recibe la conexión de entrada y `main:2` conserva la continuidad. En la primera colocación, ambos están libres. Estos nombres son internos y no establecen jerarquía entre los cuatro brazos.
+La correspondencia técnica estable es `a → main:1` y `b → main:2`. Si el chancho ramificador se agrega a una cadena existente, `main:1` recibe la conexión de entrada y `main:2` es la única continuación siguiente. En la primera colocación, ambos están libres y cualquiera puede usarse primero. Solo cuando ambos están ocupados se habilitan `branch:1` y `branch:2`. Estos nombres son internos y expresan el mecanismo local del cruce, no una jerarquía global entre brazos.
 
 El número ordinal de una conexión del chancho no identifica un puerto específico: cuenta cuántos de sus cuatro puertos están ocupados. Por R-018 y R-033, el aporte es `2N` con 0 o 1 conexión y 0 con 2, 3 o 4.
 
@@ -161,7 +161,7 @@ La rama puede reconstruirse comenzando en una arista `branch:*` ocupada y recorr
 
 - Los dos extremos principales se derivan del primer y último elemento de `mainLine.placementIds`, sus puertos de continuidad y `connections`.
 - Cada ramificación no vacía tiene un único extremo terminal derivado.
-- Un puerto `branch:*` libre de un chancho especial es también un extremo legal capaz de iniciar una rama.
+- Un puerto `branch:*` libre es un extremo legal únicamente después de que las dos continuidades del chancho estén ocupadas.
 - La colección de extremos abiertos se deriva; no se persiste.
 
 Cada extremo puede identificarse canónicamente por su pareja `placementId + portId`. Una proyección futura puede exponer un `openEndId` compuesto, pero no debe guardarlo si no añade información. La identidad individual es obligatoria para R-030: dos extremos con el mismo valor siguen siendo destinos diferentes.

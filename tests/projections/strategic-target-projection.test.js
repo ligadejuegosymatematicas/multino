@@ -35,7 +35,7 @@ test("proyecta S y puntos exactos por target sin modificar el snapshot", () => {
     "4-6",
   );
 
-  assert.equal(projections.length, 4);
+  assert.equal(projections.length, 2);
   for (const projection of projections) {
     const actual = applyTurnAction(state, projection.action);
     const resolution = getScoringPresentation(actual).latestResolution;
@@ -63,7 +63,7 @@ test("conserva targets repetidos y distingue principal de brazos potenciales", (
     `${action.target.placementId}:${action.target.portId}`
   );
 
-  assert.equal(new Set(identities).size, 4);
+  assert.equal(new Set(identities).size, 2);
   assert.equal(
     projections.filter(({ continuation }) => continuation.region === "main")
       .length,
@@ -71,13 +71,7 @@ test("conserva targets repetidos y distingue principal de brazos potenciales", (
   );
   assert.equal(
     projections.filter(({ opensBranchArm }) => opensBranchArm).length,
-    2,
-  );
-  assert.deepEqual(
-    projections
-      .filter(({ opensBranchArm }) => opensBranchArm)
-      .map(({ continuation }) => continuation.armIndex),
-    [1, 2],
+    0,
   );
 });
 

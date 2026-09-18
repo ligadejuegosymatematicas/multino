@@ -83,13 +83,18 @@ function createTraditionalScenario() {
   );
   state = playDomino(
     state,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  state = playDomino(
+    state,
     "2-4",
     targetAt("placement-1", "branch:1"),
   );
   state = playDomino(
     state,
     "2-2",
-    targetAt("placement-3", "side:a"),
+    targetAt("placement-4", "side:a"),
   );
   return playDomino(
     state,
@@ -238,10 +243,14 @@ test("la escena ubica principal horizontal y ambos brazos verticales", () => {
 
   assert.deepEqual(
     scene.mainTiles.map((tile) => tile.placementId),
-    ["placement-1", "placement-2"],
+    ["placement-3", "placement-1", "placement-2"],
   );
-  assert.equal(scene.mainTiles[0].orientation, "vertical");
-  assert.equal(scene.mainTiles[1].orientation, "horizontal");
+  assert.equal(scene.mainTiles.find((tile) => tile.placementId === "placement-1").orientation, "vertical");
+  assert.ok(
+    scene.mainTiles
+      .filter((tile) => tile.placementId !== "placement-1")
+      .every((tile) => tile.orientation === "horizontal"),
+  );
   assert.equal(family.arms[0].direction, "up");
   assert.equal(family.arms[1].direction, "down");
   assert.ok(family.arms[0].tiles.every((tile) => tile.y < family.root.y));
@@ -520,7 +529,7 @@ test("el markup muestra fichas, cruce especial y extremos abiertos exactos", () 
   assert.match(markup, /traditional-domino__special[^>]*><\/span>/);
   assert.match(
     markup,
-    /data-target-id="placement-4:side:b"[^>]+data-port-id="side:b"/,
+    /data-target-id="placement-6:side:a"[^>]+data-port-id="side:a"/,
   );
   assert.doesNotMatch(markup, /Especiales:|>×4<|<small>|family-tone-/);
   assert.match(markup, /data-fit-table/);
@@ -529,6 +538,8 @@ test("el markup muestra fichas, cruce especial y extremos abiertos exactos", () 
 test("un brazo iniciado y uno potencial se distinguen sin alterar sus puertos", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(
     state,
     "2-4",
@@ -610,9 +621,9 @@ test("los números de opción aparecen solo para targets compatibles repetidos",
   assert.ok(neutral.openTargets.every((target) => target.optionIndex === null));
   assert.deepEqual(
     selected.openTargets.map((target) => target.optionIndex),
-    [1, 2, 3, 4],
+    [1, 2],
   );
-  assert.match(selected.openTargets[0].accessibleLabel, /opción 1 de 4/);
+  assert.match(selected.openTargets[0].accessibleLabel, /opción 1 de 2/);
   assert.doesNotMatch(
     renderTraditionalTableMarkup(neutral),
     /traditional-target__option/,
@@ -621,7 +632,7 @@ test("los números de opción aparecen solo para targets compatibles repetidos",
     renderTraditionalTableMarkup(selected).match(
       /traditional-target__option/g,
     )?.length,
-    4,
+    2,
   );
 });
 
@@ -642,7 +653,7 @@ test("un extremo tradicional envía al controlador placementId y portId exactos"
     selectedDominoId: presentation.selectedDominoId,
     legalTargets: presentation.selectedLegalTargets,
   });
-  const chosen = scene.openTargets[2];
+  const chosen = scene.openTargets[1];
 
   controller.submitTarget(chosen);
 

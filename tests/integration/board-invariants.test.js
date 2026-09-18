@@ -64,6 +64,7 @@ test("invariante: un puerto no puede estar ocupado dos veces", () => {
 test("R-034: una rama no puede reconectarse a mainLine en un puerto ordinario", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
   state = playDomino(state, "4-5", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
 
@@ -71,28 +72,30 @@ test("R-034: una rama no puede reconectarse a mainLine en un puerto ordinario", 
     const ownerId = findDominoOwner(snapshot, "2-5");
     const index = snapshot.hands[ownerId].indexOf("2-5");
     snapshot.hands[ownerId][index] = "2-4";
-    snapshot.board.placements["placement-3"].dominoId = "2-5";
-    snapshot.history[2].payload.dominoId = "2-5";
-    snapshot.board.connections["connection-2"].from = {
-      placementId: "placement-2",
+    snapshot.board.placements["placement-4"].dominoId = "2-5";
+    snapshot.history[3].payload.dominoId = "2-5";
+    snapshot.board.connections["connection-3"].from = {
+      placementId: "placement-3",
       portId: "side:b",
     };
-    snapshot.board.connections["connection-2"].to.portId = "side:b";
+    snapshot.board.connections["connection-3"].to.portId = "side:b";
   });
 });
 
 test("R-035: dos ramas distintas no pueden conectarse entre sí", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
   state = playDomino(state, "3-4", targetAt("placement-1", "branch:2"));
-  state = playDomino(state, "2-3", targetAt("placement-2", "side:a"));
+  state = playDomino(state, "2-3", targetAt("placement-4", "side:a"));
 
   expectCorruption(state, "BRANCHES_CONNECTED", (snapshot) => {
-    snapshot.board.connections["connection-4"] = {
-      id: "connection-4",
-      from: { placementId: "placement-4", portId: "side:b" },
-      to: { placementId: "placement-3", portId: "side:a" },
+    snapshot.board.connections["connection-6"] = {
+      id: "connection-6",
+      from: { placementId: "placement-6", portId: "side:b" },
+      to: { placementId: "placement-5", portId: "side:a" },
     };
   });
 });
@@ -100,19 +103,21 @@ test("R-035: dos ramas distintas no pueden conectarse entre sí", () => {
 test("R-002/R-035: una ramificación no puede originar otra ramificación", () => {
   let state = createBoardScenario({ K: 2, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
-  state = playDomino(state, "2-2", targetAt("placement-2", "side:a"));
+  state = playDomino(state, "2-2", targetAt("placement-4", "side:a"));
 
   expectCorruption(state, "SECOND_LEVEL_BRANCH", (snapshot) => {
     removeFromHand(snapshot, "2-5");
-    snapshot.board.placements["placement-4"] = {
-      id: "placement-4",
+    snapshot.board.placements["placement-6"] = {
+      id: "placement-6",
       dominoId: "2-5",
     };
-    snapshot.board.connections["connection-3"] = {
-      id: "connection-3",
-      from: { placementId: "placement-3", portId: "branch:1" },
-      to: { placementId: "placement-4", portId: "side:a" },
+    snapshot.board.connections["connection-5"] = {
+      id: "connection-5",
+      from: { placementId: "placement-5", portId: "branch:1" },
+      to: { placementId: "placement-6", portId: "side:a" },
     };
   });
 });
@@ -146,6 +151,18 @@ test("R-032: un chancho especial no puede exceder cuatro conexiones", () => {
       from: { placementId: "placement-1", portId: "branch:1" },
       to: { placementId: "placement-6", portId: "side:a" },
     };
+  });
+});
+
+test("R-032: un lateral exige ambas continuidades ocupadas", () => {
+  let state = createBoardScenario({ firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
+
+  expectCorruption(state, "SPECIAL_DOUBLE_CONTINUITY_REQUIRED", (snapshot) => {
+    snapshot.board.mainLine.placementIds = ["placement-1", "placement-3"];
+    snapshot.board.connections["connection-1"].from.portId = "branch:1";
   });
 });
 

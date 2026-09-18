@@ -8,6 +8,7 @@ import {
   getOpenEndTargets,
   getBoardTopologyProjection,
   getRoundStructureProjection,
+  getScoringTerms,
   ROUND_STRUCTURE_MODES,
 } from "../../src/js/game/index.js";
 import {
@@ -35,8 +36,104 @@ test("Ramificado convierte el primer doble posterior a una apertura ordinaria", 
     getOpenEndTargets(state).filter((target) =>
       target.placementId === "placement-2"
     ).length,
-    3,
+    1,
   );
+  assert.deepEqual(
+    getOpenEndTargets(state)
+      .filter((target) => target.placementId === "placement-2")
+      .map((target) => target.portId),
+    ["main:2"],
+  );
+
+  state = playDomino(state, "3-5", targetAt("placement-2", "main:2"));
+  assert.deepEqual(
+    getOpenEndTargets(state)
+      .filter((target) => target.placementId === "placement-2")
+      .map((target) => target.portId),
+    ["branch:1", "branch:2"],
+  );
+});
+
+test("Ramificado completa continuidad antes de habilitar laterales", () => {
+  let state = createBoardScenario({ firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+
+  let projection = getRoundStructureProjection(state).branchingDouble;
+  assert.deepEqual(projection, {
+    value: 4,
+    placementId: "placement-1",
+    connectionCount: 0,
+    capacity: 4,
+    remainingConnections: 4,
+    phase: "tip",
+    continuationPortsRemaining: 2,
+    lateralPortsUnlocked: false,
+    lateralPortsRemaining: 2,
+    contributesToScoring: true,
+    isSaturated: false,
+  });
+  assert.deepEqual(
+    getOpenEndTargets(state)
+      .filter((target) => target.placementId === "placement-1")
+      .map((target) => target.portId),
+    ["main:1", "main:2"],
+  );
+  assert.equal(
+    getScoringTerms(state).find((term) => term.placementId === "placement-1")
+      .contribution,
+    8,
+  );
+
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
+  projection = getRoundStructureProjection(state).branchingDouble;
+  assert.equal(projection.phase, "continuity");
+  assert.equal(projection.connectionCount, 1);
+  assert.equal(projection.continuationPortsRemaining, 1);
+  assert.equal(projection.lateralPortsUnlocked, false);
+  assert.deepEqual(
+    getOpenEndTargets(state)
+      .filter((target) => target.placementId === "placement-1")
+      .map((target) => target.portId),
+    ["main:2"],
+  );
+  assert.equal(
+    getScoringTerms(state).find((term) => term.placementId === "placement-1")
+      .contribution,
+    8,
+  );
+
+  state = playDomino(state, "1-4", targetAt("placement-1", "main:2"));
+  projection = getRoundStructureProjection(state).branchingDouble;
+  assert.equal(projection.phase, "cross");
+  assert.equal(projection.connectionCount, 2);
+  assert.equal(projection.continuationPortsRemaining, 0);
+  assert.equal(projection.lateralPortsUnlocked, true);
+  assert.equal(projection.lateralPortsRemaining, 2);
+  assert.deepEqual(
+    getOpenEndTargets(state)
+      .filter((target) => target.placementId === "placement-1")
+      .map((target) => target.portId),
+    ["branch:1", "branch:2"],
+  );
+  assert.equal(
+    getScoringTerms(state).find((term) => term.placementId === "placement-1")
+      .contribution,
+    0,
+  );
+
+  state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
+  projection = getRoundStructureProjection(state).branchingDouble;
+  assert.equal(projection.phase, "lateral");
+  assert.equal(projection.connectionCount, 3);
+  assert.equal(projection.lateralPortsRemaining, 1);
+  assert.equal(projection.contributesToScoring, false);
+
+  state = playDomino(state, "3-4", targetAt("placement-1", "branch:2"));
+  projection = getRoundStructureProjection(state).branchingDouble;
+  assert.equal(projection.phase, "saturated");
+  assert.equal(projection.connectionCount, 4);
+  assert.equal(projection.lateralPortsRemaining, 0);
+  assert.equal(projection.isSaturated, true);
 });
 
 test("segundo y tercer doble son ordinarios y no abren nuevos brazos", () => {
@@ -92,7 +189,7 @@ test("la proyección deriva n/7, targets reales y estado del ramificador", () =>
     value: 4,
     playedTileCount: 1,
     totalTileCount: 7,
-    openTargetCount: 4,
+    openTargetCount: 2,
   });
   assert.deepEqual(projection.branchingDouble, {
     value: 4,
@@ -100,10 +197,15 @@ test("la proyección deriva n/7, targets reales y estado del ramificador", () =>
     connectionCount: 0,
     capacity: 4,
     remainingConnections: 4,
+    phase: "tip",
+    continuationPortsRemaining: 2,
+    lateralPortsUnlocked: false,
+    lateralPortsRemaining: 2,
+    contributesToScoring: true,
     isSaturated: false,
   });
 
-  state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
+  state = playDomino(state, "2-4", targetAt("placement-1", "main:1"));
   projection = getRoundStructureProjection(state);
   assert.equal(
     projection.values.find((entry) => entry.value === 4).playedTileCount,
@@ -111,6 +213,8 @@ test("la proyección deriva n/7, targets reales y estado del ramificador", () =>
   );
   assert.equal(projection.branchingDouble.connectionCount, 1);
   assert.equal(projection.branchingDouble.remainingConnections, 3);
+  assert.equal(projection.branchingDouble.phase, "continuity");
+  assert.equal(projection.branchingDouble.lateralPortsUnlocked, false);
 });
 
 test("dos targets iguales cuentan dos y cuatro conexiones saturan el ramificador", () => {
@@ -133,6 +237,11 @@ test("dos targets iguales cuentan dos y cuatro conexiones saturan el ramificador
     connectionCount: 4,
     capacity: 4,
     remainingConnections: 0,
+    phase: "saturated",
+    continuationPortsRemaining: 0,
+    lateralPortsUnlocked: true,
+    lateralPortsRemaining: 0,
+    contributesToScoring: false,
     isSaturated: true,
   });
 });

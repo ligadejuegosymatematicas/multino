@@ -39,6 +39,10 @@ export {
   getDerivedBranches,
   getOpenEndTargets,
 } from "./engine/BoardQueries.js";
+export {
+  BRANCHING_DOUBLE_PHASES,
+  getBranchingDoubleState,
+} from "./engine/BranchingDoubleState.js";
 export { validateBoardState } from "./engine/BoardValidator.js";
 export {
   areValuesCompatible,

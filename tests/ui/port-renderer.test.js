@@ -37,9 +37,10 @@ function targetAt(placementId, portId) {
 function createTwoArmScenario() {
   let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "4-5", targetAt("placement-1", "main:1"));
   state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "2-4", targetAt("placement-1", "branch:1"));
-  state = playDomino(state, "1-2", targetAt("placement-3", "side:a"));
+  state = playDomino(state, "1-2", targetAt("placement-4", "side:a"));
   state = playDomino(state, "0-4", targetAt("placement-1", "branch:2"));
   return state;
 }
@@ -144,13 +145,13 @@ test("el ramificador se resume en el medallón y conserva su hub bajo demanda", 
 
   assert.equal(scene.hubs.length, 1);
   assert.equal(scene.hubs[0].sockets.length, 4);
-  assert.equal(scene.openTargets.length, 4);
+  assert.equal(scene.openTargets.length, 2);
   assert.equal(scene.nodes.find((node) => node.value === 5).ramifier.capacity, 4);
   assert.match(markup, /port-macro-node-shell has-open-targets has-ramifier/);
   assert.equal(markup.match(/port-ramifier__socket/g)?.length, 4);
   assert.doesNotMatch(markup, /port-double-hub is-special/);
   assert.match(structureMarkup, /port-double-hub is-special/);
-  assert.equal(structureMarkup.match(/port-double-hub__socket is-open/g)?.length, 4);
+  assert.equal(structureMarkup.match(/port-double-hub__socket is-open/g)?.length, 2);
 });
 
 test("targets repetidos mantienen placementId + portId y numeración temporal", () => {
@@ -170,7 +171,7 @@ test("targets repetidos mantienen placementId + portId y numeración temporal", 
   });
   const choiceMarkup = renderPortTargetChooserMarkup(choiceScene.targetChoice);
 
-  assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 4);
+  assert.equal(scene.openTargets.filter((target) => target.isLegal).length, 2);
   assert.deepEqual(
     scene.openTargets.map((target) => ({
       placementId: target.placementId,
@@ -183,12 +184,12 @@ test("targets repetidos mantienen placementId + portId y numeración temporal", 
   );
   assert.deepEqual(
     scene.openTargets.map(({ optionIndex }) => optionIndex),
-    [1, 2, 3, 4],
+    [1, 2],
   );
-  assert.equal(scene.nodes.find((node) => node.value === 4).compatibleTargetCount, 4);
+  assert.equal(scene.nodes.find((node) => node.value === 4).compatibleTargetCount, 2);
   assert.match(markup, /port-macro-node-shell is-compatible is-in-selected-domino has-open-targets has-ramifier/);
   assert.doesNotMatch(markup, /port-open-target__option/);
-  assert.equal(choiceMarkup.match(/class="port-target-choice__option"/g)?.length, 4);
+  assert.equal(choiceMarkup.match(/class="port-target-choice__option"/g)?.length, 2);
   assert.doesNotMatch(choiceMarkup, /placement-|main:|branch:/);
   const valueAction = getPortValueAction(scene, 4);
   assert.equal(valueAction.type, "CHOOSE");
@@ -472,6 +473,7 @@ test("inspeccionar un brazo exacto no mezcla el otro brazo de la familia", () =>
 test("un brazo potencial solo señala su propio hub raíz entre varios especiales", () => {
   let state = createBoardScenario({ K: 7, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = playDomino(state, "0-4", targetAt("placement-1", "main:1"));
   state = playDomino(state, "3-4", targetAt("placement-1", "main:2"));
   state = playDomino(state, "3-3", (target) => target.value === 3);
   const scene = createPortScene(projectPortView(state), {
@@ -505,7 +507,7 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   assert.equal(scene.nodeFocus.ports.length, 6);
   assert.equal(scene.nodeFocus.value, 4);
   assert.equal(scene.visualState, "node-focus");
-  assert.match(inspector, /3 de 6 ojales utilizados/);
+  assert.match(inspector, /4 de 6 ojales utilizados/);
   assert.match(inspector, /Chancho 4\|4: ramificador/);
   assert.match(inspector, /chancho · conexión [1-4]/);
   assert.doesNotMatch(inspector, /main:|branch:|side:/);
@@ -609,7 +611,7 @@ test("un especial con extremos libres mantiene scoring y targets separados", () 
     },
   });
 
-  assert.equal(scene.openTargets.length, 4);
+  assert.equal(scene.openTargets.length, 2);
   assert.equal(scene.openTargets.filter((target) => target.isScoringTerm).length, 0);
   assert.equal(scene.hubs.filter((hub) => hub.isScoringTerm).length, 0);
   assert.equal(scene.nodes.find((node) => node.value === 5).isScoringSource, true);

@@ -154,7 +154,7 @@ test("destinos jugables y términos de S son contratos distintos", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "5-5" });
   state = playDomino(state, "5-5");
 
-  assert.equal(getOpenEndTargets(state).length, 4);
+  assert.equal(getOpenEndTargets(state).length, 2);
   assert.equal(getScoringTerms(state).length, 1);
   assert.equal(calculateOpenEndsSum(state), 10);
 });

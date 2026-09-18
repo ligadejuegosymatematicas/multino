@@ -98,6 +98,16 @@ test("el grafo de valores no reconstruye línea principal ni ramas", () => {
     "3-4",
     targetAt("placement-1", "main:2"),
   );
+  mainState = playDomino(
+    mainState,
+    "1-4",
+    targetAt("placement-1", "branch:1"),
+  );
+  mainState = playDomino(
+    mainState,
+    "1-2",
+    targetAt("placement-2", "side:a"),
+  );
 
   let branchState = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   branchState = playDomino(branchState, "4-4");
@@ -109,7 +119,17 @@ test("el grafo de valores no reconstruye línea principal ni ramas", () => {
   branchState = playDomino(
     branchState,
     "3-4",
+    targetAt("placement-1", "main:2"),
+  );
+  branchState = playDomino(
+    branchState,
+    "1-4",
     targetAt("placement-1", "branch:1"),
+  );
+  branchState = playDomino(
+    branchState,
+    "1-2",
+    targetAt("placement-4", "side:a"),
   );
 
   assert.deepEqual(

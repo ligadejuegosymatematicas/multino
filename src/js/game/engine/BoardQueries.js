@@ -8,6 +8,7 @@ import {
   deriveOccupiedBranches,
   getConnectionAtPort,
 } from "./BoardTopology.js";
+import { getBranchingDoubleState } from "./BranchingDoubleState.js";
 import { validateBoardState } from "./BoardValidator.js";
 
 function createOpenEndTarget(
@@ -104,6 +105,13 @@ export function getOpenEndTargets(state) {
   );
 
   for (const originPlacementId of state.board.specialDoublePlacementIds) {
+    const ramifier = getBranchingDoubleState(state);
+    if (
+      ramifier?.placementId === originPlacementId &&
+      !ramifier.lateralPortsUnlocked
+    ) {
+      continue;
+    }
     for (const originPortId of ["branch:1", "branch:2"]) {
       const branchId = `${originPlacementId}:${originPortId}`;
       const branch = branchesByOrigin.get(branchId);
