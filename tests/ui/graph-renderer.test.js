@@ -215,6 +215,51 @@ test("el feedback destaca solo términos reales de S en el grafo", () => {
   assert.match(markup, /graph-loop is-main is-special-double[^\"]*is-scoring-term/);
   assert.match(markup, /graph-vertex [^"]*is-scoring-term/);
   assert.match(markup, /graph-vertex__scoring-multiplicity[\s\S]+?>×2</);
+  assert.match(markup, /data-scoring-anchor-value="5"/);
+});
+
+test("Grafo conserva el token cero y excluye un ramificador no contribuyente", () => {
+  let zeroState = createBoardScenario({ K: 0, firstDominoId: "0-3" });
+  zeroState = playDomino(zeroState, "0-3");
+  const zeroView = projectGraphView(zeroState);
+  const zeroScene = createGraphScene(zeroView, {
+    scoringResolution: {
+      terms: zeroView.scoringPresentation.terms,
+    },
+  });
+
+  assert.equal(
+    zeroScene.vertices.find((vertex) => vertex.value === 0).scoringMultiplicity,
+    1,
+  );
+  assert.equal(
+    zeroScene.vertices.find((vertex) => vertex.value === 0).isScoringTerm,
+    true,
+  );
+  assert.match(renderGraphSvgMarkup(zeroScene), /data-scoring-anchor-value="0"/);
+
+  let crossedState = createBoardScenario({ K: 1, firstDominoId: "5-5" });
+  crossedState = playDomino(crossedState, "5-5");
+  crossedState = playDomino(
+    crossedState,
+    "1-5",
+    targetAt("placement-1", "main:1"),
+  );
+  crossedState = playDomino(
+    crossedState,
+    "2-5",
+    targetAt("placement-1", "main:2"),
+  );
+  const crossedView = projectGraphView(crossedState);
+  const crossedScene = createGraphScene(crossedView, {
+    scoringResolution: crossedView.scoringPresentation.latestResolution,
+  });
+
+  assert.equal(
+    crossedScene.loops.find((loop) => loop.placementId === "placement-1")
+      .isScoringTerm,
+    false,
+  );
 });
 
 test("una ficha ordinaria produce una arista identificable sin etiqueta redundante", () => {

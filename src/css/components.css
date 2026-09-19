@@ -219,7 +219,7 @@
 }
 
 .score-team.is-score-feedback {
-  animation: score-arrival 420ms 2.85s ease-out both;
+  animation: score-arrival 520ms 4.05s ease-out both;
 }
 
 .score-team__delta {
@@ -236,7 +236,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   opacity: 0;
-  animation: score-delta 430ms 2.85s ease-out both;
+  animation: score-delta 560ms 4.05s ease-out both;
 }
 
 .score-team strong {
@@ -405,7 +405,7 @@
 .play-feedback.is-score-feedback {
   pointer-events: auto;
   cursor: pointer;
-  animation-duration: 3.3s;
+  animation-duration: 4.65s;
 }
 
 .scoring-feedback {
@@ -440,7 +440,7 @@
   gap: 0.22rem;
   color: #ffe29a;
   white-space: nowrap;
-  animation-delay: 900ms;
+  animation-delay: 1150ms;
 }
 
 .scoring-feedback__term {
@@ -453,20 +453,43 @@
   border-radius: 0.42rem;
   background: rgb(87 57 8 / 0.72);
   opacity: 0;
-  animation: scoring-term-arrival 520ms ease-out both;
-  animation-delay: calc(900ms + var(--term-index) * 90ms);
+  animation: scoring-term-arrival 620ms ease-out both;
+  animation-delay: calc(1720ms + var(--term-index) * 90ms);
 }
 
 .scoring-feedback__operator {
   color: #bba978;
+  opacity: 0;
+  animation: scoring-term-arrival 420ms 1780ms ease-out both;
 }
 
 .scoring-feedback__sum {
+  gap: 0.24rem;
   padding-inline: 0.52rem;
   border-inline-start: 1px solid rgb(255 255 255 / 0.18);
   color: #ffe29a;
   font-size: 1.12rem;
-  animation-delay: 1720ms;
+  animation-delay: 2300ms;
+}
+
+.scoring-feedback__equals,
+.scoring-feedback__result,
+.scoring-feedback__sum-label {
+  opacity: 0;
+  animation: scoring-step 360ms ease-out both;
+}
+
+.scoring-feedback__equals { animation-delay: 2300ms; }
+.scoring-feedback__result {
+  color: #ffda70;
+  font-size: 1.18rem;
+  animation-delay: 2480ms;
+}
+.scoring-feedback__sum-label {
+  margin-inline-start: 0.24rem;
+  padding-inline-start: 0.48rem;
+  border-inline-start: 1px solid rgb(255 255 255 / 0.18);
+  animation-delay: 2750ms;
 }
 
 .scoring-feedback__divisibility {
@@ -474,14 +497,14 @@
   font-size: 0.72rem;
   flex-wrap: wrap;
   gap: 0.2rem;
-  animation-delay: 2240ms;
+  animation-delay: 3150ms;
 }
 
 .scoring-feedback__outcome {
   min-width: 5rem;
   color: #c8d0ca;
   font-size: 0.9rem;
-  animation-delay: 2780ms;
+  animation-delay: 4100ms;
 }
 
 .scoring-feedback__quotient,
@@ -507,6 +530,12 @@
   font-size: 1.12rem;
 }
 
+.scoring-feedback__outcome.is-award.has-score-target {
+  animation:
+    scoring-step 420ms 4100ms ease-out both,
+    scoring-award-transfer 620ms 4140ms ease-in both;
+}
+
 .scoring-feedback__outcome.is-no-award {
   color: #bcc6c0;
 }
@@ -520,6 +549,39 @@
   color: #e5dcc4;
   font-size: 0.65rem;
   font-weight: 650;
+}
+
+.scoring-flight-layer {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scoring-flight-token {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid #ffe29a;
+  border-radius: 999px;
+  color: #332306;
+  background: #ffd261;
+  box-shadow: 0 0 12px rgb(255 202 82 / 0.82);
+  font-size: 0.72rem;
+  font-weight: 950;
+  opacity: 0;
+  transform: translate(
+    calc(var(--token-from-x) - 0.875rem),
+    calc(var(--token-from-y) - 0.875rem)
+  );
+  animation: scoring-token-flight 760ms
+    calc(1150ms + var(--token-order) * 90ms) ease-in-out both;
 }
 
 .branch-feedback {
@@ -895,6 +957,37 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes scoring-token-flight {
+  0% {
+    opacity: 0;
+    transform: translate(
+      calc(var(--token-from-x) - 0.875rem),
+      calc(var(--token-from-y) - 0.875rem)
+    ) scale(0.72);
+  }
+  15% { opacity: 1; }
+  78% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(
+      calc(var(--token-to-x) - 0.875rem),
+      calc(var(--token-to-y) - 0.875rem)
+    ) scale(1);
+  }
+}
+
+@keyframes scoring-award-transfer {
+  0%, 25% { transform: translate(0, 0) scale(1); }
+  55% { transform: translate(0, -0.12rem) scale(1.18); }
+  100% {
+    opacity: 0;
+    transform: translate(
+      var(--score-transfer-x),
+      var(--score-transfer-y)
+    ) scale(0.72);
+  }
+}
+
 .play-feedback.is-complete {
   opacity: 1;
   animation: none;
@@ -903,9 +996,14 @@
 .play-feedback.is-complete .scoring-feedback__source,
 .play-feedback.is-complete .scoring-feedback__terms,
 .play-feedback.is-complete .scoring-feedback__term,
+.play-feedback.is-complete .scoring-feedback__operator,
 .play-feedback.is-complete .scoring-feedback__sum,
+.play-feedback.is-complete .scoring-feedback__equals,
+.play-feedback.is-complete .scoring-feedback__result,
+.play-feedback.is-complete .scoring-feedback__sum-label,
 .play-feedback.is-complete .scoring-feedback__divisibility,
-.play-feedback.is-complete .scoring-feedback__outcome {
+.play-feedback.is-complete .scoring-feedback__outcome,
+.play-feedback.is-complete .scoring-feedback__outcome.is-award.has-score-target {
   opacity: 1;
   transform: none;
   animation: none;
@@ -919,16 +1017,28 @@
   .scoring-feedback__source,
   .scoring-feedback__terms,
   .scoring-feedback__term,
+  .scoring-feedback__operator,
   .scoring-feedback__sum,
+  .scoring-feedback__equals,
+  .scoring-feedback__result,
+  .scoring-feedback__sum-label,
   .scoring-feedback__divisibility,
   .scoring-feedback__outcome {
     animation: none;
   }
 
+  .scoring-flight-layer {
+    display: none;
+  }
+
   .scoring-feedback__source,
   .scoring-feedback__terms,
   .scoring-feedback__term,
+  .scoring-feedback__operator,
   .scoring-feedback__sum,
+  .scoring-feedback__equals,
+  .scoring-feedback__result,
+  .scoring-feedback__sum-label,
   .scoring-feedback__divisibility,
   .scoring-feedback__outcome {
     opacity: 1;

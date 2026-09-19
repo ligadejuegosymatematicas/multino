@@ -283,17 +283,17 @@ export function createGraphScene(
   );
   const scoringDoublePlacementIds = new Set(
     (scoringResolution?.terms ?? [])
-      .filter((term) => term.isDouble)
+      .filter((term) => term.isDouble && term.factor > 0)
       .map((term) => term.placementId),
   );
   const scoringValues = new Set(
     (scoringResolution?.terms ?? [])
-      .filter((term) => term.isContributing)
+      .filter((term) => term.isDouble !== true || term.factor > 0)
       .map((term) => term.value),
   );
   const scoringMultiplicityByValue = new Map();
   for (const term of scoringResolution?.terms ?? []) {
-    if (!term.isContributing && term.contribution <= 0) continue;
+    if (term.factor <= 0) continue;
     scoringMultiplicityByValue.set(
       term.value,
       (scoringMultiplicityByValue.get(term.value) ?? 0) + term.factor,

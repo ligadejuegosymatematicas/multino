@@ -52,7 +52,7 @@ function renderTile(tile) {
       <span class="traditional-domino__divider" aria-hidden="true"></span>
       <span class="traditional-domino__half">${renderPips(tile.secondValue)}</span>
       ${tile.isSpecialDouble ? '<span class="traditional-domino__special" aria-hidden="true"></span>' : ""}
-      ${tile.isScoringTerm ? `<span class="traditional-domino__scoring-value is-first" aria-hidden="true">${tile.firstValue}</span><span class="traditional-domino__scoring-value is-second" aria-hidden="true">${tile.secondValue}</span>` : ""}
+      ${tile.isScoringTerm ? `<span class="traditional-domino__scoring-value is-first" data-scoring-anchor-value="${tile.firstValue}" data-scoring-anchor-id="double:${escapeAttribute(tile.placementId)}:0" aria-hidden="true">${tile.firstValue}</span><span class="traditional-domino__scoring-value is-second" data-scoring-anchor-value="${tile.secondValue}" data-scoring-anchor-id="double:${escapeAttribute(tile.placementId)}:1" aria-hidden="true">${tile.secondValue}</span>` : ""}
     </div>`;
 }
 
@@ -91,7 +91,7 @@ function renderTarget(target) {
     target.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
   const scoringValue = target.isScoringTerm
-    ? `<span class="traditional-target__scoring-value" aria-hidden="true">${target.value}</span>`
+    ? `<span class="traditional-target__scoring-value" data-scoring-anchor-value="${target.value}" data-scoring-anchor-id="port:${escapeAttribute(target.placementId)}:${escapeAttribute(target.portId)}" aria-hidden="true">${target.value}</span>`
     : "";
   return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${scoringValue}</button>`;
 }

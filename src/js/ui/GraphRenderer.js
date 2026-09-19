@@ -119,7 +119,7 @@ function renderVertex(vertex, hasSelection) {
     ? `<g class="graph-vertex__scoring-multiplicity" aria-hidden="true"><circle cx="${vertex.x - 31}" cy="${vertex.y - 31}" r="13"></circle><text x="${vertex.x - 31}" y="${vertex.y - 31}">×${vertex.scoringMultiplicity}</text></g>`
     : "";
   return `
-    <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}" role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
+    <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
       <circle class="graph-vertex__touch" cx="${vertex.x}" cy="${vertex.y}" r="43"></circle>
       <circle class="graph-vertex__circle" cx="${vertex.x}" cy="${vertex.y}" r="35"></circle>
       <text class="graph-vertex__value" x="${vertex.x}" y="${vertex.y}">${vertex.value}</text>

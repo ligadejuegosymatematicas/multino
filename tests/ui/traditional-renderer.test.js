@@ -1041,6 +1041,8 @@ test("una ronda terminada mantiene la mesa y deshabilita sus extremos", () => {
     .filter((term) => term.isDouble ? term.factor > 0 : true).length;
   assert.equal(sourceCount, expectedSourceCount);
   assert.match(markup, /traditional-(?:domino|target) [^"]*is-scoring-term/);
+  assert.match(markup, /data-scoring-anchor-value=/);
+  assert.match(markup, /data-scoring-anchor-id=/);
   assert.equal(
     markup.match(/traditional-domino__scoring-value/g)?.length ?? 0,
     scene.tiles.filter((tile) => tile.isScoringTerm).length * 2,

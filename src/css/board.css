@@ -126,7 +126,7 @@
 .open-target.is-scoring-term .open-target__curve,
 .open-target.is-scoring-term .open-target__end,
 .graph-vertex.is-scoring-term .graph-vertex__circle {
-  animation: scoring-source-highlight 3.3s ease-out;
+  animation: scoring-source-highlight 4.65s ease-out;
 }
 
 .graph-vertex__scoring-multiplicity circle {

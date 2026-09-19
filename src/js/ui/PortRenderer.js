@@ -166,7 +166,7 @@ function renderScoringMultiplicity(node) {
     ? `×${node.scoringMultiplicity}→${displayedMultiplicity}`
     : `×${displayedMultiplicity}`;
   return `
-    <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}" aria-hidden="true">
+    <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}"${node.isScoringFeedbackSource ? ` data-scoring-anchor-value="${node.value}"` : ""} aria-hidden="true">
       <circle cx="${node.x - 49}" cy="${node.y - 43}" r="15"></circle>
       <text x="${node.x - 49}" y="${node.y - 43}">${transition}</text>
     </g>`;

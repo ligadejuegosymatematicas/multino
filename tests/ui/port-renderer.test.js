@@ -826,6 +826,10 @@ test("Puertos intensifica las fuentes reales y deja la resolución a la banda co
   assert.doesNotMatch(scoredMarkup, /port-cover__scoring/);
   assert.match(scoredMarkup, /port-cover__current-score is-pending/);
   assert.match(scoredMarkup, /S = …/);
+  assert.match(
+    scoredMarkup,
+    new RegExp(`data-scoring-anchor-value="${contributingTarget.value}"`),
+  );
   assert.doesNotMatch(scoredMarkup, /S = 10/);
   const scoredScene = createPortScene(view, { scoringResolution });
   assert.equal(

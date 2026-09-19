@@ -4,6 +4,7 @@ import test from "node:test";
 
 import { projectGraphView } from "../../src/js/game/index.js";
 import {
+  createScoringSourceTokens,
   createScoringFeedbackPresentation,
   getGameFeedback,
   SCORING_FEEDBACK_TIMING,
@@ -110,6 +111,10 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   }, "Órbita");
 
   assert.deepEqual(scored.terms.map((term) => term.label), ["2×5", "3"]);
+  assert.deepEqual(
+    scored.sourceTokens.map((token) => token.value),
+    [5, 5, 3],
+  );
   assert.equal(scored.divisionText, "20 = 5 × 4");
   assert.equal(scored.outcomeText, "+4 Vector");
   assert.equal(scored.sourceMultiplicities[5], 2);
@@ -126,8 +131,38 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   assert.deepEqual(zero.terms, []);
   assert.equal(zero.divisionText, "0 puntos");
   assert.equal(zero.outcomeText, "0 puntos");
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 2800);
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 3500);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 4000);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 5000);
+});
+
+test("cada scoringTerm genera tokens canónicos, incluido cero y doble ×2", () => {
+  const tokens = createScoringSourceTokens([
+    {
+      placementId: "placement-1",
+      portId: "side:a",
+      value: 0,
+      factor: 1,
+      isDouble: false,
+    },
+    {
+      placementId: "placement-2",
+      portId: null,
+      value: 5,
+      factor: 2,
+      isDouble: true,
+    },
+  ]);
+
+  assert.deepEqual(tokens.map((token) => token.value), [0, 5, 5]);
+  assert.deepEqual(tokens.map((token) => token.anchorId), [
+    "port:placement-1:side:a",
+    "double:placement-2:0",
+    "double:placement-2:1",
+  ]);
+  assert.equal(
+    tokens.reduce((sum, token) => sum + token.value, 0),
+    10,
+  );
 });
 
 test("la ficha visual compartida conserva pips reales incluso con ceros", () => {
@@ -239,6 +274,10 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(themeCss, /--game-gold-bright:\s*var\(--scoring\)/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
+  assert.match(componentsCss, /scoring-token-flight 760ms/);
+  assert.match(componentsCss, /score-delta 560ms 4\.05s/);
+  assert.match(componentsCss, /animation-duration:\s*4\.65s/);
+  assert.match(componentsCss, /@keyframes scoring-award-transfer/);
   assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
   assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
   assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
