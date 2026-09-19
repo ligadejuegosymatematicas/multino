@@ -208,6 +208,32 @@ function createRamifiedGrowthStates() {
   return states;
 }
 
+function createLongVerticalBranchStates() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  const states = [];
+  const play = (dominoId, placementId = null) => {
+    state = playDomino(
+      state,
+      dominoId,
+      placementId === null
+        ? undefined
+        : (target) => target.placementId === placementId,
+    );
+    states.push(state);
+  };
+  play("4-4");
+  play("3-4", "placement-1");
+  play("4-6", "placement-1");
+  play("1-4", "placement-1");
+  play("2-4", "placement-1");
+  play("1-1", "placement-4");
+  play("0-1", "placement-6");
+  play("0-5", "placement-7");
+  play("5-5", "placement-8");
+  play("2-5", "placement-9");
+  return states;
+}
+
 function geometryByPlacement(scene) {
   return new Map(scene.tiles.map((tile) => [tile.placementId, {
     x: tile.x,
@@ -332,6 +358,67 @@ test("Lineal agrega una ficha sin recolocar el snake ya jugado", () => {
   });
   assert.ok(scenes.at(-1).layoutStats.turnCount >= 2);
   assert.ok(new Set(scenes.at(-1).mainTiles.map((tile) => tile.direction)).size >= 3);
+});
+
+test("Lineal anticipa un giro seguro y reduce el span del fixture largo", () => {
+  const scenes = createIncrementalScenes(createLongLinearStates());
+  const finalScene = scenes.at(-1);
+  const softTurns = finalScene.mainTiles.filter(
+    (tile) => tile.turnReason === "soft",
+  );
+  const legacyHardTurnSpan = 639 + 338;
+
+  assert.ok(softTurns.length >= 1);
+  for (const tile of softTurns) {
+    const index = finalScene.mainTiles.indexOf(tile);
+    assert.ok(finalScene.mainTiles[index - 1].straightRunLength >= 4);
+  }
+  assert.ok(
+    finalScene.contentBounds.width + finalScene.contentBounds.height <
+      legacyHardTurnSpan,
+  );
+  assert.equal(finalScene.layoutStats.softTurnCount, softTurns.length);
+});
+
+test("un corredor corto y despejado no gira prematuramente", () => {
+  const scenes = createIncrementalScenes(createLongLinearStates().slice(0, 4));
+  const scene = scenes.at(-1);
+
+  assert.deepEqual(
+    scene.mainTiles.map((tile) => tile.direction),
+    ["right", "right", "right", "right"],
+  );
+  assert.equal(scene.layoutStats.softTurnCount, 0);
+  assert.equal(scene.layoutStats.turnCount, 0);
+});
+
+test("borde y colisión conservan hard turns sin recolocar fichas previas", () => {
+  const scenes = createIncrementalScenes(createLongLinearStates());
+  const finalScene = scenes.at(-1);
+
+  scenes.slice(1).forEach((scene, index) =>
+    assertPreviousGeometryFrozen(scenes[index], scene)
+  );
+  assert.ok(finalScene.layoutStats.hardTurnCount >= 1);
+  assert.equal(
+    finalScene.layoutStats.turnCount,
+    finalScene.layoutStats.softTurnCount + finalScene.layoutStats.hardTurnCount,
+  );
+});
+
+test("un brazo vertical largo serpentea localmente sin mover los otros brazos", () => {
+  const scenes = createIncrementalScenes(createLongVerticalBranchStates());
+  const finalScene = scenes.at(-1);
+  const family = finalScene.branchFamilies[0];
+  const longArm = family.arms.find((arm) => arm.armIndex === 1);
+
+  scenes.slice(1).forEach((scene, index) =>
+    assertPreviousGeometryFrozen(scenes[index], scene)
+  );
+  assert.equal(family.arms.filter((arm) => arm.tiles.length > 0).length, 2);
+  assert.ok(longArm.tiles.length >= 6);
+  assert.ok(new Set(longArm.tiles.map((tile) => tile.direction)).size >= 3);
+  assert.ok(finalScene.layoutStats.hardTurnCount >= 1);
 });
 
 test("Ramificado congela 2, 3 y 4 brazos mientras crecen por separado", () => {

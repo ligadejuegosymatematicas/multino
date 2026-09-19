@@ -10,7 +10,9 @@ const MIN_HEIGHT = 260;
 const TABLE_PADDING = 52;
 const STABLE_CANVAS_WIDTH = 1000;
 const STABLE_CANVAS_HEIGHT = 800;
-const LOOKAHEAD_STEPS = 3;
+const LOOKAHEAD_STEPS = 5;
+const SOFT_TURN_RUN_START = 4;
+const SOFT_BOUNDARY_START = 0.7;
 
 export const TRADITIONAL_COLLISION_MARGIN = COLLISION_MARGIN;
 export const TRADITIONAL_TILE_LONG = TILE_LONG;
@@ -97,7 +99,11 @@ function reverseTile(tile) {
 
 function refreshProjectedTile(tile, rawTile) {
   const oriented = tile.layoutReversed ? reverseTile(rawTile) : rawTile;
-  return projectTile(oriented, tile.x, tile.y, tile.direction);
+  return {
+    ...projectTile(oriented, tile.x, tile.y, tile.direction),
+    straightRunLength: tile.straightRunLength ?? 1,
+    turnReason: tile.turnReason ?? "origin",
+  };
 }
 
 export function traditionalTileBounds(tile, margin = 0) {
@@ -210,24 +216,77 @@ function futureRoomScore(candidate, direction, occupied, center) {
   return score;
 }
 
+function compactBounds(tiles) {
+  if (tiles.length === 0) {
+    return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
+  }
+  const bounds = tiles.map((tile) => traditionalTileBounds(tile));
+  const left = Math.min(...bounds.map((box) => box.left));
+  const right = Math.max(...bounds.map((box) => box.right));
+  const top = Math.min(...bounds.map((box) => box.top));
+  const bottom = Math.max(...bounds.map((box) => box.bottom));
+  return {
+    left,
+    right,
+    top,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function envelopeGrowth(candidate, occupied) {
+  const before = compactBounds(occupied);
+  const after = compactBounds([...occupied, candidate]);
+  return Math.max(0, after.width - before.width) +
+    Math.max(0, after.height - before.height);
+}
+
+function softBoundaryPressure(candidate, center) {
+  const xRatio = Math.abs(candidate.x - center.x) / SOFT_HALF_WIDTH;
+  const yRatio = Math.abs(candidate.y - center.y) / SOFT_HALF_HEIGHT;
+  const normalize = (ratio) => Math.max(
+    0,
+    (ratio - SOFT_BOUNDARY_START) / (1 - SOFT_BOUNDARY_START),
+  );
+  return normalize(xRatio) + normalize(yRatio);
+}
+
 function scoreCandidate(
   candidate,
   direction,
   currentDirection,
   initialDirection,
   occupied,
+  envelopeTiles,
   center,
+  straightRunLength,
 ) {
   const initialVector = VECTOR[initialDirection];
   const sectorProgress = (candidate.x - center.x) * initialVector.x +
     (candidate.y - center.y) * initialVector.y;
   const fitsNext = withinSoftBoard(candidate, center) &&
     (direction !== currentDirection || hasForwardRoom(candidate, direction, center));
+  const isStraight = direction === currentDirection;
+  const runPressure = Math.max(
+    0,
+    straightRunLength - (SOFT_TURN_RUN_START - 1),
+  );
+  const directionPreference = isStraight
+    ? 520 - runPressure * 430
+    : -180 + runPressure * 180;
+  const prematureSoftTurnPenalty = !isStraight &&
+      straightRunLength < SOFT_TURN_RUN_START
+    ? 4000
+    : 0;
   return (fitsNext ? 10000 : 0) +
-    (direction === currentDirection ? 500 : 0) +
+    directionPreference +
     futureRoomScore(candidate, direction, occupied, center) +
     Math.max(-500, sectorProgress) -
-    (Math.abs(candidate.x - center.x) + Math.abs(candidate.y - center.y)) * 0.02;
+    envelopeGrowth(candidate, envelopeTiles) * 6 -
+    softBoundaryPressure(candidate, center) * 900 -
+    prematureSoftTurnPenalty -
+    (Math.abs(candidate.x - center.x) + Math.abs(candidate.y - center.y)) * 0.06;
 }
 
 function choosePlacement(
@@ -240,12 +299,14 @@ function choosePlacement(
   clockwiseFirst,
   connectionClearance,
   center = { x: 0, y: 0 },
+  currentStraightRunLength = 0,
 ) {
   const turns = clockwiseFirst
     ? [CLOCKWISE[currentDirection], COUNTERCLOCKWISE[currentDirection]]
     : [COUNTERCLOCKWISE[currentDirection], CLOCKWISE[currentDirection]];
   const directions = [currentDirection, ...turns];
   let best = null;
+  let straightFitsSoftBoard = false;
   for (let expansion = 0; expansion <= 5; expansion += 1) {
     for (const direction of directions) {
       const candidate = placeAfterFace(
@@ -261,14 +322,24 @@ function choosePlacement(
         (occupiedTile) => occupiedTile.placementId !== source.placementId,
       );
       if (collides(candidate, obstacles)) continue;
+      if (
+        expansion === 0 &&
+        direction === currentDirection &&
+        withinSoftBoard(candidate, center) &&
+        hasForwardRoom(candidate, direction, center)
+      ) {
+        straightFitsSoftBoard = true;
+      }
       const score = scoreCandidate(
         candidate,
         direction,
         currentDirection,
         initialDirection,
         obstacles,
+        occupied,
         center,
-      ) + (direction === turns[0] ? 200 : 0) - expansion * 200;
+        currentStraightRunLength,
+      ) + (direction === turns[0] ? 35 : 0) - expansion * 200;
       if (!best || score > best.score) {
         best = { tile: candidate, direction, score };
       }
@@ -278,7 +349,17 @@ function choosePlacement(
   if (!best) {
     throw new Error(`No existe espacio visual limpio para ${tile.placementId}.`);
   }
-  return best;
+  const turned = best.direction !== currentDirection;
+  return {
+    ...best,
+    tile: {
+      ...best.tile,
+      straightRunLength: turned ? 1 : currentStraightRunLength + 1,
+      turnReason: turned
+        ? straightFitsSoftBoard ? "soft" : "hard"
+        : "straight",
+    },
+  };
 }
 
 function placeChain(
@@ -298,6 +379,9 @@ function placeChain(
   let previous = source;
   let previousFace = sourceFace;
   let direction = initialDirection;
+  let straightRunLength = source.direction === initialDirection
+    ? source.straightRunLength ?? 1
+    : 0;
   let turnCount = 0;
   for (const rawTile of rawTiles) {
     const tile = reverse ? reverseTile(rawTile) : rawTile;
@@ -311,9 +395,11 @@ function placeChain(
       clockwiseFirst,
       connectionClearance,
       center,
+      straightRunLength,
     );
     if (chosen.direction !== direction) turnCount += 1;
     direction = chosen.direction;
+    straightRunLength = chosen.tile.straightRunLength;
     tiles.push(chosen.tile);
     occupied.push(chosen.tile);
     previous = chosen.tile;
@@ -508,6 +594,9 @@ export function previewTraditionalPlacement(
     true,
     connectionClearance,
     layout.softCenter,
+    openFace.anchor.direction === currentDirection
+      ? openFace.anchor.straightRunLength ?? 1
+      : 0,
   );
   return {
     ...chosen.tile,
@@ -685,6 +774,12 @@ function assembleLayout(
 
   const tiles = [...tileByPlacementId.values()];
   const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
+  const softTurnCount = tiles.filter(
+    (tile) => tile.turnReason === "soft",
+  ).length;
+  const hardTurnCount = tiles.filter(
+    (tile) => tile.turnReason === "hard",
+  ).length;
   return {
     ...size,
     contentBounds: measureContent(tiles, size.softCenter),
@@ -697,6 +792,8 @@ function assembleLayout(
       strategy: specialIndex >= 0 ? "four-arm-snake" : "linear-snake",
       incremental: true,
       turnCount,
+      softTurnCount,
+      hardTurnCount,
       collisionMargin: COLLISION_MARGIN,
       expandedCanvas: contentExceedsSoftBoard(tiles, size.softCenter),
     },
@@ -711,7 +808,11 @@ function createInitialLayout(table, connectionClearance) {
   let turnCount = 0;
 
   if (rawMain.length > 0 && specialIndex >= 0) {
-    const root = projectTile(rawMain[specialIndex], 0, 0, "right");
+    const root = {
+      ...projectTile(rawMain[specialIndex], 0, 0, "right"),
+      straightRunLength: 1,
+      turnReason: "origin",
+    };
     occupied.push(root);
     tileByPlacementId.set(root.placementId, root);
     const left = placeChain(
@@ -761,7 +862,11 @@ function createInitialLayout(table, connectionClearance) {
       }
     }
   } else if (rawMain.length > 0) {
-    const first = projectTile(rawMain[0], 0, 0, "right");
+    const first = {
+      ...projectTile(rawMain[0], 0, 0, "right"),
+      straightRunLength: 1,
+      turnReason: "origin",
+    };
     occupied.push(first);
     tileByPlacementId.set(first.placementId, first);
     const rest = placeChain(
@@ -872,6 +977,9 @@ function extendLayout(table, previousLayout, connectionClearance) {
       true,
       connectionClearance,
       previousLayout.softCenter,
+      extension.source.direction === currentDirection
+        ? extension.source.straightRunLength ?? 1
+        : 0,
     );
     if (chosen.direction !== currentDirection) turnCount += 1;
     tileByPlacementId.set(newPlacementId, chosen.tile);
