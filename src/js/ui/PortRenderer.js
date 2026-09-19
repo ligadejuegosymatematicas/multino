@@ -156,11 +156,19 @@ function renderRamifierStatus(node) {
 }
 
 function renderScoringMultiplicity(node) {
-  if (node.scoringMultiplicity === 0) return "";
+  const previewActive = node.previewScoringMultiplicity !== null;
+  const displayedMultiplicity = previewActive
+    ? node.previewScoringMultiplicity
+    : node.scoringMultiplicity;
+  if (displayedMultiplicity === 0 && node.scoringMultiplicity === 0) return "";
+  const transition = previewActive &&
+      displayedMultiplicity !== node.scoringMultiplicity
+    ? `×${node.scoringMultiplicity}→${displayedMultiplicity}`
+    : `×${displayedMultiplicity}`;
   return `
-    <g class="port-macro-node__scoring-badge" data-scoring-multiplicity="${node.scoringMultiplicity}" aria-hidden="true">
+    <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}" aria-hidden="true">
       <circle cx="${node.x - 49}" cy="${node.y - 43}" r="15"></circle>
-      <text x="${node.x - 49}" y="${node.y - 43}">×${node.scoringMultiplicity}</text>
+      <text x="${node.x - 49}" y="${node.y - 43}">${transition}</text>
     </g>`;
 }
 
@@ -174,11 +182,13 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
   const ramifierLabel = node.ramifier
     ? `; chancho ramificador con ${node.ramifier.connectionCount} de 4 conexiones${node.ramifier.isSaturated ? "; saturado" : ""}`
     : "";
-  const scoringLabel = node.scoringMultiplicity > 0
-    ? `; aporta ${node.scoringMultiplicity} ${node.scoringMultiplicity === 1 ? "vez" : "veces"} a S`
+  const displayedScoringMultiplicity = node.previewScoringMultiplicity ??
+    node.scoringMultiplicity;
+  const scoringLabel = displayedScoringMultiplicity > 0
+    ? `; aporta ${displayedScoringMultiplicity} ${displayedScoringMultiplicity === 1 ? "vez" : "veces"} a S${node.previewScoringMultiplicity !== null ? " en la previsualización" : ""}`
     : "; no aporta actualmente a S";
   return `
-    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}${node.isScoringFeedbackSource ? " is-scoring-feedback-source" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${node.scoringMultiplicity}" data-played-tile-count="${node.playedTileCount}" role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
+    <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}${node.isScoringFeedbackSource ? " is-scoring-feedback-source" : ""}${node.isDecisionPreview ? " is-decision-preview" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${displayedScoringMultiplicity}" data-played-tile-count="${node.playedTileCount}"${node.previewScoringMultiplicity !== null ? ` data-current-scoring-multiplicity="${node.scoringMultiplicity}"` : ""} role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas jugadas; ${node.openTargetCount} ${node.openTargetCount === 1 ? "destino abierto" : "destinos abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
       <text class="port-macro-node__value" x="${node.x}" y="${node.y - 5}">${node.value}</text>
       <g class="port-macro-node__target-badge${node.displayTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}">
@@ -396,6 +406,26 @@ function openTargetChangeText(changes) {
   return parts.length > 0 ? `Puntas ${parts.join(" · ")}` : null;
 }
 
+function scoringMultiplicitiesFromDecision(decision) {
+  const multiplicities = Array.from({ length: 7 }, () => 0);
+  for (const term of decision.outcome?.scoring?.terms ?? []) {
+    if (
+      Number.isSafeInteger(term.value) &&
+      term.value >= 0 &&
+      term.value <= 6 &&
+      Number.isSafeInteger(term.factor) &&
+      term.factor > 0
+    ) {
+      multiplicities[term.value] += term.factor;
+    }
+  }
+  return multiplicities;
+}
+
+function badgeIdentity(badge) {
+  return `${badge.kind}\u0000${badge.text}`;
+}
+
 export function createPortDecisionPresentation(decision) {
   const meta = PORT_DECISION_META[decision.decisionKind] ??
     PORT_DECISION_META.continue;
@@ -456,9 +486,72 @@ export function createPortDecisionPresentation(decision) {
 }
 
 export function createPortDecisionPresentations(decisions) {
-  const presentations = decisions.map(createPortDecisionPresentation);
+  return createPortDecisionChoicePresentation(decisions).options;
+}
+
+/**
+ * Separa lo común de un conjunto de decisiones y deja en cada tarjeta solo la
+ * consecuencia que realmente la distingue. No expone S ni puntos futuros.
+ */
+export function createPortDecisionChoicePresentation(decisions) {
+  const rawPresentations = decisions.map(createPortDecisionPresentation);
+  const commonBadgeIds = rawPresentations.length === 0
+    ? new Set()
+    : new Set(rawPresentations[0].badges.map(badgeIdentity));
+  for (const presentation of rawPresentations.slice(1)) {
+    const ownIds = new Set(presentation.badges.map(badgeIdentity));
+    for (const identity of [...commonBadgeIds]) {
+      if (!ownIds.has(identity)) commonBadgeIds.delete(identity);
+    }
+  }
+  const commonBadges = rawPresentations[0]?.badges.filter(
+    (badge) => commonBadgeIds.has(badgeIdentity(badge)),
+  ) ?? [];
+  const multiplicities = decisions.map(scoringMultiplicitiesFromDecision);
+  const differingScoringValues = Array.from({ length: 7 }, (_, value) => value)
+    .filter((value) =>
+      new Set(multiplicities.map((values) => values[value])).size > 1
+    );
+  const structuralTitles = new Set(
+    rawPresentations.map((presentation) => presentation.title),
+  );
+  const options = rawPresentations.map((presentation, index) => {
+    const distinctBadges = presentation.badges.filter(
+      (badge) => !commonBadgeIds.has(badgeIdentity(badge)),
+    );
+    const scoringDifferences = differingScoringValues.map((value) => ({
+      kind: "scoring-preview",
+      text: `${value} queda ×${multiplicities[index][value]}`,
+      value,
+      multiplicity: multiplicities[index][value],
+    }));
+    const title = structuralTitles.size === 1 && scoringDifferences.length > 0
+      ? scoringDifferences[0].text
+      : presentation.title;
+    const structuralTitle = title === presentation.title
+      ? null
+      : presentation.title;
+    const badges = [...scoringDifferences, ...distinctBadges];
+    const preview = {
+      scoringMultiplicities: multiplicities[index],
+      branchingDouble: decisions[index].outcome?.branchingDouble ?? null,
+    };
+    return {
+      ...presentation,
+      title,
+      structuralTitle,
+      badges,
+      preview,
+      visibleSignature: JSON.stringify({
+        icon: presentation.icon,
+        title,
+        structuralTitle,
+        badges: badges.map(({ kind, text }) => ({ kind, text })),
+      }),
+    };
+  });
   const signatures = new Set();
-  for (const presentation of presentations) {
+  for (const presentation of options) {
     if (signatures.has(presentation.visibleSignature)) {
       throw new Error(
         "Dos decisiones estratégicas distintas resultaron visualmente indistinguibles.",
@@ -466,7 +559,7 @@ export function createPortDecisionPresentations(decisions) {
     }
     signatures.add(presentation.visibleSignature);
   }
-  return presentations;
+  return { commonBadges, options };
 }
 
 function renderK7Background(scene) {
@@ -477,15 +570,24 @@ function renderK7Background(scene) {
   return `<g class="port-k7" aria-hidden="true">${edges}${loops}</g>`;
 }
 
-export function renderPortTargetChooserMarkup(targetChoice) {
+export function renderPortTargetChooserMarkup(
+  targetChoice,
+  { previewIndex = null } = {},
+) {
   if (!targetChoice || targetChoice.decisions.length < 2) {
     return "";
   }
-  const presentations = createPortDecisionPresentations(
+  const choicePresentation = createPortDecisionChoicePresentation(
     targetChoice.decisions,
   );
+  const commonMarkup = choicePresentation.commonBadges.length === 0
+    ? ""
+    : `<div class="port-target-choice__common" aria-label="Consecuencias comunes">${choicePresentation.commonBadges.map((badge) =>
+        `<small class="port-target-choice__effect is-${badge.kind}">${escapeAttribute(badge.text)}</small>`
+      ).join("")}</div>`;
   const options = targetChoice.decisions.map((decision, index) => {
-    const presentation = presentations[index];
+    const presentation = choicePresentation.options[index];
+    const isPreviewed = previewIndex === index;
     const badges = presentation.badges.map((badge) =>
       `<small class="port-target-choice__effect is-${badge.kind}">${escapeAttribute(badge.text)}</small>`
     ).join("");
@@ -493,10 +595,12 @@ export function renderPortTargetChooserMarkup(targetChoice) {
       ? `; ${presentation.badges.map((badge) => badge.text).join("; ")}`
       : "";
     return `
-    <button type="button" class="port-target-choice__option" data-port-choice-index="${index}" aria-label="${escapeAttribute(presentation.title + accessibleEffects)}">
+    <button type="button" class="port-target-choice__option${isPreviewed ? " is-previewed" : ""}" data-port-choice-index="${index}" aria-pressed="${isPreviewed}" aria-label="${escapeAttribute(presentation.title + accessibleEffects + (isPreviewed ? "; tocar otra vez para jugar" : "; previsualizar"))}">
       <span class="port-target-choice__icon" aria-hidden="true">${presentation.icon}</span>
       <span class="port-target-choice__title">${presentation.title}</span>
+      ${presentation.structuralTitle ? `<span class="port-target-choice__structure">${presentation.structuralTitle}</span>` : ""}
       <span class="port-target-choice__effects">${badges}</span>
+      ${isPreviewed ? '<span class="port-target-choice__confirm">Toca otra vez para jugar</span>' : ""}
     </button>`;
   }).join("");
   return `
@@ -505,7 +609,7 @@ export function renderPortTargetChooserMarkup(targetChoice) {
         <span class="port-target-choice__eyebrow">Valor elegido</span>
         <strong>${targetChoice.value}</strong>
       </div>
-      <div class="port-target-choice__options">${options}</div>
+      <div class="port-target-choice__decision-area">${commonMarkup}<div class="port-target-choice__options">${options}</div></div>
       <button type="button" class="port-target-choice__cancel" data-close-port-choice aria-label="Cancelar elección">×</button>
     </section>`;
 }
@@ -602,6 +706,7 @@ export class PortRenderer {
     this.inspectedRouteId = null;
     this.structureVisible = false;
     this.targetChoiceValue = null;
+    this.previewDecisionIndex = null;
     this.lastSelectedDominoId = null;
     this.lastBoardSignature = null;
     this.hasShownRamifierHint = false;
@@ -618,14 +723,23 @@ export class PortRenderer {
       this.inspectedRouteId = null;
       this.structureVisible = false;
       this.targetChoiceValue = null;
+      this.previewDecisionIndex = null;
     }
     this.lastBoardSignature = currentSignature;
     if (this.lastSelectedDominoId !== presentation.selectedDominoId) {
       this.targetChoiceValue = null;
+      this.previewDecisionIndex = null;
       this.strategicNodeValue = null;
     }
     this.lastSelectedDominoId = presentation.selectedDominoId;
 
+    const previewDecision = this.targetChoiceValue === null ||
+        this.previewDecisionIndex === null
+      ? null
+      : (presentation.strategicDecisionGroups ?? [])
+        .filter((decision) => decision.value === this.targetChoiceValue)[
+          this.previewDecisionIndex
+        ] ?? null;
     const scene = createPortScene(presentation.portView, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
@@ -636,6 +750,7 @@ export class PortRenderer {
       expandedNodeValue: this.expandedNodeValue,
       strategicNodeValue: this.strategicNodeValue,
       selectedTargetValue: this.targetChoiceValue,
+      previewDecision,
       showStructure: this.structureVisible,
       layout: this.container.clientWidth >= 760
         ? PORT_SCENE_LAYOUTS.WIDE
@@ -653,7 +768,7 @@ export class PortRenderer {
       ? `<p class="port-ramifier-hint" role="status">Completa el cruce antes de abrir brazos.</p>`
       : "";
     if (showRamifierHint) this.hasShownRamifierHint = true;
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${startMarkup}${ramifierHint}${renderPortTargetChooserMarkup(scene.targetChoice)}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${startMarkup}${ramifierHint}${renderPortTargetChooserMarkup(scene.targetChoice, { previewIndex: this.previewDecisionIndex })}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
     const activateNode = (value) => {
@@ -667,6 +782,7 @@ export class PortRenderer {
           this.targetChoiceValue = this.targetChoiceValue === value
             ? null
             : value;
+          this.previewDecisionIndex = null;
           this.render(presentation, options);
         }
         return;
@@ -682,6 +798,7 @@ export class PortRenderer {
       this.strategicNodeValue = null;
       this.inspectedRouteId = null;
       this.targetChoiceValue = null;
+      this.previewDecisionIndex = null;
       this.render(presentation, options);
     };
     const activateRoute = (routeId) => {
@@ -690,6 +807,7 @@ export class PortRenderer {
       this.strategicNodeValue = null;
       this.structureVisible = false;
       this.targetChoiceValue = null;
+      this.previewDecisionIndex = null;
       this.render(presentation, options);
     };
     const clearRoute = () => {
@@ -710,6 +828,7 @@ export class PortRenderer {
       this.strategicNodeValue = null;
       this.inspectedRouteId = null;
       this.targetChoiceValue = null;
+      this.previewDecisionIndex = null;
       this.render(presentation, options);
     };
 
@@ -753,18 +872,23 @@ export class PortRenderer {
     );
     for (const element of this.container.querySelectorAll("[data-port-choice-index]")) {
       element.addEventListener("click", () => {
+        const index = Number(element.dataset.portChoiceIndex);
         const decision = scene.targetChoice?.decisions[
-          Number(element.dataset.portChoiceIndex)
+          index
         ];
-        if (decision?.canonicalTarget) {
+        if (decision?.canonicalTarget && this.previewDecisionIndex === index) {
           options.onTarget?.(decision.canonicalTarget);
+          return;
         }
+        this.previewDecisionIndex = index;
+        this.render(presentation, options);
       });
     }
     this.container.querySelector("[data-close-port-choice]")?.addEventListener(
       "click",
       () => {
         this.targetChoiceValue = null;
+        this.previewDecisionIndex = null;
         this.render(presentation, options);
       },
     );
@@ -810,6 +934,7 @@ export class PortRenderer {
         if (this.targetChoiceValue !== null) {
           event.preventDefault();
           this.targetChoiceValue = null;
+          this.previewDecisionIndex = null;
           this.render(presentation, options);
           return;
         }

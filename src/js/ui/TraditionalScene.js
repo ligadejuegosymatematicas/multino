@@ -1,6 +1,7 @@
 import {
   createTraditionalSnakeLayout,
   pointOutsideTraditionalTile,
+  previewTraditionalPlacement,
 } from "./TraditionalSnakeLayout.js";
 
 export const TRADITIONAL_CONNECTION_CLEARANCE = 2;
@@ -172,6 +173,25 @@ export function createTraditionalScene(
     target.isScoringTerm = scoringPortIds.has(target.id);
   }
 
+  const selectedDomino = view.hand.find(
+    (domino) => domino.dominoId === selectedDominoId,
+  ) ?? null;
+  const ghostPlacements = isFinished || selectedDomino === null
+    ? []
+    : openTargets
+      .filter((target) => target.isLegal)
+      .map((target) => previewTraditionalPlacement(
+        layout,
+        target,
+        selectedDomino,
+        { connectionClearance: TRADITIONAL_CONNECTION_CLEARANCE },
+      ))
+      .filter(Boolean)
+      .map((ghost) => ({
+        ...ghost,
+        accessibleLabel: `Jugar ficha ${selectedDomino.a}|${selectedDomino.b} en el extremo de valor ${view.table.openTargets.find((target) => target.id === ghost.id)?.value}`,
+      }));
+
   const lockedRamifierSockets = createLockedRamifierSockets(
     view,
     sceneTileByPlacementId,
@@ -184,6 +204,7 @@ export function createTraditionalScene(
     hasSelection,
     isFinished,
     selectedDominoId,
+    selectedDomino,
     canStart:
       !isFinished && hasSelection && legalTargetIds.has("START"),
     mainTiles,
@@ -191,6 +212,7 @@ export function createTraditionalScene(
     tiles: sceneTiles,
     connections,
     openTargets,
+    ghostPlacements,
     lockedRamifierSockets,
     scoringResolution,
     layoutStats,

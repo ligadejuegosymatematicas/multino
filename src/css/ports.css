@@ -396,6 +396,14 @@
 .port-target-choice > div:first-child { display: grid; }
 .port-target-choice__eyebrow { color: var(--muted); font-size: 0.62rem; font-weight: 800; text-transform: uppercase; }
 .port-target-choice strong { color: var(--ink); font-size: 1.65rem; }
+.port-target-choice__decision-area { display: grid; gap: 0.35rem; }
+.port-target-choice__common {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+  padding-inline: 0.18rem;
+  opacity: 0.7;
+}
 .port-target-choice__options { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .port-target-choice__option,
 .port-target-choice__cancel {
@@ -417,12 +425,21 @@
   border-radius: 0.72rem;
   text-align: start;
 }
+.port-target-choice__option.is-previewed {
+  border-color: #8ffff0;
+  box-shadow: 0 0 0 2px rgb(39 222 197 / 0.28), 0 0 16px rgb(39 222 197 / 0.24);
+}
 .port-target-choice__icon {
   grid-row: 1 / 3;
   font-size: 1.2rem;
 }
 .port-target-choice__title {
   font-size: 0.75rem;
+}
+.port-target-choice__structure {
+  color: #b9c4bb;
+  font-size: 0.6rem;
+  font-weight: 700;
 }
 .port-target-choice__effects {
   display: flex;
@@ -439,6 +456,12 @@
   opacity: 0.88;
 }
 .port-target-choice__effect.is-scoring { color: var(--scoring); background: rgb(86 57 7 / 0.56); }
+.port-target-choice__effect.is-scoring-preview {
+  color: #fff0b4;
+  border-color: var(--scoring);
+  background: rgb(86 57 7 / 0.78);
+  box-shadow: 0 0 8px rgb(255 201 78 / 0.28);
+}
 .port-target-choice__effect.is-scoring-off {
   color: #f1d48c;
   border-style: dashed;
@@ -447,7 +470,20 @@
 .port-target-choice__effect.is-playable { color: #79f4df; background: rgb(5 74 66 / 0.68); }
 .port-target-choice__effect.is-structure,
 .port-target-choice__effect.is-places { color: #d8d7c8; background: rgb(255 255 255 / 0.06); }
+.port-target-choice__confirm {
+  grid-column: 1 / -1;
+  color: #8ffff0;
+  font-size: 0.58rem;
+  font-weight: 850;
+  text-align: center;
+}
 .port-target-choice__cancel { width: 2.55rem; border-color: #c7cecb; color: #536976; background: #fff; font-size: 1.15rem; }
+
+.port-macro-node__scoring-badge.is-preview text { font-size: 12px; }
+.port-macro-node__scoring-badge.is-preview.is-removing {
+  opacity: 0.64;
+  filter: saturate(0.35);
+}
 
 .port-ramifier-hint {
   position: absolute;

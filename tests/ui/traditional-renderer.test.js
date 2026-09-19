@@ -40,6 +40,7 @@ import {
 } from "../../src/js/ui/ViewModeController.js";
 import {
   createBoardScenario,
+  ensureDominoInHand,
   playDomino,
 } from "../fixtures/board-scenarios.js";
 import { createValidParticipantInput } from "../fixtures/participants.js";
@@ -650,9 +651,10 @@ test("la selección destaca solo extremos legales y conserva targets concretos",
   );
 });
 
-test("los números de opción aparecen solo para targets compatibles repetidos", () => {
+test("dos destinos físicos se muestran como ghosts de la ficha real", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
+  state = ensureDominoInHand(state, state.currentPlayerId, "0-4");
   const view = projectTraditionalView(state);
   const neutral = createTraditionalScene(view);
   const legalTargets = view.table.openTargets.map((target) => ({ ...target }));
@@ -667,16 +669,136 @@ test("los números de opción aparecen solo para targets compatibles repetidos",
     [1, 2],
   );
   assert.match(selected.openTargets[0].accessibleLabel, /opción 1 de 2/);
+  assert.equal(selected.ghostPlacements.length, 2);
+  assert.deepEqual(
+    selected.ghostPlacements.map((ghost) => ghost.id).sort(),
+    legalTargets.map((target) => target.id).sort(),
+  );
+  assert.ok(selected.ghostPlacements.every((ghost) =>
+    ghost.dominoId === "0-4" &&
+    [ghost.a, ghost.b].sort((a, b) => a - b).join("|") === "0|4"
+  ));
   assert.doesNotMatch(
     renderTraditionalTableMarkup(neutral),
-    /traditional-target__option/,
+    /traditional-ghost/,
   );
   assert.equal(
     renderTraditionalTableMarkup(selected).match(
-      /traditional-target__option/g,
+      /data-ghost-target-id=/g,
     )?.length,
     2,
   );
+  assert.doesNotMatch(
+    renderTraditionalTableMarkup(selected),
+    /traditional-target__option|Destino 1|Destino 2/,
+  );
+  const selectedMarkup = renderTraditionalTableMarkup(selected);
+  assert.equal(
+    (selectedMarkup.match(/data-domino-a="4" data-domino-b="0"/g)?.length ?? 0) +
+      (selectedMarkup.match(/data-domino-a="0" data-domino-b="4"/g)?.length ?? 0),
+    2,
+  );
+});
+
+test("el ghost ocupa exactamente la geometría que recibirá la ficha al jugar", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = ensureDominoInHand(state, state.currentPlayerId, "0-4");
+  const view = projectTraditionalView(state);
+  const legalTargets = view.table.openTargets.map((target) => ({ ...target }));
+  const selected = createTraditionalScene(view, {
+    selectedDominoId: "0-4",
+    legalTargets,
+  });
+  const target = legalTargets[0];
+  const ghost = selected.ghostPlacements.find(
+    (candidate) => candidate.id === target.id,
+  );
+
+  const nextState = playDomino(
+    state,
+    "0-4",
+    targetAt(target.placementId, target.portId),
+  );
+  const after = createTraditionalScene(projectTraditionalView(nextState), {
+    previousLayout: selected.layoutState,
+  });
+  const placed = after.tiles.find(
+    (tile) => !selected.tiles.some(
+      (previous) => previous.placementId === tile.placementId,
+    ),
+  );
+
+  assert.ok(ghost);
+  assert.ok(placed);
+  assert.equal(placed.x, ghost.x);
+  assert.equal(placed.y, ghost.y);
+  assert.equal(placed.orientation, ghost.orientation);
+  assert.equal(placed.firstValue, ghost.firstValue);
+  assert.equal(placed.secondValue, ghost.secondValue);
+});
+
+test("Tradicional proyecta una, dos y tres colocaciones físicas exactas", () => {
+  let singleState = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  singleState = playDomino(singleState, "4-4");
+  singleState = playDomino(
+    singleState,
+    "0-4",
+    targetAt("placement-1", "main:1"),
+  );
+  singleState = ensureDominoInHand(
+    singleState,
+    singleState.currentPlayerId,
+    "1-4",
+  );
+  const singleView = projectTraditionalView(singleState);
+  const singleTargets = singleView.table.openTargets.filter(
+    (target) => target.value === 4,
+  );
+  const single = createTraditionalScene(singleView, {
+    selectedDominoId: "1-4",
+    legalTargets: singleTargets,
+  });
+
+  let tripleState = createBoardScenario({ K: 1, firstDominoId: "4-4" });
+  for (const [dominoId, placementId, portId] of [
+    ["4-4", null, null],
+    ["0-4", "placement-1", "main:1"],
+    ["1-4", "placement-1", "main:2"],
+    ["0-5", "placement-2", "side:a"],
+    ["4-5", "placement-4", "side:b"],
+    ["2-4", "placement-1", "branch:1"],
+    ["2-3", "placement-6", "side:a"],
+    ["3-4", "placement-7", "side:b"],
+  ]) {
+    tripleState = portId === null
+      ? playDomino(tripleState, dominoId)
+      : playDomino(tripleState, dominoId, targetAt(placementId, portId));
+  }
+  tripleState = ensureDominoInHand(
+    tripleState,
+    tripleState.currentPlayerId,
+    "4-6",
+  );
+  const tripleView = projectTraditionalView(tripleState);
+  const tripleTargets = tripleView.table.openTargets.filter(
+    (target) => target.value === 4,
+  );
+  const triple = createTraditionalScene(tripleView, {
+    selectedDominoId: "4-6",
+    legalTargets: tripleTargets,
+  });
+
+  assert.equal(single.ghostPlacements.length, 1);
+  assert.equal(tripleTargets.length, 3);
+  assert.equal(triple.ghostPlacements.length, 3);
+  assert.equal(
+    new Set(triple.ghostPlacements.map((ghost) => `${ghost.x}:${ghost.y}`)).size,
+    3,
+  );
+  assert.ok(triple.ghostPlacements.every((ghost) =>
+    ["horizontal", "vertical"].includes(ghost.orientation)
+  ));
 });
 
 test("un extremo tradicional envía al controlador placementId y portId exactos", () => {

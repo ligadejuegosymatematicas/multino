@@ -416,6 +416,51 @@
   outline-offset: 3px;
 }
 
+.traditional-ghost {
+  position: absolute;
+  z-index: 30;
+  left: var(--ghost-x);
+  top: var(--ghost-y);
+  display: grid;
+  width: max(var(--ghost-width), 46px);
+  height: max(var(--ghost-height), 46px);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0.65rem;
+  color: #102824;
+  background: transparent;
+  cursor: pointer;
+  filter: drop-shadow(0 0 7px rgb(39 222 197 / 0.78));
+  transform: translate(-50%, -50%);
+}
+
+.traditional-ghost__tile {
+  width: 72px;
+  height: 38px;
+  border: 3px dashed var(--game-teal-bright) !important;
+  opacity: 0.62;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.7),
+    0 0 0 3px rgb(39 222 197 / 0.18),
+    0 0 13px rgb(39 222 197 / 0.55) !important;
+  pointer-events: none;
+}
+
+.traditional-ghost.is-vertical .traditional-ghost__tile {
+  transform: rotate(90deg);
+}
+
+.traditional-ghost:hover .traditional-ghost__tile,
+.traditional-ghost:focus-visible .traditional-ghost__tile {
+  opacity: 0.84;
+}
+
+.traditional-ghost:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 4px;
+}
+
 .traditional-start {
   position: absolute;
   z-index: 30;
@@ -553,6 +598,8 @@
   .traditional-target.is-legal {
     animation: none;
   }
+
+  .traditional-ghost__tile { transition: none; }
 
   .traditional-domino.is-scoring-term,
   .traditional-target.is-scoring-term {

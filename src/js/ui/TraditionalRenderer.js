@@ -13,6 +13,7 @@ import {
 } from "./TraditionalCamera.js";
 import { traditionalTileBounds } from "./TraditionalSnakeLayout.js";
 import { renderPipsMarkup } from "./DominoPips.js";
+import { renderDominoTileMarkup } from "./DominoTile.js";
 
 function escapeAttribute(value) {
   return String(value)
@@ -90,13 +91,17 @@ function renderTarget(target) {
     target.topology.branchState === "STARTED" ? "is-started" : "",
     target.isScoringTerm ? "is-scoring-term" : "",
   ].filter(Boolean).join(" ");
-  const option = target.optionIndex === null
-    ? ""
-    : `<span class="traditional-target__option" aria-hidden="true">${target.optionIndex}</span>`;
   const scoringValue = target.isScoringTerm
     ? `<span class="traditional-target__scoring-value" aria-hidden="true">${target.value}</span>`
     : "";
-  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${scoringValue}${option}</button>`;
+  return `<button type="button" class="${classes}" style="--target-x:${target.x}px;--target-y:${target.y}px" data-target-id="${escapeAttribute(target.id)}" data-placement-id="${escapeAttribute(target.placementId)}" data-port-id="${escapeAttribute(target.portId)}" data-target-value="${target.value}" aria-label="${escapeAttribute(target.accessibleLabel)}"${target.isDisabled ? " disabled" : ""}><span class="traditional-target__socket" aria-hidden="true"></span>${scoringValue}</button>`;
+}
+
+function renderGhostPlacement(ghost) {
+  return `<button type="button" class="traditional-ghost is-${ghost.orientation}" style="--ghost-x:${ghost.x}px;--ghost-y:${ghost.y}px;--ghost-width:${ghost.width}px;--ghost-height:${ghost.height}px" data-ghost-target-id="${escapeAttribute(ghost.id)}" aria-label="${escapeAttribute(ghost.accessibleLabel)}">${renderDominoTileMarkup(
+    { a: ghost.a, b: ghost.b },
+    { className: "traditional-ghost__tile" },
+  )}</button>`;
 }
 
 function renderLockedRamifierSocket(socket) {
@@ -123,6 +128,7 @@ export function renderTraditionalTableMarkup(scene) {
             ${scene.tiles.map(renderTile).join("")}
             ${scene.lockedRamifierSockets.map(renderLockedRamifierSocket).join("")}
             ${scene.openTargets.map(renderTarget).join("")}
+            ${scene.ghostPlacements.map(renderGhostPlacement).join("")}
             ${startMarkup}
           </div>
         </div>
@@ -302,6 +308,13 @@ export class TraditionalRenderer {
     )) {
       element.addEventListener("click", () =>
         onTarget?.(targetById.get(element.dataset.targetId))
+      );
+    }
+    for (const element of this.container.querySelectorAll(
+      "[data-ghost-target-id]",
+    )) {
+      element.addEventListener("click", () =>
+        onTarget?.(targetById.get(element.dataset.ghostTargetId))
       );
     }
     this.container

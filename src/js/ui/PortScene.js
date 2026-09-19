@@ -402,6 +402,7 @@ export function createPortScene(
     expandedNodeValue = null,
     strategicNodeValue = null,
     selectedTargetValue = null,
+    previewDecision = null,
     showStructure = false,
     layout = PORT_SCENE_LAYOUTS.COMPACT,
     scoringResolution = null,
@@ -466,6 +467,13 @@ export function createPortScene(
   const scoringMultiplicityByValue = createPortScoringMultiplicity(
     currentScoringTerms,
   );
+  const previewScoringMultiplicityByValue = previewDecision === null
+    ? null
+    : createPortScoringMultiplicity(
+        previewDecision.outcome?.scoring?.terms ?? [],
+      );
+  const previewBranchingDouble = previewDecision?.outcome?.branchingDouble ??
+    null;
   const highlightedScoringTerms = (
     scoringResolution?.terms ?? currentScoringTerms
   ).filter((term) => term.isDouble !== true || scoringTermMultiplicity(term) > 0);
@@ -517,6 +525,37 @@ export function createPortScene(
       endpointPositions.set(port.id, projected);
       return projected;
     });
+    const currentRamifier = branchingDouble?.value === node.value
+      ? {
+          ...branchingDouble,
+          sockets: (branchingHub?.sockets ?? []).map((socket) => ({
+            portId: socket.boardPortId,
+            isUsed: socket.connectionId !== null,
+            isAvailable: socket.connectionId === null && socket.isOpenEnd,
+            isLocked: socket.connectionId === null && !socket.isOpenEnd,
+          })),
+        }
+      : null;
+    const previewRamifier = currentRamifier !== null &&
+        previewBranchingDouble?.value === node.value
+      ? {
+          ...currentRamifier,
+          ...previewBranchingDouble,
+          sockets: currentRamifier.sockets.map((socket) => ({
+            ...socket,
+            isAvailable: socket.isUsed
+              ? false
+              : socket.portId.startsWith("branch:")
+                ? previewBranchingDouble.lateralPortsUnlocked
+                : previewBranchingDouble.continuationPortsRemaining > 0,
+            isLocked: socket.isUsed
+              ? false
+              : socket.portId.startsWith("branch:")
+                ? !previewBranchingDouble.lateralPortsUnlocked
+                : previewBranchingDouble.continuationPortsRemaining === 0,
+          })),
+        }
+      : null;
     return {
       ...node,
       ...position,
@@ -528,23 +567,16 @@ export function createPortScene(
         ? strategicDecisionCount
         : valueState.openTargetCount,
       scoringMultiplicity: scoringMultiplicityByValue.get(node.value),
+      previewScoringMultiplicity:
+        previewScoringMultiplicityByValue?.get(node.value) ?? null,
       compatibleTargetCount: strategicDecisionCount,
       strategicDecisionCount,
       physicalCompatibleTargetCount,
       isCompatible: hasSelection && compatibleTargetCount > 0,
       isInSelectedDomino: hasSelection && selectedValues.has(node.value),
       isTargetChoiceOpen: selectedTargetValue === node.value,
-      ramifier: branchingDouble?.value === node.value
-        ? {
-            ...branchingDouble,
-            sockets: (branchingHub?.sockets ?? []).map((socket) => ({
-              portId: socket.boardPortId,
-              isUsed: socket.connectionId !== null,
-              isAvailable: socket.connectionId === null && socket.isOpenEnd,
-              isLocked: socket.connectionId === null && !socket.isOpenEnd,
-            })),
-          }
-        : null,
+      ramifier: previewRamifier ?? currentRamifier,
+      isDecisionPreview: previewDecision !== null,
     };
   });
   const hubs = view.portGraph.doubleHubs.map((hub) => {
@@ -855,6 +887,7 @@ export function createPortScene(
     ),
     selectedDominoId,
     selectedTargetValue,
+    previewDecision,
     selectedDomino,
     strategicDecisions: strategicDecisions.map((decision) => ({
       ...decision,

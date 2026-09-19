@@ -17,6 +17,7 @@ import {
   PORT_SCENE_LAYOUTS,
 } from "../../src/js/ui/PortScene.js";
 import {
+  createPortDecisionChoicePresentation,
   createPortDecisionPresentations,
   getPortValueAction,
   renderPortNodeInspectorMarkup,
@@ -334,6 +335,95 @@ test("la salvaguarda rechaza grupos distintos visualmente idénticos", () => {
     () => createPortDecisionPresentations([repeated, structuredClone(repeated)]),
     /indistinguibles/,
   );
+});
+
+test("las opciones factorizan lo común y hacen protagonista ×1 frente a ×2", () => {
+  const commonEffects = {
+    scoringMultiplicityChanges: [],
+    openTargetChangesByValue: [{ value: 3, before: 0, after: 1, delta: 1 }],
+    branchingConnectionCountBefore: null,
+    branchingConnectionCountAfter: null,
+    endsRound: false,
+  };
+  const decisions = [1, 2].map((factor, index) => ({
+    decisionKind: "continue",
+    physicalTargetCount: index === 0 ? 1 : 2,
+    canonicalTarget: {
+      kind: "OPEN_END",
+      placementId: `placement-${index + 1}`,
+      portId: "side:a",
+    },
+    outcome: {
+      scoring: {
+        terms: [{ value: 5, factor, contribution: 5 * factor }],
+      },
+      branchingDouble: null,
+    },
+    effects: commonEffects,
+  }));
+  const presentation = createPortDecisionChoicePresentation(decisions);
+  const markup = renderPortTargetChooserMarkup({ value: 5, decisions });
+
+  assert.deepEqual(
+    presentation.options.map((option) => option.title),
+    ["5 queda ×1", "5 queda ×2"],
+  );
+  assert.equal(
+    presentation.commonBadges.filter((badge) => badge.text === "Puntas +3").length,
+    1,
+  );
+  assert.equal(markup.match(/Puntas \+3/g)?.length, 1);
+  assert.match(markup, />5 queda ×1</);
+  assert.match(markup, />5 queda ×2</);
+  assert.match(markup, />×2 lugares equivalentes</);
+  assert.doesNotMatch(markup, /S\s*=|puntos futuros|placement-/);
+});
+
+test("la previsualización local cambia medallón y mecanismo sin revelar S futuro", () => {
+  const state = createOrdinaryAndCrossDecisionState();
+  const groups = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const cross = groups.find(
+    (decision) => decision.decisionKind === "complete-cross",
+  );
+  const crossIndex = groups.indexOf(cross);
+  const current = createPortScene(projectPortView(state, state.currentPlayerId));
+  const preview = createPortScene(projectPortView(state, state.currentPlayerId), {
+    selectedDominoId: "1-6",
+    legalTargets: getLegalTargetsForDomino(
+      state,
+      state.currentPlayerId,
+      "1-6",
+    ),
+    strategicDecisions: groups,
+    selectedTargetValue: 6,
+    previewDecision: cross,
+  });
+  const currentSix = current.nodes.find((node) => node.value === 6);
+  const previewSix = preview.nodes.find((node) => node.value === 6);
+  const markup = renderPortSvgMarkup(preview);
+
+  assert.equal(currentSix.scoringMultiplicity, 3);
+  assert.equal(previewSix.previewScoringMultiplicity, 1);
+  assert.equal(previewSix.ramifier.lateralPortsUnlocked, true);
+  assert.equal(
+    previewSix.ramifier.sockets.filter(
+      (socket) => socket.portId.startsWith("branch:") && socket.isAvailable,
+    ).length,
+    2,
+  );
+  assert.match(markup, /data-node-value="6"[^>]+data-scoring-multiplicity="1"/);
+  assert.match(markup, />×3→1</);
+  assert.match(
+    renderPortTargetChooserMarkup(preview.targetChoice, {
+      previewIndex: crossIndex,
+    }),
+    /Toca otra vez para jugar/,
+  );
+  assert.equal(preview.scoringPresentation.sum, current.scoringPresentation.sum);
 });
 
 test("sin selección los badges hacen visibles extremos reales sin exponer incidencias", () => {

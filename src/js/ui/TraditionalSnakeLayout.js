@@ -13,6 +13,8 @@ const STABLE_CANVAS_HEIGHT = 800;
 const LOOKAHEAD_STEPS = 3;
 
 export const TRADITIONAL_COLLISION_MARGIN = COLLISION_MARGIN;
+export const TRADITIONAL_TILE_LONG = TILE_LONG;
+export const TRADITIONAL_TILE_SHORT = TILE_SHORT;
 
 const VECTOR = Object.freeze({
   right: Object.freeze({ x: 1, y: 0 }),
@@ -439,6 +441,85 @@ function directionForSide(side) {
     case "bottom": return "down";
     default: throw new TypeError(`Cara tradicional desconocida: ${side}.`);
   }
+}
+
+function initialDirectionForOpenTarget(layout, target, face) {
+  if (target.topology.region === "branch") {
+    const family = layout.branchFamilies.find(
+      (candidate) => candidate.id === target.topology.familyId,
+    );
+    const arm = family?.arms.find(
+      (candidate) => candidate.armIndex === target.topology.armIndex,
+    );
+    return arm?.direction ?? directionForSide(face.side);
+  }
+  const first = layout.mainTiles[0];
+  if (
+    first?.placementId === target.placementId &&
+    first.physicalStart.portId === target.portId
+  ) {
+    return "left";
+  }
+  return "right";
+}
+
+/**
+ * Previsualiza una única jugada física con la misma elección local usada al
+ * crecer la mesa. No simula reglas: recibe exclusivamente un target ya legal.
+ */
+export function previewTraditionalPlacement(
+  layout,
+  target,
+  domino,
+  { connectionClearance = 2 } = {},
+) {
+  const openFace = layout.openFacesByTargetId.get(target.id);
+  if (!openFace || !domino) return null;
+  const otherValue = domino.a === target.value ? domino.b : domino.a;
+  const rawTile = {
+    placementId: `ghost:${target.id}`,
+    dominoId: domino.dominoId,
+    values: [target.value, otherValue],
+    isDouble: domino.a === domino.b,
+    isSpecialDouble: false,
+    doubleRole: domino.a === domino.b ? "ORDINARY_DOUBLE" : null,
+    region: target.topology.region,
+    start: {
+      portId: "ghost:start",
+      value: target.value,
+      connectionId: null,
+      neighborPlacementId: target.placementId,
+    },
+    end: {
+      portId: "ghost:end",
+      value: otherValue,
+      connectionId: null,
+      neighborPlacementId: null,
+    },
+  };
+  const currentDirection = directionForSide(openFace.face.side);
+  const chosen = choosePlacement(
+    rawTile,
+    openFace.anchor,
+    openFace.face,
+    currentDirection,
+    initialDirectionForOpenTarget(layout, target, openFace.face),
+    layout.tiles,
+    true,
+    connectionClearance,
+    layout.softCenter,
+  );
+  return {
+    ...chosen.tile,
+    id: target.id,
+    target: {
+      kind: "OPEN_END",
+      placementId: target.placementId,
+      portId: target.portId,
+    },
+    a: chosen.tile.firstValue,
+    b: chosen.tile.secondValue,
+  };
 }
 
 function branchDirection(root, armIndex) {
