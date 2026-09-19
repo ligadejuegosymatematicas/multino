@@ -13,24 +13,32 @@ import {
 } from "../../src/js/ui/TraditionalRenderer.js";
 import {
   createTraditionalAutoPanPlan,
+  createTraditionalCameraTransitionPlan,
   createTraditionalFitCamera,
+  createTraditionalProgressiveCamera,
   isTraditionalOrientationChange,
   preserveTraditionalCamera,
   revealTraditionalWorldBounds,
   sampleTraditionalAutoPan,
+  sampleTraditionalCameraTransition,
 } from "../../src/js/ui/TraditionalCamera.js";
 import {
   calculateTraditionalFitScale,
   createTraditionalScene,
   TRADITIONAL_CONNECTION_CLEARANCE,
   TRADITIONAL_FINAL_MIN_SCALE,
+  TRADITIONAL_INITIAL_MAX_SCALE,
   TRADITIONAL_MIN_READABLE_SCALE,
   TRADITIONAL_TARGET_CENTER_DISTANCE,
   TRADITIONAL_TARGET_HIT_SIZE,
 } from "../../src/js/ui/TraditionalScene.js";
 import {
   TRADITIONAL_COLLISION_MARGIN,
+  TRADITIONAL_MAX_CONNECTOR_LENGTH,
+  inspectTraditionalLayoutGeometry,
+  traditionalConnectorLength,
   traditionalBoundsOverlap,
+  traditionalSegmentsConflict,
   traditionalTileBounds,
 } from "../../src/js/ui/TraditionalSnakeLayout.js";
 import { InteractionController } from "../../src/js/ui/InteractionController.js";
@@ -329,6 +337,63 @@ test("cada unión física enfrenta el valor exacto de su conexión lógica", () 
     .every((segment) =>
       segment.orientation === "horizontal" || segment.orientation === "vertical"
     ));
+});
+
+test("ningún conector cruza fichas, otros conectores ni supera una unión física normal", () => {
+  const scenes = [
+    ...createIncrementalScenes(createLongLinearStates()),
+    ...createIncrementalScenes(createRamifiedGrowthStates()),
+    createTraditionalScene(projectTraditionalView(createOrientationScenario())),
+  ];
+
+  for (const scene of scenes) {
+    const audit = inspectTraditionalLayoutGeometry(scene);
+    assert.deepEqual(audit.edgeEdgeCrossings, []);
+    assert.deepEqual(audit.edgeTileCrossings, []);
+    assert.deepEqual(audit.overlyLongConnections, []);
+    assert.equal(audit.isValid, true);
+    assert.ok(scene.connections.every((connection) =>
+      traditionalConnectorLength(connection.segments) <=
+        TRADITIONAL_MAX_CONNECTOR_LENGTH
+    ));
+  }
+});
+
+test("la auditoría detecta cruces edge-edge y edge-tile sintéticos", () => {
+  assert.equal(
+    traditionalSegmentsConflict(
+      { x: 0, y: 20, x2: 40, y2: 20 },
+      { x: 20, y: 0, x2: 20, y2: 40 },
+    ),
+    true,
+  );
+  const audit = inspectTraditionalLayoutGeometry({
+    tiles: [{
+      placementId: "tile-3",
+      x: 20,
+      y: 20,
+      width: 38,
+      height: 72,
+    }],
+    connections: [
+      {
+        id: "edge-a",
+        firstPlacementId: "tile-1",
+        secondPlacementId: "tile-2",
+        segments: [{ x: 0, y: 20, x2: 40, y2: 20 }],
+      },
+      {
+        id: "edge-b",
+        firstPlacementId: "tile-4",
+        secondPlacementId: "tile-5",
+        segments: [{ x: 20, y: 0, x2: 20, y2: 40 }],
+      },
+    ],
+  });
+
+  assert.equal(audit.edgeEdgeCrossings.length, 1);
+  assert.equal(audit.edgeTileCrossings.length, 2);
+  assert.equal(audit.isValid, false);
 });
 
 test("Lineal serpentea antes del borde y conserva fichas legibles", () => {
@@ -999,8 +1064,8 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.doesNotMatch(rendererSource, /\bstate\.board\b|\bview\.board\b/);
   assert.doesNotMatch(sceneSource, /\bstate\.board\b|\bview\.board\b/);
   assert.match(rendererSource, /aria-label="Mesa tradicional de dominó"/);
-  assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*auto/);
-  assert.match(css, /touch-action:\s*pan-x pan-y/);
+  assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*hidden/);
+  assert.match(css, /touch-action:\s*none/);
   assert.match(rendererSource, /data-fit-table/);
   assert.match(rendererSource, /aria-label="Ajustar tablero"/);
   assert.match(rendererSource, /cancelAnimationFrame/);
@@ -1010,9 +1075,9 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
     rendererSource,
     /ResizeObserver\(\(\) => \{[\s\S]+?this\.autoPanTarget !== null[\s\S]+?return;/,
   );
-  assert.match(rendererSource, /pointermove/);
+  assert.doesNotMatch(rendererSource, /pointermove/);
   assert.doesNotMatch(rendererSource, /scene\.isFinished\s*\|\|\s*this\.sceneSignature/);
-  assert.match(rendererSource, /revealTraditionalWorldBounds/);
+  assert.match(rendererSource, /createTraditionalProgressiveCamera/);
   assert.match(rendererSource, /isTraditionalOrientationChange/);
   assert.match(css, /@media \(max-width: 36rem\)/);
   assert.match(
@@ -1135,6 +1200,54 @@ test("el autopan no se programa si la ficha nueva ya está visible", () => {
   assert.equal(createTraditionalAutoPanPlan(camera, { ...camera }), null);
 });
 
+test("el auto-fit progresivo solo aleja y conserva visible el conjunto", () => {
+  const before = {
+    scale: 0.9,
+    left: 280,
+    top: 210,
+    viewportWidth: 390,
+    viewportHeight: 430,
+  };
+  const next = createTraditionalProgressiveCamera(before, {
+    fitScale: 0.7,
+    contentBounds: {
+      left: 310,
+      right: 780,
+      top: 250,
+      bottom: 720,
+      centerX: 545,
+      centerY: 485,
+    },
+    tableWidth: 1000,
+    tableHeight: 800,
+    viewportWidth: 390,
+    viewportHeight: 430,
+  });
+
+  assert.equal(next.scale, 0.7);
+  assert.ok(next.scale <= before.scale);
+  assert.ok(310 * next.scale >= next.left - 18);
+  assert.ok(780 * next.scale <= next.left + next.viewportWidth + 18);
+});
+
+test("la transición de cámara interpola zoom-out y pan sin overshoot", () => {
+  const plan = createTraditionalCameraTransitionPlan(
+    { scale: 0.9, left: 180, top: 120 },
+    { scale: 0.72, left: 145, top: 96 },
+  );
+  const samples = [0, 0.25, 0.5, 0.75, 1]
+    .map((progress) => sampleTraditionalCameraTransition(plan, progress));
+
+  assert.deepEqual(samples[0], { scale: 0.9, left: 180, top: 120 });
+  assert.deepEqual(samples.at(-1), { scale: 0.72, left: 145, top: 96 });
+  for (let index = 1; index < samples.length; index += 1) {
+    assert.ok(samples[index].scale <= samples[index - 1].scale);
+    assert.ok(samples[index].scale >= 0.72);
+    assert.ok(samples[index].left <= samples[index - 1].left);
+    assert.ok(samples[index].left >= 145);
+  }
+});
+
 test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo legible", () => {
   assert.equal(
     calculateTraditionalFitScale({
@@ -1143,7 +1256,7 @@ test("la cámara amplía estados holgados sin reducir fichas bajo el mínimo leg
       viewportWidth: 1000,
       viewportHeight: 650,
     }),
-    1.339,
+    TRADITIONAL_INITIAL_MAX_SCALE,
   );
   assert.equal(
     calculateTraditionalFitScale({

@@ -13,10 +13,14 @@ const STABLE_CANVAS_HEIGHT = 800;
 const LOOKAHEAD_STEPS = 5;
 const SOFT_TURN_RUN_START = 4;
 const SOFT_BOUNDARY_START = 0.7;
+const CONNECTOR_MARGIN = 6;
+const MAX_CONNECTOR_LENGTH = 54;
+const MAX_LOCAL_EXPANSION_STEPS = 1;
 
 export const TRADITIONAL_COLLISION_MARGIN = COLLISION_MARGIN;
 export const TRADITIONAL_TILE_LONG = TILE_LONG;
 export const TRADITIONAL_TILE_SHORT = TILE_SHORT;
+export const TRADITIONAL_MAX_CONNECTOR_LENGTH = MAX_CONNECTOR_LENGTH;
 
 const VECTOR = Object.freeze({
   right: Object.freeze({ x: 1, y: 0 }),
@@ -140,6 +144,101 @@ function collides(candidate, occupied) {
     candidateBounds,
     traditionalTileBounds(tile, COLLISION_MARGIN / 2),
   ));
+}
+
+function segmentBounds(segment, margin = 0) {
+  return {
+    left: Math.min(segment.x, segment.x2) - margin,
+    right: Math.max(segment.x, segment.x2) + margin,
+    top: Math.min(segment.y, segment.y2) - margin,
+    bottom: Math.max(segment.y, segment.y2) + margin,
+  };
+}
+
+function pointEquals(first, second) {
+  return first.x === second.x && first.y === second.y;
+}
+
+function sharedEndpoint(first, second) {
+  const firstPoints = [
+    { x: first.x, y: first.y },
+    { x: first.x2, y: first.y2 },
+  ];
+  const secondPoints = [
+    { x: second.x, y: second.y },
+    { x: second.x2, y: second.y2 },
+  ];
+  return firstPoints.some((point) =>
+    secondPoints.some((candidate) => pointEquals(point, candidate))
+  );
+}
+
+function overlapLength(firstStart, firstEnd, secondStart, secondEnd) {
+  return Math.min(
+    Math.max(firstStart, firstEnd),
+    Math.max(secondStart, secondEnd),
+  ) - Math.max(
+    Math.min(firstStart, firstEnd),
+    Math.min(secondStart, secondEnd),
+  );
+}
+
+function sharedEndpointIsOnlyContact(first, second) {
+  if (!sharedEndpoint(first, second)) return false;
+  const firstHorizontal = first.y === first.y2;
+  const secondHorizontal = second.y === second.y2;
+  if (firstHorizontal !== secondHorizontal) return true;
+  const overlap = firstHorizontal
+    ? overlapLength(first.x, first.x2, second.x, second.x2)
+    : overlapLength(first.y, first.y2, second.y, second.y2);
+  return overlap <= 0;
+}
+
+export function traditionalSegmentsConflict(
+  first,
+  second,
+  margin = CONNECTOR_MARGIN,
+) {
+  if (!traditionalBoundsOverlap(
+    segmentBounds(first, margin / 2),
+    segmentBounds(second, margin / 2),
+  )) return false;
+  return !sharedEndpointIsOnlyContact(first, second);
+}
+
+export function traditionalConnectorLength(segments) {
+  return segments.reduce(
+    (total, segment) => total +
+      Math.abs(segment.x2 - segment.x) + Math.abs(segment.y2 - segment.y),
+    0,
+  );
+}
+
+function connectorInvadesTile(segments, tile, margin = CONNECTOR_MARGIN) {
+  const tileBox = traditionalTileBounds(tile, margin / 2);
+  return segments.some((segment) => traditionalBoundsOverlap(
+    segmentBounds(segment, margin / 2),
+    tileBox,
+  ));
+}
+
+function connectorConflicts(segments, connections) {
+  return connections.some((connection) =>
+    connection.segments.some((segment) =>
+      segments.some((candidate) =>
+        traditionalSegmentsConflict(candidate, segment)
+      )
+    )
+  );
+}
+
+function flattenLayoutConnections(connections = []) {
+  return connections.map((connection) => ({
+    id: connection.id,
+    firstPlacementId: connection.firstPlacementId,
+    secondPlacementId: connection.secondPlacementId,
+    segments: connection.segments.map((segment) => ({ ...segment })),
+  }));
 }
 
 function withinSoftBoard(tile, center = { x: 0, y: 0 }) {
@@ -277,7 +376,7 @@ function scoreCandidate(
     : -180 + runPressure * 180;
   const prematureSoftTurnPenalty = !isStraight &&
       straightRunLength < SOFT_TURN_RUN_START
-    ? 4000
+    ? (SOFT_TURN_RUN_START - straightRunLength) * 850
     : 0;
   return (fitsNext ? 10000 : 0) +
     directionPreference +
@@ -296,6 +395,7 @@ function choosePlacement(
   currentDirection,
   initialDirection,
   occupied,
+  occupiedConnections,
   clockwiseFirst,
   connectionClearance,
   center = { x: 0, y: 0 },
@@ -307,7 +407,11 @@ function choosePlacement(
   const directions = [currentDirection, ...turns];
   let best = null;
   let straightFitsSoftBoard = false;
-  for (let expansion = 0; expansion <= 5; expansion += 1) {
+  for (
+    let expansion = 0;
+    expansion <= MAX_LOCAL_EXPANSION_STEPS;
+    expansion += 1
+  ) {
     for (const direction of directions) {
       const candidate = placeAfterFace(
         source,
@@ -316,12 +420,33 @@ function choosePlacement(
         direction,
         currentDirection,
         connectionClearance,
-        expansion * (TILE_LONG + TILE_GAP),
+        expansion * TILE_GAP,
       );
       const obstacles = occupied.filter(
         (occupiedTile) => occupiedTile.placementId !== source.placementId,
       );
       if (collides(candidate, obstacles)) continue;
+      const connectorStart = pointOutsideTraditionalTile(
+        source,
+        sourceFace,
+        connectionClearance,
+      );
+      const connectorEnd = pointOutsideTraditionalTile(
+        candidate,
+        candidate.physicalStart,
+        connectionClearance,
+      );
+      const connectorSegments = connectionSegments(
+        connectorStart,
+        connectorEnd,
+        sourceFace,
+      );
+      const connectorLength = traditionalConnectorLength(connectorSegments);
+      if (connectorLength > MAX_CONNECTOR_LENGTH) continue;
+      if (obstacles.some((obstacle) =>
+        connectorInvadesTile(connectorSegments, obstacle)
+      )) continue;
+      if (connectorConflicts(connectorSegments, occupiedConnections)) continue;
       if (
         expansion === 0 &&
         direction === currentDirection &&
@@ -339,9 +464,16 @@ function choosePlacement(
         occupied,
         center,
         currentStraightRunLength,
-      ) + (direction === turns[0] ? 35 : 0) - expansion * 200;
+      ) + (direction === turns[0] ? 35 : 0) -
+        expansion * 240 - connectorLength * 4;
       if (!best || score > best.score) {
-        best = { tile: candidate, direction, score };
+        best = {
+          tile: candidate,
+          direction,
+          score,
+          connectorSegments,
+          connectorLength,
+        };
       }
     }
     if (best?.score >= 10000) break;
@@ -368,6 +500,7 @@ function placeChain(
   rawTiles,
   initialDirection,
   occupied,
+  occupiedConnections,
   connectionClearance,
   {
     reverse = false,
@@ -392,6 +525,7 @@ function placeChain(
       direction,
       initialDirection,
       occupied,
+      occupiedConnections,
       clockwiseFirst,
       connectionClearance,
       center,
@@ -402,6 +536,12 @@ function placeChain(
     straightRunLength = chosen.tile.straightRunLength;
     tiles.push(chosen.tile);
     occupied.push(chosen.tile);
+    occupiedConnections.push({
+      id: tile.start.connectionId ?? `${previous.placementId}:${tile.placementId}`,
+      firstPlacementId: previous.placementId,
+      secondPlacementId: tile.placementId,
+      segments: chosen.connectorSegments,
+    });
     previous = chosen.tile;
     previousFace = chosen.tile.physicalEnd;
   }
@@ -482,6 +622,73 @@ function createConnection(
     y2: secondPoint.y,
     orientation: segments.length === 1 ? segments[0].orientation : "elbow",
     segments,
+  };
+}
+
+/**
+ * Auditoría pura de la geometría ya proyectada. Sirve tanto para fixtures como
+ * para impedir que un cambio futuro vuelva a aceptar cruces o enlaces largos.
+ */
+export function inspectTraditionalLayoutGeometry(
+  layout,
+  {
+    connectorMargin = CONNECTOR_MARGIN,
+    maxConnectorLength = MAX_CONNECTOR_LENGTH,
+  } = {},
+) {
+  const edgeTileCrossings = [];
+  const edgeEdgeCrossings = [];
+  const overlyLongConnections = [];
+  const connections = layout.connections ?? [];
+  const tiles = layout.tiles ?? [];
+
+  for (const connection of connections) {
+    const length = traditionalConnectorLength(connection.segments);
+    if (length > maxConnectorLength) {
+      overlyLongConnections.push({ connectionId: connection.id, length });
+    }
+    for (const tile of tiles) {
+      if (
+        tile.placementId === connection.firstPlacementId ||
+        tile.placementId === connection.secondPlacementId
+      ) continue;
+      if (connectorInvadesTile(connection.segments, tile, connectorMargin)) {
+        edgeTileCrossings.push({
+          connectionId: connection.id,
+          placementId: tile.placementId,
+        });
+      }
+    }
+  }
+
+  connections.forEach((first, index) => {
+    connections.slice(index + 1).forEach((second) => {
+      const conflicts = first.segments.some((firstSegment) =>
+        second.segments.some((secondSegment) =>
+          traditionalSegmentsConflict(
+            firstSegment,
+            secondSegment,
+            connectorMargin,
+          )
+        )
+      );
+      if (conflicts) {
+        edgeEdgeCrossings.push({
+          firstConnectionId: first.id,
+          secondConnectionId: second.id,
+        });
+      }
+    });
+  });
+
+  return {
+    edgeTileCrossings,
+    edgeEdgeCrossings,
+    overlyLongConnections,
+    isValid:
+      edgeTileCrossings.length === 0 &&
+      edgeEdgeCrossings.length === 0 &&
+      overlyLongConnections.length === 0,
   };
 }
 
@@ -591,6 +798,7 @@ export function previewTraditionalPlacement(
     currentDirection,
     initialDirectionForOpenTarget(layout, target, openFace.face),
     layout.tiles,
+    flattenLayoutConnections(layout.connections),
     true,
     connectionClearance,
     layout.softCenter,
@@ -804,6 +1012,7 @@ function createInitialLayout(table, connectionClearance) {
   const rawMain = table.mainLine.tiles;
   const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
   const occupied = [];
+  const occupiedConnections = [];
   const tileByPlacementId = new Map();
   let turnCount = 0;
 
@@ -821,6 +1030,7 @@ function createInitialLayout(table, connectionClearance) {
       rawMain.slice(0, specialIndex).reverse(),
       "left",
       occupied,
+      occupiedConnections,
       connectionClearance,
       { reverse: true, clockwiseFirst: true },
     );
@@ -830,6 +1040,7 @@ function createInitialLayout(table, connectionClearance) {
       rawMain.slice(specialIndex + 1),
       "right",
       occupied,
+      occupiedConnections,
       connectionClearance,
       { clockwiseFirst: true },
     );
@@ -852,6 +1063,7 @@ function createInitialLayout(table, connectionClearance) {
           arm.tiles,
           initialDirection,
           occupied,
+          occupiedConnections,
           connectionClearance,
           { clockwiseFirst: true },
         );
@@ -875,6 +1087,7 @@ function createInitialLayout(table, connectionClearance) {
       rawMain.slice(1),
       "right",
       occupied,
+      occupiedConnections,
       connectionClearance,
       { clockwiseFirst: true },
     );
@@ -974,6 +1187,7 @@ function extendLayout(table, previousLayout, connectionClearance) {
       currentDirection,
       extension.initialDirection,
       [...tileByPlacementId.values()],
+      flattenLayoutConnections(previousLayout.connections),
       true,
       connectionClearance,
       previousLayout.softCenter,

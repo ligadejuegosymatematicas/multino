@@ -4,14 +4,13 @@ import {
   TRADITIONAL_FINAL_MIN_SCALE,
 } from "./TraditionalScene.js";
 import {
-  createTraditionalAutoPanPlan,
+  createTraditionalCameraTransitionPlan,
   createTraditionalFitCamera,
+  createTraditionalProgressiveCamera,
   isTraditionalOrientationChange,
   preserveTraditionalCamera,
-  revealTraditionalWorldBounds,
-  sampleTraditionalAutoPan,
+  sampleTraditionalCameraTransition,
 } from "./TraditionalCamera.js";
-import { traditionalTileBounds } from "./TraditionalSnakeLayout.js";
 import { renderPipsMarkup } from "./DominoPips.js";
 import { renderDominoTileMarkup } from "./DominoTile.js";
 
@@ -121,7 +120,7 @@ export function renderTraditionalTableMarkup(scene) {
           <span class="traditional-camera-controls__label">${scene.isFinished ? "Centrar mesa" : "Ajustar tablero"}</span>
         </button>
       </div>
-      <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Ventana desplazable sobre la mesa; arrastra para recorrerla">
+      <div class="traditional-table__viewport" data-table-viewport tabindex="0" aria-label="Mesa completa ajustada automáticamente">
         <div class="traditional-table__canvas" data-table-canvas>
           <div class="traditional-table__surface">
             ${scene.connections.map(renderConnection).join("")}
@@ -202,33 +201,30 @@ export class TraditionalRenderer {
       height: Math.max(viewport.clientHeight, 1),
     });
     const applyCamera = (camera, { animate = false } = {}) => {
-      canvas.style.setProperty("--table-scale", String(camera.scale));
-      canvas.style.setProperty("--scaled-table-width", `${scene.width * camera.scale}px`);
-      canvas.style.setProperty("--scaled-table-height", `${scene.height * camera.scale}px`);
       this.viewportSize = {
         width: camera.viewportWidth,
         height: camera.viewportHeight,
       };
       if (animate) {
-        this.#animateAutoPan(viewport, camera);
+        this.#animateCamera(viewport, canvas, scene, camera);
         return;
       }
       this.#cancelAutoPan();
-      viewport.scrollLeft = camera.left;
-      viewport.scrollTop = camera.top;
+      this.#paintCameraFrame(viewport, canvas, scene, camera);
       this.cameraState = { ...camera };
     };
+    const fittedScale = (dimensions) => calculateTraditionalFitScale({
+      contentWidth: scene.contentBounds.width,
+      contentHeight: scene.contentBounds.height,
+      viewportWidth: dimensions.width,
+      viewportHeight: dimensions.height,
+      minScale: scene.isFinished
+        ? TRADITIONAL_FINAL_MIN_SCALE
+        : undefined,
+    });
     const fitAndPosition = () => {
       const dimensions = viewportDimensions();
-      const scale = calculateTraditionalFitScale({
-        contentWidth: scene.contentBounds.width,
-        contentHeight: scene.contentBounds.height,
-        viewportWidth: dimensions.width,
-        viewportHeight: dimensions.height,
-        minScale: scene.isFinished
-          ? TRADITIONAL_FINAL_MIN_SCALE
-          : undefined,
-      });
+      const scale = fittedScale(dimensions);
       const camera = createTraditionalFitCamera({
         scale,
         contentBounds: scene.contentBounds,
@@ -251,23 +247,24 @@ export class TraditionalRenderer {
         viewportHeight: dimensions.height,
       });
       if (addedTiles.length === 1) {
-        camera = revealTraditionalWorldBounds(
-          camera,
-          traditionalTileBounds(addedTiles[0]),
-          {
-            tableWidth: scene.width,
-            tableHeight: scene.height,
-            viewportWidth: dimensions.width,
-            viewportHeight: dimensions.height,
-          },
-        );
+        camera = createTraditionalProgressiveCamera(camera, {
+          fitScale: fittedScale(dimensions),
+          contentBounds: scene.contentBounds,
+          tableWidth: scene.width,
+          tableHeight: scene.height,
+          viewportWidth: dimensions.width,
+          viewportHeight: dimensions.height,
+        });
       }
-      const moved = camera.left !== this.cameraState.left ||
-        camera.top !== this.cameraState.top;
+      const changed = camera.left !== this.cameraState.left ||
+        camera.top !== this.cameraState.top ||
+        camera.scale !== this.cameraState.scale;
       const reduceMotion = globalThis.matchMedia?.(
         "(prefers-reduced-motion: reduce)",
       ).matches ?? false;
-      applyCamera(camera, { animate: moved && addedTiles.length === 1 && !reduceMotion });
+      applyCamera(camera, {
+        animate: changed && addedTiles.length === 1 && !reduceMotion,
+      });
     }
     this.container.querySelector("[data-fit-table]")?.addEventListener(
       "click",
@@ -299,7 +296,6 @@ export class TraditionalRenderer {
       });
       this.resizeObserver.observe(viewport);
     }
-    this.#enableMousePan(viewport);
     const targetById = new Map(
       scene.openTargets.map((target) => [target.id, target]),
     );
@@ -336,14 +332,32 @@ export class TraditionalRenderer {
     this.autoPanTarget = null;
   }
 
-  #animateAutoPan(viewport, requestedCamera) {
+  #paintCameraFrame(viewport, canvas, scene, camera) {
+    canvas.style.setProperty("--table-scale", String(camera.scale));
+    canvas.style.setProperty(
+      "--scaled-table-width",
+      `${scene.width * camera.scale}px`,
+    );
+    canvas.style.setProperty(
+      "--scaled-table-height",
+      `${scene.height * camera.scale}px`,
+    );
+    viewport.scrollLeft = camera.left;
+    viewport.scrollTop = camera.top;
+  }
+
+  #animateCamera(viewport, canvas, scene, requestedCamera) {
     this.#cancelAutoPan();
     const currentCamera = {
       ...requestedCamera,
+      scale: this.cameraState?.scale ?? requestedCamera.scale,
       left: this.cameraState?.left ?? viewport.scrollLeft,
       top: this.cameraState?.top ?? viewport.scrollTop,
     };
-    const plan = createTraditionalAutoPanPlan(currentCamera, requestedCamera);
+    const plan = createTraditionalCameraTransitionPlan(
+      currentCamera,
+      requestedCamera,
+    );
     if (plan === null) {
       this.cameraState = { ...requestedCamera };
       return;
@@ -351,8 +365,7 @@ export class TraditionalRenderer {
     const token = this.autoPanToken;
     const duration = 240;
     let startedAt = null;
-    viewport.scrollLeft = plan.from.left;
-    viewport.scrollTop = plan.from.top;
+    this.#paintCameraFrame(viewport, canvas, scene, plan.from);
     this.autoPanTarget = { ...plan.to };
     this.cameraState = { ...requestedCamera };
     const requestFrame = typeof globalThis.requestAnimationFrame === "function"
@@ -362,15 +375,13 @@ export class TraditionalRenderer {
       if (token !== this.autoPanToken) return;
       startedAt ??= timestamp;
       const progress = Math.min(1, (timestamp - startedAt) / duration);
-      const sample = sampleTraditionalAutoPan(plan, progress);
-      viewport.scrollLeft = sample.left;
-      viewport.scrollTop = sample.top;
+      const sample = sampleTraditionalCameraTransition(plan, progress);
+      this.#paintCameraFrame(viewport, canvas, scene, sample);
       if (progress < 1) {
         this.autoPanFrame = requestFrame(step);
         return;
       }
-      viewport.scrollLeft = requestedCamera.left;
-      viewport.scrollTop = requestedCamera.top;
+      this.#paintCameraFrame(viewport, canvas, scene, requestedCamera);
       this.autoPanFrame = null;
       this.autoPanTarget = null;
       this.cameraState = { ...requestedCamera };
@@ -378,52 +389,4 @@ export class TraditionalRenderer {
     this.autoPanFrame = requestFrame(step);
   }
 
-  #enableMousePan(viewport) {
-    let drag = null;
-    viewport.addEventListener("pointerdown", (event) => {
-      if (
-        event.pointerType !== "mouse" ||
-        event.button !== 0 ||
-        event.target.closest("button")
-      ) {
-        return;
-      }
-      this.#cancelAutoPan();
-      this.cameraState = {
-        ...this.cameraState,
-        left: viewport.scrollLeft,
-        top: viewport.scrollTop,
-      };
-      drag = {
-        pointerId: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        left: viewport.scrollLeft,
-        top: viewport.scrollTop,
-      };
-      viewport.setPointerCapture(event.pointerId);
-      viewport.classList.add("is-panning");
-    });
-    viewport.addEventListener("pointermove", (event) => {
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-      viewport.scrollLeft = drag.left - (event.clientX - drag.x);
-      viewport.scrollTop = drag.top - (event.clientY - drag.y);
-    });
-    const stopPan = (event) => {
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-      this.cameraState = {
-        ...this.cameraState,
-        left: viewport.scrollLeft,
-        top: viewport.scrollTop,
-      };
-      viewport.classList.remove("is-panning");
-      drag = null;
-    };
-    viewport.addEventListener("pointerup", stopPan);
-    viewport.addEventListener("pointercancel", stopPan);
-  }
 }

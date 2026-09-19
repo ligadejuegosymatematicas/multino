@@ -7,8 +7,9 @@ import {
 export const TRADITIONAL_CONNECTION_CLEARANCE = 2;
 export const TRADITIONAL_TARGET_CENTER_DISTANCE = 20;
 export const TRADITIONAL_TARGET_HIT_SIZE = 32;
-export const TRADITIONAL_MIN_READABLE_SCALE = 0.68;
-export const TRADITIONAL_FINAL_MIN_SCALE = 0.55;
+export const TRADITIONAL_MIN_READABLE_SCALE = 0.52;
+export const TRADITIONAL_FINAL_MIN_SCALE = 0.5;
+export const TRADITIONAL_INITIAL_MAX_SCALE = 0.92;
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
@@ -228,7 +229,7 @@ export function calculateTraditionalFitScale({
   viewportWidth,
   viewportHeight,
   minScale = TRADITIONAL_MIN_READABLE_SCALE,
-  maxScale = 1.35,
+  maxScale = TRADITIONAL_INITIAL_MAX_SCALE,
   padding = 18,
 }) {
   const usableWidth = Math.max(viewportWidth - padding * 2, 1);

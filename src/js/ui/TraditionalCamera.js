@@ -41,6 +41,48 @@ export function createTraditionalFitCamera({
   };
 }
 
+/**
+ * Auto-fit incremental: la escala solo puede mantenerse o disminuir durante
+ * una ronda. Conserva el centro mundial que el jugador estaba mirando y luego
+ * aplica únicamente la corrección necesaria para incluir toda la mesa.
+ */
+export function createTraditionalProgressiveCamera(
+  camera,
+  {
+    fitScale,
+    contentBounds,
+    tableWidth,
+    tableHeight,
+    viewportWidth,
+    viewportHeight,
+    margin = 18,
+  },
+) {
+  const scale = Math.min(camera.scale, fitScale);
+  const worldCenter = {
+    x: (camera.left + camera.viewportWidth / 2) / camera.scale,
+    y: (camera.top + camera.viewportHeight / 2) / camera.scale,
+  };
+  const centered = preserveTraditionalCamera({
+    ...camera,
+    scale,
+    left: worldCenter.x * scale - viewportWidth / 2,
+    top: worldCenter.y * scale - viewportHeight / 2,
+  }, {
+    tableWidth,
+    tableHeight,
+    viewportWidth,
+    viewportHeight,
+  });
+  return revealTraditionalWorldBounds(centered, contentBounds, {
+    tableWidth,
+    tableHeight,
+    viewportWidth,
+    viewportHeight,
+    margin,
+  });
+}
+
 export function preserveTraditionalCamera(camera, {
   tableWidth,
   tableHeight,
@@ -128,6 +170,44 @@ export function sampleTraditionalAutoPan(plan, progress) {
   return {
     left: plan.from.left + plan.delta.left * easedProgress,
     top: plan.from.top + plan.delta.top * easedProgress,
+  };
+}
+
+export function createTraditionalCameraTransitionPlan(
+  currentCamera,
+  requestedCamera,
+) {
+  if (
+    currentCamera.left === requestedCamera.left &&
+    currentCamera.top === requestedCamera.top &&
+    currentCamera.scale === requestedCamera.scale
+  ) return null;
+  return {
+    from: {
+      left: currentCamera.left,
+      top: currentCamera.top,
+      scale: currentCamera.scale,
+    },
+    to: {
+      left: requestedCamera.left,
+      top: requestedCamera.top,
+      scale: requestedCamera.scale,
+    },
+    delta: {
+      left: requestedCamera.left - currentCamera.left,
+      top: requestedCamera.top - currentCamera.top,
+      scale: requestedCamera.scale - currentCamera.scale,
+    },
+  };
+}
+
+export function sampleTraditionalCameraTransition(plan, progress) {
+  const clampedProgress = clamp(progress, 0, 1);
+  const easedProgress = 1 - ((1 - clampedProgress) ** 3);
+  return {
+    left: plan.from.left + plan.delta.left * easedProgress,
+    top: plan.from.top + plan.delta.top * easedProgress,
+    scale: plan.from.scale + plan.delta.scale * easedProgress,
   };
 }
 
