@@ -195,14 +195,14 @@ function inspectionState({
 
 function describeDoubleSocket(boardPortId) {
   const labels = {
-    "main:1": "chancho · conexión 1",
-    "main:2": "chancho · conexión 2",
-    "branch:1": "chancho · conexión 3",
-    "branch:2": "chancho · conexión 4",
-    "side:a": "chancho · extremo 1",
-    "side:b": "chancho · extremo 2",
+    "main:1": "doble · conexión 1",
+    "main:2": "doble · conexión 2",
+    "branch:1": "doble · conexión 3",
+    "branch:2": "doble · conexión 4",
+    "side:a": "doble · extremo 1",
+    "side:b": "doble · extremo 2",
   };
-  return labels[boardPortId] ?? "chancho";
+  return labels[boardPortId] ?? "doble";
 }
 
 function createNodeInspector(node, bridges, hubs) {
@@ -849,6 +849,8 @@ export function createPortScene(
     viewBox: `0 0 ${geometry.width} ${geometry.height}`,
     width: geometry.width,
     height: geometry.height,
+    playedPlacementCount:
+      view.portGraph.externalThreads.length + view.portGraph.doubleHubs.length,
     orbit: {
       cx: geometry.center.x,
       cy: geometry.center.y,

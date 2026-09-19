@@ -21,6 +21,7 @@ import {
   createPortDecisionPresentations,
   getPortValueAction,
   renderPortNodeInspectorMarkup,
+  renderPortSemanticLegendMarkup,
   renderPortStrategicInspectorMarkup,
   renderPortStructureToggleMarkup,
   renderPortSvgMarkup,
@@ -282,8 +283,8 @@ test("las decisiones distintas usan efectos legibles y nunca Destino 1 o 2", () 
   };
   const markup = renderPortTargetChooserMarkup(targetChoice);
 
-  assert.match(markup, />Continuar brazo</);
-  assert.match(markup, />Abrir brazo</);
+  assert.match(markup, />Seguir punta</);
+  assert.match(markup, />Abrir rama</);
   assert.match(markup, />×2 lugares equivalentes</);
   assert.doesNotMatch(markup, /Destino \d|placement-|side:|branch:/);
 });
@@ -311,10 +312,11 @@ test("continuar y completar cruce son opciones inequívocas para el mismo valor"
   assert.equal(new Set(
     presentations.map((presentation) => presentation.visibleSignature),
   ).size, 2);
-  assert.match(markup, />Continuar brazo</);
+  assert.match(markup, />Seguir punta</);
   assert.match(markup, />Completar cruce</);
-  assert.match(markup, /Chancho 6 ×2 → 0 en S/);
-  assert.match(markup, />\+2 brazos</);
+  assert.match(markup, /Σ 6 ×2 → —/);
+  assert.match(markup, />↗ \+2 ramas</);
+  assert.doesNotMatch(markup, /Chancho|chancho/);
   assert.doesNotMatch(markup, />Continuar<\/span>[\s\S]*?>Continuar<\/span>/);
   assert.doesNotMatch(markup, /placement-|main:|side:/);
 });
@@ -366,15 +368,15 @@ test("las opciones factorizan lo común y hacen protagonista ×1 frente a ×2", 
 
   assert.deepEqual(
     presentation.options.map((option) => option.title),
-    ["5 queda ×1", "5 queda ×2"],
+    ["Σ 5 ×1", "Σ 5 ×2"],
   );
   assert.equal(
     presentation.commonBadges.filter((badge) => badge.text === "Puntas +3").length,
     1,
   );
   assert.equal(markup.match(/Puntas \+3/g)?.length, 1);
-  assert.match(markup, />5 queda ×1</);
-  assert.match(markup, />5 queda ×2</);
+  assert.match(markup, />Σ 5 ×1</);
+  assert.match(markup, />Σ 5 ×2</);
   assert.match(markup, />×2 lugares equivalentes</);
   assert.doesNotMatch(markup, /S\s*=|puntos futuros|placement-/);
 });
@@ -416,7 +418,7 @@ test("la previsualización local cambia medallón y mecanismo sin revelar S futu
     2,
   );
   assert.match(markup, /data-node-value="6"[^>]+data-scoring-multiplicity="1"/);
-  assert.match(markup, />×3→1</);
+  assert.match(markup, />Σ×3→1</);
   assert.match(
     renderPortTargetChooserMarkup(preview.targetChoice, {
       previewIndex: crossIndex,
@@ -461,10 +463,10 @@ test("n/7 permanece visible y el doble cuenta una sola ficha", () => {
   assert.equal(four.playedTileCount, 2);
   assert.equal(two.playedTileCount, 1);
   assert.equal(four.totalTileCount, 7);
-  assert.match(markup, />2\/7</);
+  assert.match(markup, />▣ 2\/7</);
   assert.equal(markup.match(/port-macro-node__played/g)?.length, 7);
-  assert.match(detail, /Fichas con 4 jugadas:<\/strong> 2\/7/);
-  assert.match(detail, /Destinos abiertos:/);
+  assert.match(detail, /Fichas con 4 que salieron:<\/strong> 2\/7/);
+  assert.match(detail, /Lugares para jugar:/);
 
   const doubleOnly = createPortScene(projectPortView(
     playDomino(
@@ -492,6 +494,27 @@ test("cada medallón separa destinos, multiplicidad de S y fichas jugadas", () =
   assert.equal(four.playedTileCount, 3);
   assert.equal(four.ramifier.connectionCount, 2);
   assert.match(markup, /data-node-value="4" data-open-target-count="2" data-decision-count="0" data-physical-target-count="0" data-scoring-multiplicity="0" data-played-tile-count="3"/);
+  assert.equal(markup.match(/data-semantic="playability"/g)?.length, 7);
+  assert.equal(markup.match(/data-semantic="history"/g)?.length, 7);
+  assert.match(markup, />↗ 2<\/text>/);
+  assert.match(markup, />▣ 3\/7<\/text>/);
+});
+
+test("la microleyenda fija icono, color y significado sin párrafos", () => {
+  const early = createPortScene(projectPortView(playDomino(
+    createBoardScenario({ K: 0, firstDominoId: "1-6" }),
+    "1-6",
+  )));
+  const dense = createPortScene(projectPortView(createTwoArmScenario()));
+  const earlyMarkup = renderPortSemanticLegendMarkup(early);
+  const denseMarkup = renderPortSemanticLegendMarkup(dense);
+
+  assert.match(earlyMarkup, /port-semantic-legend is-intro/);
+  assert.match(earlyMarkup, />↗<\/b> jugar/);
+  assert.match(earlyMarkup, />Σ<\/b> suma/);
+  assert.match(earlyMarkup, />▣<\/b> salieron/);
+  assert.match(denseMarkup, /port-semantic-legend is-subtle/);
+  assert.doesNotMatch(earlyMarkup, /Destino|placement-|portId/);
 });
 
 test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", () => {
@@ -506,8 +529,8 @@ test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", 
   assert.equal(five.playedTileCount, 1);
   assert.match(markup, /data-scoring-multiplicity="2"/);
   assert.match(markup, /port-macro-node__scoring-badge/);
-  assert.match(markup, />×2<\/text>/);
-  assert.match(markup, />1\/7<\/text>/);
+  assert.match(markup, />Σ×2<\/text>/);
+  assert.match(markup, />▣ 1\/7<\/text>/);
 });
 
 test("la suma central coincide con Σ m_n n", () => {
@@ -752,8 +775,8 @@ test("abrir un macro-nodo muestra todas sus parejas sin duplicar el valor", () =
   assert.equal(scene.nodeFocus.value, 4);
   assert.equal(scene.visualState, "node-focus");
   assert.match(inspector, /4 de 6 ojales utilizados/);
-  assert.match(inspector, /Chancho 4\|4: ramificador/);
-  assert.match(inspector, /chancho · conexión [1-4]/);
+  assert.match(inspector, /Doble 4\|4: central/);
+  assert.match(inspector, /doble · conexión [1-4]/);
   assert.doesNotMatch(inspector, /main:|branch:|side:/);
   assert.doesNotMatch(inspector, /placement-|connection-/);
 
@@ -982,6 +1005,11 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-open-target\.is-legal \{ color: #27dec5/);
   assert.match(css, /\.graph-root\.is-ports-view \{[\s\S]*?#075040/);
   assert.match(css, /\.port-macro-node__body \{ fill: #f3ead6/);
+  assert.match(css, /\.port-semantic-legend \{/);
+  assert.match(css, /\.port-target-choice \{[\s\S]*?inset:\s*auto auto 0\.5rem 50%/);
+  assert.match(css, /\.port-graph \{[\s\S]*?inset:\s*2\.85rem 0 auto/);
+  assert.match(css, /\.has-port-target-choice \.port-graph \{[\s\S]*?height:\s*calc\(100% - 11\.25rem\)/);
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 31rem\)/);
   assert.doesNotMatch(css, /\.port-ramifier__[^{]+\{[^}]+#d4a331/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });

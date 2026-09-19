@@ -6,9 +6,11 @@
 }
 
 .port-graph {
+  position: absolute;
+  inset: 2.85rem 0 auto;
   display: block;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 2.85rem);
   touch-action: manipulation;
 }
 
@@ -297,10 +299,10 @@
 }
 
 .port-macro-node__value { font-size: 39px; font-weight: 900; }
-.port-macro-node__target-badge circle { fill: #76858b; stroke: #fffefb; stroke-width: 3; }
-.port-macro-node__target-badge text { fill: #fff; font-size: 12px; font-weight: 900; }
-.port-macro-node__target-badge.has-targets circle { fill: #078b7d; }
-.port-macro-node__target-badge.is-compatible circle { fill: #078b7d; }
+.port-macro-node__target-badge rect { fill: #76858b; stroke: #fffefb; stroke-width: 3; }
+.port-macro-node__target-badge text { fill: #fff; font-size: 10px; font-weight: 950; }
+.port-macro-node__target-badge.has-targets rect { fill: #078b7d; }
+.port-macro-node__target-badge.is-compatible rect { fill: #078b7d; }
 .port-macro-node__target-badge.is-zero { opacity: 0.7; }
 .port-macro-node__scoring-badge circle {
   fill: #8c630d;
@@ -310,7 +312,7 @@
 }
 .port-macro-node__scoring-badge text {
   fill: #fff7dc;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 950;
 }
 .port-macro-node__played {
@@ -379,9 +381,9 @@
 .port-target-choice {
   position: absolute;
   z-index: 50;
-  inset: 50% auto auto 50%;
+  inset: auto auto 0.5rem 50%;
   display: grid;
-  min-width: min(22rem, calc(100% - 2rem));
+  width: min(34rem, calc(100% - 1rem));
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.75rem;
@@ -390,7 +392,15 @@
   border-radius: 1rem;
   background: rgb(255 254 251 / 0.98);
   box-shadow: 0 1rem 2.5rem rgb(12 41 64 / 0.18);
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+}
+
+.graph-root.is-ports-view .port-graph {
+  transition: inset 180ms ease, width 180ms ease;
+}
+
+.graph-root.is-ports-view.has-port-target-choice .port-graph {
+  height: calc(100% - 11.25rem);
 }
 
 .port-target-choice > div:first-child { display: grid; }
@@ -478,6 +488,45 @@
   text-align: center;
 }
 .port-target-choice__cancel { width: 2.55rem; border-color: #c7cecb; color: #536976; background: #fff; font-size: 1.15rem; }
+
+.port-semantic-legend {
+  position: absolute;
+  z-index: 34;
+  inset: 0.55rem auto auto 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.34rem 0.5rem;
+  border: 1px solid rgb(197 154 87 / 0.5);
+  border-radius: 999px;
+  color: #d8dfd8;
+  background: rgb(5 31 29 / 0.82);
+  box-shadow: 0 0.3rem 0.8rem rgb(0 0 0 / 0.2);
+  font-size: 0.62rem;
+  font-weight: 800;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 180ms ease;
+}
+
+.port-semantic-legend b {
+  display: inline-grid;
+  min-width: 1.05rem;
+  place-items: center;
+  margin-inline-end: 0.12rem;
+  font-size: 0.74rem;
+}
+
+.port-semantic-legend .is-playable b { color: var(--playable); }
+.port-semantic-legend .is-scoring b { color: var(--scoring); }
+.port-semantic-legend .is-history b { color: #c4cbc4; }
+.port-semantic-legend.is-intro { opacity: 1; }
+.port-semantic-legend.is-subtle { opacity: 0.62; }
+
+.port-macro-node.is-decision-preview .port-ramifier__socket.is-available {
+  filter: drop-shadow(0 0 5px rgb(39 222 197 / 0.85));
+}
 
 .port-macro-node__scoring-badge.is-preview text { font-size: 12px; }
 .port-macro-node__scoring-badge.is-preview.is-removing {
@@ -684,9 +733,9 @@
 .port-macro-node-shell.is-strategic-inspected .port-macro-node__rim { stroke: #f4ead2; }
 .port-macro-node__value { fill: #12282c; }
 .port-macro-node__target-badge text { fill: #effffb; }
-.port-macro-node__target-badge circle { fill: #233d3e; stroke: #d7c293; }
-.port-macro-node__target-badge.has-targets circle { fill: var(--playable-deep); stroke: #83eadd; }
-.port-macro-node__target-badge.is-compatible circle { fill: var(--playable-deep); stroke: #8ffff0; }
+.port-macro-node__target-badge rect { fill: #233d3e; stroke: #d7c293; }
+.port-macro-node__target-badge.has-targets rect { fill: var(--playable-deep); stroke: #83eadd; }
+.port-macro-node__target-badge.is-compatible rect { fill: var(--playable-deep); stroke: #8ffff0; }
 .port-macro-node__scoring-badge circle {
   fill: #855d0d;
   stroke: var(--scoring);
@@ -767,7 +816,9 @@
   .port-double-hub,
   .port-open-target,
   .port-incidence-wrap,
-  .port-macro-node-shell { transition: none; }
+  .port-macro-node-shell,
+  .port-graph,
+  .port-semantic-legend { transition: none; }
   .port-open-target.is-legal,
   .port-cover__scoring,
   .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
@@ -776,12 +827,47 @@
 }
 
 @media (max-width: 36rem) {
-  .port-target-choice { grid-template-columns: auto 1fr auto; min-width: calc(100% - 1rem); }
+  .port-target-choice {
+    width: calc(100% - 0.8rem);
+    grid-template-columns: auto 1fr auto;
+  }
   .port-target-choice__options { justify-content: center; }
+  .port-target-choice__option { min-width: min(9.2rem, 46%); }
+  .graph-root.is-ports-view.has-port-target-choice .port-graph {
+    height: calc(100% - 12.25rem);
+  }
+  .port-semantic-legend {
+    inset: 0.4rem 0.4rem auto auto;
+    gap: 0.34rem;
+    padding: 0.28rem 0.4rem;
+    font-size: 0.56rem;
+    transform: none;
+  }
   .port-node-inspector { inset: auto 0.4rem 0.4rem; width: auto; max-height: 36%; }
   .port-strategic-inspector { inset: auto 0.4rem 0.4rem; width: calc(100% - 0.8rem); }
   .port-structure-toggle { inset: 0.4rem auto auto 0.4rem; min-height: 2.35rem; }
   .port-node-inspector details { display: none; }
   .port-thread__hit,
   .port-bridge__hit { stroke-width: 34; }
+}
+
+@media (orientation: landscape) and (max-height: 31rem) {
+  .graph-root.is-ports-view.has-port-target-choice .port-graph {
+    width: 64%;
+    height: calc(100% - 2.85rem);
+  }
+
+  .port-target-choice {
+    inset: 50% 0.4rem auto auto;
+    width: calc(36% - 0.8rem);
+    max-height: calc(100% - 0.8rem);
+    grid-template-columns: 1fr auto;
+    align-content: center;
+    overflow: auto;
+    transform: translateY(-50%);
+  }
+
+  .port-target-choice > div:first-child { display: none; }
+  .port-target-choice__options { display: grid; }
+  .port-target-choice__option { min-width: 0; }
 }
