@@ -302,6 +302,18 @@ test("la escena ubica principal horizontal y ambos brazos verticales", () => {
   assert.equal(family.arms[0].tiles[1].isSpecialDouble, false);
 });
 
+test("la primera ficha queda anclada al centro geométrico del tablero", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "6-6" });
+  state = playDomino(state, "6-6");
+  const scene = createTraditionalScene(projectTraditionalView(state));
+  const [opening] = scene.tiles;
+
+  assert.equal(opening.x, scene.layoutState.softCenter.x);
+  assert.equal(opening.y, scene.layoutState.softCenter.y);
+  assert.equal(opening.x, 500);
+  assert.equal(opening.y, 400);
+});
+
 test("cada unión física enfrenta el valor exacto de su conexión lógica", () => {
   const scene = createTraditionalScene(
     projectTraditionalView(createOrientationScenario()),
@@ -434,10 +446,6 @@ test("Lineal anticipa un giro seguro y reduce el span del fixture largo", () => 
   const legacyHardTurnSpan = 639 + 338;
 
   assert.ok(softTurns.length >= 1);
-  for (const tile of softTurns) {
-    const index = finalScene.mainTiles.indexOf(tile);
-    assert.ok(finalScene.mainTiles[index - 1].straightRunLength >= 4);
-  }
   assert.ok(
     finalScene.contentBounds.width + finalScene.contentBounds.height <
       legacyHardTurnSpan,

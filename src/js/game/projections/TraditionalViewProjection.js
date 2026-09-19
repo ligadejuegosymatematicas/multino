@@ -77,6 +77,7 @@ function createTileProjection(
   return {
     placementId,
     dominoId: placement.dominoId,
+    sequence: placement.sequence,
     values: domino.sides.map((side) => side.value),
     isDouble: topology.isDouble,
     isSpecialDouble: topology.isSpecialDouble,

@@ -11,11 +11,16 @@ const TABLE_PADDING = 52;
 const STABLE_CANVAS_WIDTH = 1000;
 const STABLE_CANVAS_HEIGHT = 800;
 const LOOKAHEAD_STEPS = 5;
+const ESCAPE_LOOKAHEAD_STEPS = 3;
 const SOFT_TURN_RUN_START = 4;
 const SOFT_BOUNDARY_START = 0.7;
 const CONNECTOR_MARGIN = 6;
-const MAX_CONNECTOR_LENGTH = 54;
+const STRAIGHT_CONNECTOR_LIMIT = TILE_GAP + CONNECTOR_MARGIN;
+const ELBOW_CONNECTOR_LIMIT = TILE_GAP + TURN_LEG * 2 + CONNECTOR_MARGIN;
+const MAX_CONNECTOR_LENGTH = ELBOW_CONNECTOR_LIMIT;
 const MAX_LOCAL_EXPANSION_STEPS = 1;
+const TURN_LEAD_ADJUSTMENTS = Object.freeze([-8, 0, 8]);
+const PROTECTED_EXIT_PENALTY = 60000;
 
 export const TRADITIONAL_COLLISION_MARGIN = COLLISION_MARGIN;
 export const TRADITIONAL_TILE_LONG = TILE_LONG;
@@ -107,6 +112,8 @@ function refreshProjectedTile(tile, rawTile) {
     ...projectTile(oriented, tile.x, tile.y, tile.direction),
     straightRunLength: tile.straightRunLength ?? 1,
     turnReason: tile.turnReason ?? "origin",
+    escapeDepth: tile.escapeDepth ?? ESCAPE_LOOKAHEAD_STEPS,
+    protectedExitsPreserved: tile.protectedExitsPreserved ?? true,
   };
 }
 
@@ -155,45 +162,6 @@ function segmentBounds(segment, margin = 0) {
   };
 }
 
-function pointEquals(first, second) {
-  return first.x === second.x && first.y === second.y;
-}
-
-function sharedEndpoint(first, second) {
-  const firstPoints = [
-    { x: first.x, y: first.y },
-    { x: first.x2, y: first.y2 },
-  ];
-  const secondPoints = [
-    { x: second.x, y: second.y },
-    { x: second.x2, y: second.y2 },
-  ];
-  return firstPoints.some((point) =>
-    secondPoints.some((candidate) => pointEquals(point, candidate))
-  );
-}
-
-function overlapLength(firstStart, firstEnd, secondStart, secondEnd) {
-  return Math.min(
-    Math.max(firstStart, firstEnd),
-    Math.max(secondStart, secondEnd),
-  ) - Math.max(
-    Math.min(firstStart, firstEnd),
-    Math.min(secondStart, secondEnd),
-  );
-}
-
-function sharedEndpointIsOnlyContact(first, second) {
-  if (!sharedEndpoint(first, second)) return false;
-  const firstHorizontal = first.y === first.y2;
-  const secondHorizontal = second.y === second.y2;
-  if (firstHorizontal !== secondHorizontal) return true;
-  const overlap = firstHorizontal
-    ? overlapLength(first.x, first.x2, second.x, second.x2)
-    : overlapLength(first.y, first.y2, second.y, second.y2);
-  return overlap <= 0;
-}
-
 export function traditionalSegmentsConflict(
   first,
   second,
@@ -203,7 +171,10 @@ export function traditionalSegmentsConflict(
     segmentBounds(first, margin / 2),
     segmentBounds(second, margin / 2),
   )) return false;
-  return !sharedEndpointIsOnlyContact(first, second);
+  // Dos conexiones reglamentarias diferentes nunca comparten un socket. Un
+  // punto geométrico coincidente entre ellas es, por tanto, una unión falsa y
+  // no un endpoint legítimo que debamos exceptuar.
+  return true;
 }
 
 export function traditionalConnectorLength(segments) {
@@ -212,6 +183,126 @@ export function traditionalConnectorLength(segments) {
       Math.abs(segment.x2 - segment.x) + Math.abs(segment.y2 - segment.y),
     0,
   );
+}
+
+function connectorLengthLimit(segments) {
+  return segments.length > 1
+    ? ELBOW_CONNECTOR_LIMIT
+    : STRAIGHT_CONNECTOR_LIMIT;
+}
+
+function connectorGeometryIsSafe(
+  segments,
+  source,
+  candidate,
+  occupied,
+  occupiedConnections,
+) {
+  const connectorLength = traditionalConnectorLength(segments);
+  if (connectorLength > connectorLengthLimit(segments)) return false;
+  if (traditionalBoundsOverlap(
+    traditionalTileBounds(candidate),
+    traditionalTileBounds(source),
+  )) return false;
+  const obstacles = occupied.filter(
+    (tile) => tile.placementId !== source.placementId,
+  );
+  if (collides(candidate, obstacles)) return false;
+  if (obstacles.some((obstacle) => connectorInvadesTile(segments, obstacle))) {
+    return false;
+  }
+  return !connectorConflicts(segments, occupiedConnections);
+}
+
+function createProbeTile(id, isDouble = false, isSpecialDouble = false) {
+  return {
+    placementId: `probe:${id}`,
+    dominoId: isDouble ? "probe-double" : "probe-ordinary",
+    values: isDouble ? [0, 0] : [0, 1],
+    isDouble,
+    isSpecialDouble,
+    doubleRole: isSpecialDouble
+      ? "BRANCHING_DOUBLE"
+      : isDouble ? "ORDINARY_DOUBLE" : null,
+    region: "probe",
+    start: {
+      portId: "probe:start",
+      value: 0,
+      connectionId: null,
+      neighborPlacementId: null,
+    },
+    end: {
+      portId: "probe:end",
+      value: isDouble ? 0 : 1,
+      connectionId: null,
+      neighborPlacementId: null,
+    },
+  };
+}
+
+function ramifierFitsAtExit(
+  anchor,
+  face,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+) {
+  const currentDirection = directionForSide(face.side);
+  for (const direction of candidateDirections(currentDirection, true)) {
+    const leadAdjustments = direction === currentDirection
+      ? [0]
+      : TURN_LEAD_ADJUSTMENTS;
+    for (const turnLeadAdjustment of leadAdjustments) {
+      const geometry = buildCandidateGeometry({
+        rawTile: createProbeTile(
+          `${anchor.placementId}:ramifier:${direction}`,
+          true,
+          true,
+        ),
+        source: anchor,
+        sourceFace: face,
+        direction,
+        currentDirection,
+        connectionClearance,
+        turnLeadAdjustment,
+      });
+      if (!connectorGeometryIsSafe(
+        geometry.connectorSegments,
+        anchor,
+        geometry.tile,
+        occupied,
+        occupiedConnections,
+      )) continue;
+      const nextOccupied = [...occupied, geometry.tile];
+      const nextConnections = [
+        ...occupiedConnections,
+        {
+          id: geometry.tile.placementId,
+          firstPlacementId: anchor.placementId,
+          secondPlacementId: geometry.tile.placementId,
+          segments: geometry.connectorSegments,
+        },
+      ];
+      const exitFaces = [geometry.tile.physicalEnd, ...[1, 2].map(
+        (armIndex) => {
+          const armDirection = branchDirection(geometry.tile, armIndex);
+          return {
+            portId: `branch:${armIndex}`,
+            value: geometry.tile.values[0],
+            side: sidesFor(armDirection).end,
+          };
+        },
+      )];
+      if (exitFaces.every((exitFace) => escapeDepthFromOpenFace(
+        geometry.tile,
+        exitFace,
+        nextOccupied,
+        nextConnections,
+        connectionClearance,
+      ) >= 3)) return true;
+    }
+  }
+  return false;
 }
 
 function connectorInvadesTile(segments, tile, margin = CONNECTOR_MARGIN) {
@@ -273,6 +364,7 @@ function placeAfterFace(
   previousDirection,
   connectionClearance,
   extraDistance = 0,
+  turnLeadAdjustment = 0,
 ) {
   const vector = VECTOR[direction];
   const dimensions = dimensionsFor(tile, direction);
@@ -290,7 +382,7 @@ function placeAfterFace(
       sourceFace,
       connectionClearance,
     );
-    const firstLeg = TURN_LEG + extraDistance;
+    const firstLeg = TURN_LEG + turnLeadAdjustment + extraDistance;
     const secondLeg = TURN_LEG + connectionClearance +
       extentAlong(dimensions, direction);
     x = start.x + oldVector.x * firstLeg + vector.x * secondLeg;
@@ -351,6 +443,373 @@ function softBoundaryPressure(candidate, center) {
   return normalize(xRatio) + normalize(yRatio);
 }
 
+function candidateDirections(currentDirection, clockwiseFirst) {
+  const turns = clockwiseFirst
+    ? [CLOCKWISE[currentDirection], COUNTERCLOCKWISE[currentDirection]]
+    : [COUNTERCLOCKWISE[currentDirection], CLOCKWISE[currentDirection]];
+  return [currentDirection, ...turns];
+}
+
+function sectorCorridorScore(candidate, initialDirection, origin) {
+  const initial = VECTOR[initialDirection];
+  const perpendicular = { x: -initial.y, y: initial.x };
+  const dx = candidate.x - origin.x;
+  const dy = candidate.y - origin.y;
+  const outward = dx * initial.x + dy * initial.y;
+  const lateral = Math.abs(dx * perpendicular.x + dy * perpendicular.y);
+  // El sector es una guía para separar brazos, no una orden de prolongar una
+  // recta hasta el borde. Una recompensa grande al progreso radial anulaba
+  // los soft turns incluso cuando el giro abría un corredor mucho mejor.
+  const corridorBalance = outward - lateral * 0.25;
+  return Math.max(-900, Math.min(360, corridorBalance * 1.2));
+}
+
+function buildCandidateGeometry({
+  rawTile,
+  source,
+  sourceFace,
+  direction,
+  currentDirection,
+  connectionClearance,
+  extraDistance = 0,
+  turnLeadAdjustment = 0,
+}) {
+  const candidate = placeAfterFace(
+    source,
+    sourceFace,
+    rawTile,
+    direction,
+    currentDirection,
+    connectionClearance,
+    extraDistance,
+    turnLeadAdjustment,
+  );
+  const connectorStart = pointOutsideTraditionalTile(
+    source,
+    sourceFace,
+    connectionClearance,
+  );
+  const connectorEnd = pointOutsideTraditionalTile(
+    candidate,
+    candidate.physicalStart,
+    connectionClearance,
+  );
+  const connectorSegments = connectionSegments(
+    connectorStart,
+    connectorEnd,
+    sourceFace,
+  );
+  return {
+    tile: candidate,
+    direction,
+    connectorSegments,
+    connectorLength: traditionalConnectorLength(connectorSegments),
+  };
+}
+
+function immediateEscapeOptions(
+  source,
+  sourceFace,
+  currentDirection,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+  isDouble = false,
+) {
+  let safeOptions = 0;
+  for (const direction of candidateDirections(currentDirection, true)) {
+    const leadAdjustments = direction === currentDirection
+      ? [0]
+      : TURN_LEAD_ADJUSTMENTS;
+    for (const turnLeadAdjustment of leadAdjustments) {
+      const geometry = buildCandidateGeometry({
+        rawTile: createProbeTile(
+          `${source.placementId}:${direction}:${isDouble ? "double" : "tile"}`,
+          isDouble,
+        ),
+        source,
+        sourceFace,
+        direction,
+        currentDirection,
+        connectionClearance,
+        turnLeadAdjustment,
+      });
+      if (connectorGeometryIsSafe(
+        geometry.connectorSegments,
+        source,
+        geometry.tile,
+        occupied,
+        occupiedConnections,
+      )) {
+        safeOptions += 1;
+        break;
+      }
+    }
+  }
+  return safeOptions;
+}
+
+function escapeDepthFromOpenFace(
+  source,
+  sourceFace,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+  isDouble = false,
+) {
+  const initialDirection = directionForSide(sourceFace.side);
+  let bestDepth = 0;
+  for (const direction of candidateDirections(initialDirection, true)) {
+    const leadAdjustments = direction === initialDirection
+      ? [0]
+      : TURN_LEAD_ADJUSTMENTS;
+    for (const turnLeadAdjustment of leadAdjustments) {
+      const geometry = buildCandidateGeometry({
+        rawTile: createProbeTile(
+          `${source.placementId}:protected:${direction}`,
+          isDouble,
+        ),
+        source,
+        sourceFace,
+        direction,
+        currentDirection: initialDirection,
+        connectionClearance,
+        turnLeadAdjustment,
+      });
+      if (!connectorGeometryIsSafe(
+        geometry.connectorSegments,
+        source,
+        geometry.tile,
+        occupied,
+        occupiedConnections,
+      )) continue;
+      const nextConnections = [
+        ...occupiedConnections,
+        {
+          id: geometry.tile.placementId,
+          firstPlacementId: source.placementId,
+          secondPlacementId: geometry.tile.placementId,
+          segments: geometry.connectorSegments,
+        },
+      ];
+      const continuation = measureEscapeCapacity(
+        geometry.tile,
+        direction,
+        initialDirection,
+        [...occupied, geometry.tile],
+        nextConnections,
+        connectionClearance,
+        2,
+      );
+      bestDepth = Math.max(bestDepth, 1 + continuation.depth);
+      break;
+    }
+  }
+  return bestDepth;
+}
+
+function measureEscapeCapacity(
+  source,
+  currentDirection,
+  initialDirection,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+  depth = ESCAPE_LOOKAHEAD_STEPS,
+) {
+  if (depth <= 0) return { depth: 0, branches: 1 };
+  let bestDepth = 0;
+  let branches = 0;
+  for (const direction of candidateDirections(currentDirection, true)) {
+    const leadAdjustments = direction === currentDirection
+      ? [0]
+      : TURN_LEAD_ADJUSTMENTS;
+    for (const turnLeadAdjustment of leadAdjustments) {
+      const geometry = buildCandidateGeometry({
+        rawTile: createProbeTile(
+          `${source.placementId}:${depth}:${direction}`,
+          depth % 2 === 0,
+        ),
+        source,
+        sourceFace: source.physicalEnd,
+        direction,
+        currentDirection,
+        connectionClearance,
+        turnLeadAdjustment,
+      });
+      if (!connectorGeometryIsSafe(
+        geometry.connectorSegments,
+        source,
+        geometry.tile,
+        occupied,
+        occupiedConnections,
+      )) continue;
+      const nextConnections = [
+        ...occupiedConnections,
+        {
+          id: geometry.tile.placementId,
+          firstPlacementId: source.placementId,
+          secondPlacementId: geometry.tile.placementId,
+          segments: geometry.connectorSegments,
+        },
+      ];
+      const next = measureEscapeCapacity(
+        geometry.tile,
+        direction,
+        initialDirection,
+        [...occupied, geometry.tile],
+        nextConnections,
+        connectionClearance,
+        depth - 1,
+      );
+      bestDepth = Math.max(bestDepth, 1 + next.depth);
+      branches += 1 + next.branches;
+      break;
+    }
+  }
+  return { depth: bestDepth, branches };
+}
+
+function protectedExitHasJointContinuation(
+  exit,
+  protectedExits,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+  isDouble = false,
+) {
+  const currentDirection = directionForSide(exit.face.side);
+  for (const direction of candidateDirections(currentDirection, true)) {
+    const leadAdjustments = direction === currentDirection
+      ? [0]
+      : TURN_LEAD_ADJUSTMENTS;
+    for (const turnLeadAdjustment of leadAdjustments) {
+      const geometry = buildCandidateGeometry({
+        rawTile: createProbeTile(
+          `${exit.anchor.placementId}:joint:${direction}`,
+          isDouble,
+        ),
+        source: exit.anchor,
+        sourceFace: exit.face,
+        direction,
+        currentDirection,
+        connectionClearance,
+        turnLeadAdjustment,
+      });
+      if (!connectorGeometryIsSafe(
+        geometry.connectorSegments,
+        exit.anchor,
+        geometry.tile,
+        occupied,
+        occupiedConnections,
+      )) continue;
+      const nextOccupied = [...occupied, geometry.tile];
+      const nextConnections = [
+        ...occupiedConnections,
+        {
+          id: geometry.tile.placementId,
+          firstPlacementId: exit.anchor.placementId,
+          secondPlacementId: geometry.tile.placementId,
+          segments: geometry.connectorSegments,
+        },
+      ];
+      const nextExit = {
+        anchor: geometry.tile,
+        face: geometry.tile.physicalEnd,
+      };
+      const remaining = protectedExits.filter(
+        (candidate) =>
+          candidate.anchor.placementId !== exit.anchor.placementId ||
+          candidate.face.portId !== exit.face.portId,
+      );
+      const allStillUsable = [nextExit, ...remaining].every((candidate) =>
+        candidate.requiresRamifierSpace
+          ? ramifierFitsAtExit(
+              candidate.anchor,
+              candidate.face,
+              nextOccupied,
+              nextConnections,
+              connectionClearance,
+            )
+          : candidate === nextExit
+            ? escapeDepthFromOpenFace(
+                candidate.anchor,
+                candidate.face,
+                nextOccupied,
+                nextConnections,
+                connectionClearance,
+              ) >= 3
+            : escapeDepthFromOpenFace(
+                candidate.anchor,
+                candidate.face,
+                nextOccupied,
+                nextConnections,
+                connectionClearance,
+              ) >= 3
+      );
+      if (allStillUsable) return true;
+    }
+  }
+  return false;
+}
+
+function preservesProtectedExits(
+  protectedExits,
+  occupied,
+  occupiedConnections,
+  connectionClearance,
+) {
+  const allHaveCorridor = protectedExits.every((exit) => {
+    if (exit.requiresRamifierSpace) {
+      return ramifierFitsAtExit(
+          exit.anchor,
+          exit.face,
+          occupied,
+          occupiedConnections,
+          connectionClearance,
+        );
+    }
+    const ordinaryFits = exit.requiresJointContinuation
+      ? escapeDepthFromOpenFace(
+            exit.anchor,
+            exit.face,
+            occupied,
+            occupiedConnections,
+            connectionClearance,
+          ) >= 3
+      : immediateEscapeOptions(
+            exit.anchor,
+            exit.face,
+            directionForSide(exit.face.side),
+            occupied,
+            occupiedConnections,
+            connectionClearance,
+          ) > 0;
+    const doubleFits = immediateEscapeOptions(
+      exit.anchor,
+      exit.face,
+      directionForSide(exit.face.side),
+      occupied,
+      occupiedConnections,
+      connectionClearance,
+      true,
+    ) > 0;
+    return ordinaryFits && doubleFits;
+  });
+  if (!allHaveCorridor) return false;
+  return protectedExits
+    .filter((exit) => !exit.requiresRamifierSpace)
+    .every((exit) =>
+      protectedExitHasJointContinuation(
+        exit,
+        protectedExits,
+        occupied,
+        occupiedConnections,
+        connectionClearance,
+      )
+    );
+}
+
 function scoreCandidate(
   candidate,
   direction,
@@ -359,7 +818,9 @@ function scoreCandidate(
   occupied,
   envelopeTiles,
   center,
+  sectorOrigin,
   straightRunLength,
+  escapeCapacity,
 ) {
   const initialVector = VECTOR[initialDirection];
   const sectorProgress = (candidate.x - center.x) * initialVector.x +
@@ -381,6 +842,9 @@ function scoreCandidate(
   return (fitsNext ? 10000 : 0) +
     directionPreference +
     futureRoomScore(candidate, direction, occupied, center) +
+    escapeCapacity.depth * 2400 +
+    Math.min(escapeCapacity.branches, 12) * 180 +
+    sectorCorridorScore(candidate, initialDirection, sectorOrigin) +
     Math.max(-500, sectorProgress) -
     envelopeGrowth(candidate, envelopeTiles) * 6 -
     softBoundaryPressure(candidate, center) * 900 -
@@ -388,7 +852,7 @@ function scoreCandidate(
     (Math.abs(candidate.x - center.x) + Math.abs(candidate.y - center.y)) * 0.06;
 }
 
-function choosePlacement(
+function collectPlacementCandidates(
   tile,
   source,
   sourceFace,
@@ -400,12 +864,14 @@ function choosePlacement(
   connectionClearance,
   center = { x: 0, y: 0 },
   currentStraightRunLength = 0,
+  {
+    sectorOrigin = center,
+    protectedExits = [],
+  } = {},
 ) {
-  const turns = clockwiseFirst
-    ? [CLOCKWISE[currentDirection], COUNTERCLOCKWISE[currentDirection]]
-    : [COUNTERCLOCKWISE[currentDirection], CLOCKWISE[currentDirection]];
-  const directions = [currentDirection, ...turns];
-  let best = null;
+  const directions = candidateDirections(currentDirection, clockwiseFirst);
+  const turns = directions.slice(1);
+  const candidates = [];
   let straightFitsSoftBoard = false;
   for (
     let expansion = 0;
@@ -413,85 +879,157 @@ function choosePlacement(
     expansion += 1
   ) {
     for (const direction of directions) {
-      const candidate = placeAfterFace(
+      const leadAdjustments = direction === currentDirection
+        ? [0]
+        : TURN_LEAD_ADJUSTMENTS;
+      for (const turnLeadAdjustment of leadAdjustments) {
+        const geometry = buildCandidateGeometry({
+        rawTile: tile,
         source,
         sourceFace,
-        tile,
         direction,
         currentDirection,
         connectionClearance,
-        expansion * TILE_GAP,
-      );
-      const obstacles = occupied.filter(
-        (occupiedTile) => occupiedTile.placementId !== source.placementId,
-      );
-      if (collides(candidate, obstacles)) continue;
-      const connectorStart = pointOutsideTraditionalTile(
+        extraDistance: expansion * TILE_GAP,
+        turnLeadAdjustment,
+        });
+        const candidate = geometry.tile;
+        const connectorSegments = geometry.connectorSegments;
+        const connectorLength = geometry.connectorLength;
+        if (!connectorGeometryIsSafe(
+        connectorSegments,
         source,
-        sourceFace,
-        connectionClearance,
-      );
-      const connectorEnd = pointOutsideTraditionalTile(
         candidate,
-        candidate.physicalStart,
+        occupied,
+        occupiedConnections,
+        )) continue;
+        const candidateConnection = {
+        id: tile.start.connectionId ?? `${source.placementId}:${tile.placementId}`,
+        firstPlacementId: source.placementId,
+        secondPlacementId: tile.placementId,
+        segments: connectorSegments,
+        };
+        const nextOccupied = [...occupied, candidate];
+        const nextConnections = [...occupiedConnections, candidateConnection];
+        const stillOpen = protectedExits.filter(
+          ({ anchor, face }) =>
+            anchor.placementId !== source.placementId ||
+            face.portId !== sourceFace.portId,
+        ).map((exit) => candidate.isSpecialDouble
+          ? { ...exit, requiresRamifierSpace: false }
+          : exit
+        );
+        // La nueva punta también pasa a formar parte del conjunto que debe
+        // coexistir con todas las demás. Antes solo medíamos su corredor de
+        // forma aislada: podía parecer profundo y, aun así, bloquear otra
+        // punta en la jugada siguiente.
+        stillOpen.push({
+          anchor: candidate,
+          face: candidate.physicalEnd,
+          requiresJointContinuation: true,
+        });
+        if (candidate.isSpecialDouble) {
+          for (const armIndex of [1, 2]) {
+            const branchDirectionValue = branchDirection(candidate, armIndex);
+            stillOpen.push({
+              anchor: candidate,
+            face: {
+                portId: `branch:${armIndex}`,
+                value: candidate.values[0],
+              side: sidesFor(branchDirectionValue).end,
+            },
+            requiresJointContinuation: true,
+          });
+          }
+        }
+        const protectsOtherExits = preservesProtectedExits(
+        stillOpen,
+        nextOccupied,
+        nextConnections,
         connectionClearance,
-      );
-      const connectorSegments = connectionSegments(
-        connectorStart,
-        connectorEnd,
-        sourceFace,
-      );
-      const connectorLength = traditionalConnectorLength(connectorSegments);
-      if (connectorLength > MAX_CONNECTOR_LENGTH) continue;
-      if (obstacles.some((obstacle) =>
-        connectorInvadesTile(connectorSegments, obstacle)
-      )) continue;
-      if (connectorConflicts(connectorSegments, occupiedConnections)) continue;
-      if (
+        );
+        const escapeCapacity = measureEscapeCapacity(
+        candidate,
+        direction,
+        initialDirection,
+        nextOccupied,
+        nextConnections,
+        connectionClearance,
+        );
+        if (
         expansion === 0 &&
         direction === currentDirection &&
         withinSoftBoard(candidate, center) &&
         hasForwardRoom(candidate, direction, center)
-      ) {
-        straightFitsSoftBoard = true;
-      }
-      const score = scoreCandidate(
+        ) {
+          straightFitsSoftBoard = true;
+        }
+        const escapePenalty = Math.max(
+          0,
+          ESCAPE_LOOKAHEAD_STEPS - escapeCapacity.depth,
+        ) * 14000;
+        const score = scoreCandidate(
         candidate,
         direction,
         currentDirection,
         initialDirection,
-        obstacles,
+        occupied,
         occupied,
         center,
+        sectorOrigin,
         currentStraightRunLength,
-      ) + (direction === turns[0] ? 35 : 0) -
-        expansion * 240 - connectorLength * 4;
-      if (!best || score > best.score) {
-        best = {
-          tile: candidate,
-          direction,
-          score,
+        escapeCapacity,
+        ) + (direction === turns[0] ? 35 : 0) -
+          expansion * 240 - connectorLength * 4 -
+          escapePenalty -
+          (protectsOtherExits ? 0 : PROTECTED_EXIT_PENALTY);
+        const result = {
+            tile: candidate,
+            direction,
+            score,
           connectorSegments,
           connectorLength,
+            escapeCapacity,
+            protectsOtherExits,
         };
+        candidates.push(result);
       }
     }
-    if (best?.score >= 10000) break;
   }
-  if (!best) {
+  const tier = (candidate) => {
+    if (candidate.protectsOtherExits && candidate.escapeCapacity.depth >= 2) {
+      return 2;
+    }
+    return candidate.protectsOtherExits ? 1 : 0;
+  };
+  return candidates
+    .sort((first, second) =>
+      tier(second) - tier(first) || second.score - first.score
+    )
+    .map((candidate) => {
+      const turned = candidate.direction !== currentDirection;
+      return {
+        ...candidate,
+        tile: {
+          ...candidate.tile,
+          straightRunLength: turned ? 1 : currentStraightRunLength + 1,
+          turnReason: turned
+            ? straightFitsSoftBoard ? "soft" : "hard"
+            : "straight",
+          escapeDepth: candidate.escapeCapacity.depth,
+          protectedExitsPreserved: candidate.protectsOtherExits,
+        },
+      };
+    });
+}
+
+function choosePlacement(...args) {
+  const candidates = collectPlacementCandidates(...args);
+  if (candidates.length === 0) {
+    const tile = args[0];
     throw new Error(`No existe espacio visual limpio para ${tile.placementId}.`);
   }
-  const turned = best.direction !== currentDirection;
-  return {
-    ...best,
-    tile: {
-      ...best.tile,
-      straightRunLength: turned ? 1 : currentStraightRunLength + 1,
-      turnReason: turned
-        ? straightFitsSoftBoard ? "soft" : "hard"
-        : "straight",
-    },
-  };
+  return candidates[0];
 }
 
 function placeChain(
@@ -639,13 +1177,73 @@ export function inspectTraditionalLayoutGeometry(
   const edgeTileCrossings = [];
   const edgeEdgeCrossings = [];
   const overlyLongConnections = [];
+  const tileOverlaps = [];
+  const socketConflicts = [];
+  const endpointMismatches = [];
+  const nonFiniteGeometry = [];
   const connections = layout.connections ?? [];
   const tiles = layout.tiles ?? [];
+  const tileByPlacementId = new Map(
+    tiles.map((tile) => [tile.placementId, tile]),
+  );
+
+  tiles.forEach((first, index) => {
+    for (const key of ["x", "y", "width", "height"]) {
+      if (!Number.isFinite(first[key])) {
+        nonFiniteGeometry.push({ placementId: first.placementId, key });
+      }
+    }
+    tiles.slice(index + 1).forEach((second) => {
+      if (traditionalBoundsOverlap(
+        traditionalTileBounds(first),
+        traditionalTileBounds(second),
+      )) {
+        tileOverlaps.push({
+          firstPlacementId: first.placementId,
+          secondPlacementId: second.placementId,
+        });
+      }
+    });
+  });
 
   for (const connection of connections) {
+    for (const segment of connection.segments) {
+      for (const key of ["x", "y", "x2", "y2"]) {
+        if (!Number.isFinite(segment[key])) {
+          nonFiniteGeometry.push({ connectionId: connection.id, key });
+        }
+      }
+    }
     const length = traditionalConnectorLength(connection.segments);
-    if (length > maxConnectorLength) {
-      overlyLongConnections.push({ connectionId: connection.id, length });
+    const expectedLimit = Math.min(
+      maxConnectorLength,
+      connectorLengthLimit(connection.segments),
+    );
+    if (length > expectedLimit) {
+      overlyLongConnections.push({
+        connectionId: connection.id,
+        length,
+        expectedLimit,
+      });
+    }
+    const firstTile = tileByPlacementId.get(connection.firstPlacementId);
+    const secondTile = tileByPlacementId.get(connection.secondPlacementId);
+    const firstExpected = firstTile && pointOutsideTraditionalTile(
+      firstTile,
+      connection.firstFace,
+      2,
+    );
+    const secondExpected = secondTile && pointOutsideTraditionalTile(
+      secondTile,
+      connection.secondFace,
+      2,
+    );
+    if (
+      !firstExpected || !secondExpected ||
+      connection.x1 !== firstExpected.x || connection.y1 !== firstExpected.y ||
+      connection.x2 !== secondExpected.x || connection.y2 !== secondExpected.y
+    ) {
+      endpointMismatches.push({ connectionId: connection.id });
     }
     for (const tile of tiles) {
       if (
@@ -681,14 +1279,48 @@ export function inspectTraditionalLayoutGeometry(
     });
   });
 
+  for (const target of layout.openTargets ?? []) {
+    for (const connection of connections) {
+      if (
+        connection.firstPlacementId === target.placementId ||
+        connection.secondPlacementId === target.placementId
+      ) continue;
+      if (connection.segments.some((segment) => {
+        const closestX = Math.max(
+          Math.min(segment.x, segment.x2),
+          Math.min(target.x, Math.max(segment.x, segment.x2)),
+        );
+        const closestY = Math.max(
+          Math.min(segment.y, segment.y2),
+          Math.min(target.y, Math.max(segment.y, segment.y2)),
+        );
+        return Math.hypot(target.x - closestX, target.y - closestY) <
+          connectorMargin;
+      })) {
+        socketConflicts.push({
+          connectionId: connection.id,
+          targetId: target.id,
+        });
+      }
+    }
+  }
+
   return {
     edgeTileCrossings,
     edgeEdgeCrossings,
     overlyLongConnections,
+    tileOverlaps,
+    socketConflicts,
+    endpointMismatches,
+    nonFiniteGeometry,
     isValid:
       edgeTileCrossings.length === 0 &&
       edgeEdgeCrossings.length === 0 &&
-      overlyLongConnections.length === 0,
+      overlyLongConnections.length === 0 &&
+      tileOverlaps.length === 0 &&
+      socketConflicts.length === 0 &&
+      endpointMismatches.length === 0 &&
+      nonFiniteGeometry.length === 0,
   };
 }
 
@@ -1008,93 +1640,198 @@ function assembleLayout(
   };
 }
 
+function placementSequence(tile) {
+  if (Number.isInteger(tile.sequence)) return tile.sequence;
+  const parsed = Number.parseInt(tile.placementId.split("-").at(-1), 10);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function orderedRawTiles(table) {
+  return [...rawTilesByPlacementId(table).values()].sort(
+    (first, second) => placementSequence(first) - placementSequence(second),
+  );
+}
+
+function collectProtectedReplayExits(
+  table,
+  rawByPlacementId,
+  tileByPlacementId,
+) {
+  const protectedById = new Map();
+  const requiresRamifierSpace = table.structuralMode === "RAMIFICADO" &&
+    ![...tileByPlacementId.values()].some((tile) => tile.isSpecialDouble);
+  for (const tile of tileByPlacementId.values()) {
+    const raw = rawByPlacementId.get(tile.placementId);
+    for (const face of [tile.physicalStart, tile.physicalEnd]) {
+      const rawFace = raw.start.portId === face.portId ? raw.start : raw.end;
+      if (
+        rawFace.neighborPlacementId === null ||
+        !tileByPlacementId.has(rawFace.neighborPlacementId)
+      ) {
+        protectedById.set(`${tile.placementId}:${face.portId}`, {
+          anchor: tile,
+          face,
+          requiresRamifierSpace,
+        });
+      }
+    }
+  }
+  for (const family of table.branchFamilies) {
+    const root = tileByPlacementId.get(family.rootPlacementId);
+    if (!root) continue;
+    for (const arm of family.arms) {
+      const firstPlacementId = arm.tiles[0]?.placementId ?? null;
+      if (firstPlacementId !== null && tileByPlacementId.has(firstPlacementId)) {
+        continue;
+      }
+      const direction = branchDirection(root, arm.armIndex);
+      const face = { ...arm.origin, side: sidesFor(direction).end };
+      protectedById.set(`${root.placementId}:${face.portId}`, {
+        anchor: root,
+        face,
+      });
+    }
+  }
+  return [...protectedById.values()];
+}
+
+function routeForHistoricalTile(
+  table,
+  rawTile,
+  openingPlacementId,
+  tileByPlacementId,
+) {
+  if (rawTile.region === "branch") {
+    const family = table.branchFamilies.find(
+      (candidate) => candidate.id === rawTile.familyId,
+    );
+    const root = tileByPlacementId.get(family.rootPlacementId);
+    const arm = family.arms.find(
+      (candidate) => candidate.armIndex === rawTile.armIndex,
+    );
+    const initialDirection = branchDirection(root, rawTile.armIndex);
+    return {
+      initialDirection,
+      sectorOrigin: { x: root.x, y: root.y },
+      rootFace: arm?.tiles[0]?.placementId === rawTile.placementId
+        ? { ...arm.origin, side: sidesFor(initialDirection).end }
+        : null,
+    };
+  }
+  const mainIds = table.mainLine.placementIds;
+  const openingIndex = mainIds.indexOf(openingPlacementId);
+  const tileIndex = mainIds.indexOf(rawTile.placementId);
+  const opening = tileByPlacementId.get(openingPlacementId);
+  return {
+    initialDirection: tileIndex < openingIndex ? "left" : "right",
+    sectorOrigin: { x: opening.x, y: opening.y },
+  };
+}
+
+/**
+ * Reconstrucción determinista por orden histórico. Al volver desde otra vista
+ * no depende de cuántas jugadas observó el renderer: reproduce las mismas
+ * decisiones locales desde el snapshot público.
+ */
 function createInitialLayout(table, connectionClearance) {
-  const rawMain = table.mainLine.tiles;
-  const specialIndex = rawMain.findIndex((tile) => tile.isSpecialDouble);
+  const ordered = orderedRawTiles(table);
   const occupied = [];
   const occupiedConnections = [];
   const tileByPlacementId = new Map();
   let turnCount = 0;
+  let exploredCandidates = 0;
+  const reconstructionBudget = Math.max(1200, ordered.length * 180);
 
-  if (rawMain.length > 0 && specialIndex >= 0) {
-    const root = {
-      ...projectTile(rawMain[specialIndex], 0, 0, "right"),
+  if (ordered.length > 0) {
+    const openingRaw = ordered[0];
+    const opening = {
+      ...projectTile(openingRaw, 0, 0, "right"),
       straightRunLength: 1,
       turnReason: "origin",
     };
-    occupied.push(root);
-    tileByPlacementId.set(root.placementId, root);
-    const left = placeChain(
-      root,
-      root.physicalStart,
-      rawMain.slice(0, specialIndex).reverse(),
-      "left",
-      occupied,
-      occupiedConnections,
-      connectionClearance,
-      { reverse: true, clockwiseFirst: true },
-    );
-    const right = placeChain(
-      root,
-      root.physicalEnd,
-      rawMain.slice(specialIndex + 1),
-      "right",
-      occupied,
-      occupiedConnections,
-      connectionClearance,
-      { clockwiseFirst: true },
-    );
-    turnCount += left.turnCount + right.turnCount;
-    [...left.tiles, ...right.tiles].forEach((tile) =>
-      tileByPlacementId.set(tile.placementId, tile)
-    );
+    occupied.push(opening);
+    tileByPlacementId.set(opening.placementId, opening);
+    const rawByPlacementId = rawTilesByPlacementId(table);
 
-    for (const family of table.branchFamilies) {
-      const familyRoot = tileByPlacementId.get(family.rootPlacementId);
-      for (const arm of family.arms) {
-        const initialDirection = branchDirection(familyRoot, arm.armIndex);
-        const rootFace = {
-          ...arm.origin,
-          side: sidesFor(initialDirection).end,
-        };
-        const placed = placeChain(
-          familyRoot,
-          rootFace,
-          arm.tiles,
-          initialDirection,
-          occupied,
-          occupiedConnections,
-          connectionClearance,
-          { clockwiseFirst: true },
-        );
-        turnCount += placed.turnCount;
-        placed.tiles.forEach((tile) =>
-          tileByPlacementId.set(tile.placementId, tile)
+    const replay = (historyIndex, accumulatedTurns) => {
+      if (historyIndex >= ordered.length) return accumulatedTurns;
+      if (exploredCandidates >= reconstructionBudget) return null;
+      const rawTile = ordered[historyIndex];
+      const startIsConnected = rawTile.start.neighborPlacementId !== null &&
+        tileByPlacementId.has(rawTile.start.neighborPlacementId);
+      const endIsConnected = rawTile.end.neighborPlacementId !== null &&
+        tileByPlacementId.has(rawTile.end.neighborPlacementId);
+      if (startIsConnected === endIsConnected) {
+        throw new Error(
+          `No se pudo reconstruir el enlace histórico de ${rawTile.placementId}.`,
         );
       }
-    }
-  } else if (rawMain.length > 0) {
-    const first = {
-      ...projectTile(rawMain[0], 0, 0, "right"),
-      straightRunLength: 1,
-      turnReason: "origin",
+      const oriented = startIsConnected ? rawTile : reverseTile(rawTile);
+      const source = tileByPlacementId.get(oriented.start.neighborPlacementId);
+      const route = routeForHistoricalTile(
+        table,
+        rawTile,
+        opening.placementId,
+        tileByPlacementId,
+      );
+      const sourceFace = route.rootFace ?? faceForConnection(
+        source,
+        oriented.start.connectionId,
+      );
+      const currentDirection = directionForSide(sourceFace.side);
+      const protectedExits = collectProtectedReplayExits(
+        table,
+        rawByPlacementId,
+        tileByPlacementId,
+      );
+      const candidates = collectPlacementCandidates(
+        oriented,
+        source,
+        sourceFace,
+        currentDirection,
+        route.initialDirection,
+        occupied,
+        occupiedConnections,
+        true,
+        connectionClearance,
+        { x: 0, y: 0 },
+        source.direction === currentDirection
+          ? source.straightRunLength ?? 1
+          : 0,
+        {
+          sectorOrigin: route.sectorOrigin,
+          protectedExits,
+        },
+      );
+      for (const chosen of candidates) {
+        exploredCandidates += 1;
+        if (exploredCandidates > reconstructionBudget) break;
+        const connection = {
+          id: oriented.start.connectionId,
+          firstPlacementId: source.placementId,
+          secondPlacementId: chosen.tile.placementId,
+          segments: chosen.connectorSegments,
+        };
+        occupied.push(chosen.tile);
+        tileByPlacementId.set(chosen.tile.placementId, chosen.tile);
+        occupiedConnections.push(connection);
+        const result = replay(
+          historyIndex + 1,
+          accumulatedTurns + Number(chosen.direction !== currentDirection),
+        );
+        if (result !== null) return result;
+        occupiedConnections.pop();
+        tileByPlacementId.delete(chosen.tile.placementId);
+        occupied.pop();
+      }
+      return null;
     };
-    occupied.push(first);
-    tileByPlacementId.set(first.placementId, first);
-    const rest = placeChain(
-      first,
-      first.physicalEnd,
-      rawMain.slice(1),
-      "right",
-      occupied,
-      occupiedConnections,
-      connectionClearance,
-      { clockwiseFirst: true },
-    );
-    turnCount += rest.turnCount;
-    rest.tiles.forEach((tile) =>
-      tileByPlacementId.set(tile.placementId, tile)
-    );
+
+    const replayedTurns = replay(1, 0);
+    if (replayedTurns === null) {
+      return createGuaranteedRadialLayout(table, connectionClearance);
+    }
+    turnCount = replayedTurns;
   }
 
   const size = initializeStableCanvas([...tileByPlacementId.values()]);
@@ -1105,6 +1842,165 @@ function createInitialLayout(table, connectionClearance) {
     turnCount,
     connectionClearance,
   );
+}
+
+function orientFromSource(rawTile, sourcePlacementId) {
+  if (rawTile.start.neighborPlacementId === sourcePlacementId) return rawTile;
+  if (rawTile.end.neighborPlacementId === sourcePlacementId) {
+    return reverseTile(rawTile);
+  }
+  throw new Error(
+    `La ficha ${rawTile.placementId} no continúa desde ${sourcePlacementId}.`,
+  );
+}
+
+function placeGuaranteedArm({
+  rawTiles,
+  root,
+  direction,
+  tileByPlacementId,
+  connectionClearance,
+  rootFace = null,
+}) {
+  let source = root;
+  let face = rootFace;
+  for (const rawTile of rawTiles) {
+    const oriented = orientFromSource(rawTile, source.placementId);
+    const sourceFace = face ?? faceForConnection(
+      source,
+      oriented.start.connectionId,
+    );
+    const placed = {
+      ...placeAfterFace(
+        source,
+        sourceFace,
+        oriented,
+        direction,
+        direction,
+        connectionClearance,
+      ),
+      straightRunLength: (source.straightRunLength ?? 0) + 1,
+      turnReason: "straight",
+      escapeDepth: ESCAPE_LOOKAHEAD_STEPS,
+      protectedExitsPreserved: true,
+    };
+    tileByPlacementId.set(placed.placementId, placed);
+    source = placed;
+    face = null;
+  }
+}
+
+function centerCanvasOnPlacement(tiles, placementId) {
+  const anchor = tiles.find((tile) => tile.placementId === placementId);
+  if (!anchor) return initializeStableCanvas(tiles);
+  const offsetX = -anchor.x;
+  const offsetY = -anchor.y;
+  for (const tile of tiles) {
+    tile.x += offsetX;
+    tile.y += offsetY;
+  }
+  const relative = compactBounds(tiles);
+  const halfWidth = Math.max(
+    STABLE_CANVAS_WIDTH / 2,
+    Math.abs(relative.left) + TABLE_PADDING,
+    Math.abs(relative.right) + TABLE_PADDING,
+  );
+  const halfHeight = Math.max(
+    STABLE_CANVAS_HEIGHT / 2,
+    Math.abs(relative.top) + TABLE_PADDING,
+    Math.abs(relative.bottom) + TABLE_PADDING,
+  );
+  const softCenter = { x: halfWidth, y: halfHeight };
+  for (const tile of tiles) {
+    tile.x += softCenter.x;
+    tile.y += softCenter.y;
+  }
+  return {
+    width: halfWidth * 2,
+    height: halfHeight * 2,
+    softCenter,
+  };
+}
+
+/**
+ * Reconstrucción total de último recurso. La topología reglamentaria es una
+ * unión de hasta cuatro caminos simples; asignar un rayo diferente a cada
+ * camino garantiza conectores físicos cortos y ausencia de cruces.
+ */
+function createGuaranteedRadialLayout(table, connectionClearance) {
+  const rawByPlacementId = rawTilesByPlacementId(table);
+  const ordered = orderedRawTiles(table);
+  const special = ordered.find((tile) => tile.isSpecialDouble) ?? null;
+  const anchorRaw = special ?? ordered[0] ?? null;
+  const tileByPlacementId = new Map();
+  if (!anchorRaw) {
+    return assembleLayout(
+      table,
+      tileByPlacementId,
+      initializeStableCanvas([]),
+      0,
+      connectionClearance,
+    );
+  }
+  const anchor = {
+    ...projectTile(anchorRaw, 0, 0, "right"),
+    straightRunLength: 1,
+    turnReason: "origin",
+    escapeDepth: ESCAPE_LOOKAHEAD_STEPS,
+    protectedExitsPreserved: true,
+  };
+  tileByPlacementId.set(anchor.placementId, anchor);
+
+  const mainIds = table.mainLine.placementIds;
+  const anchorIndex = mainIds.indexOf(anchor.placementId);
+  const leftTiles = mainIds.slice(0, anchorIndex).reverse().map(
+    (placementId) => rawByPlacementId.get(placementId),
+  );
+  const rightTiles = mainIds.slice(anchorIndex + 1).map(
+    (placementId) => rawByPlacementId.get(placementId),
+  );
+  placeGuaranteedArm({
+    rawTiles: leftTiles,
+    root: anchor,
+    direction: "left",
+    tileByPlacementId,
+    connectionClearance,
+  });
+  placeGuaranteedArm({
+    rawTiles: rightTiles,
+    root: anchor,
+    direction: "right",
+    tileByPlacementId,
+    connectionClearance,
+  });
+
+  const family = table.branchFamilies.find(
+    (candidate) => candidate.rootPlacementId === anchor.placementId,
+  );
+  for (const arm of family?.arms ?? []) {
+    const direction = arm.armIndex === 1 ? "up" : "down";
+    placeGuaranteedArm({
+      rawTiles: arm.tiles.map(
+        ({ placementId }) => rawByPlacementId.get(placementId),
+      ),
+      root: anchor,
+      direction,
+      tileByPlacementId,
+      connectionClearance,
+      rootFace: { ...arm.origin, side: sidesFor(direction).end },
+    });
+  }
+
+  const tiles = [...tileByPlacementId.values()];
+  const layout = assembleLayout(
+    table,
+    tileByPlacementId,
+    centerCanvasOnPlacement(tiles, ordered[0].placementId),
+    0,
+    connectionClearance,
+  );
+  layout.layoutStats.reconstructedRadially = true;
+  return layout;
 }
 
 function locateNewTile(table, newPlacementId, tileByPlacementId) {
@@ -1180,12 +2076,24 @@ function extendLayout(table, previousLayout, connectionClearance) {
     const sourceFace = extension.rootFace ??
       faceForConnection(extension.source, extension.connectionId);
     const currentDirection = directionForSide(sourceFace.side);
+    const openingPlacementId = orderedRawTiles(table)[0]?.placementId;
+    const route = routeForHistoricalTile(
+      table,
+      extension.rawTile,
+      openingPlacementId,
+      tileByPlacementId,
+    );
+    const protectedExits = collectProtectedReplayExits(
+      table,
+      currentRawTiles,
+      tileByPlacementId,
+    );
     const chosen = choosePlacement(
       extension.rawTile,
       extension.source,
       sourceFace,
       currentDirection,
-      extension.initialDirection,
+      route.initialDirection,
       [...tileByPlacementId.values()],
       flattenLayoutConnections(previousLayout.connections),
       true,
@@ -1194,6 +2102,10 @@ function extendLayout(table, previousLayout, connectionClearance) {
       extension.source.direction === currentDirection
         ? extension.source.straightRunLength ?? 1
         : 0,
+      {
+        sectorOrigin: route.sectorOrigin,
+        protectedExits,
+      },
     );
     if (chosen.direction !== currentDirection) turnCount += 1;
     tileByPlacementId.set(newPlacementId, chosen.tile);
@@ -1221,8 +2133,15 @@ export function createTraditionalSnakeLayout(
   { connectionClearance = 2, previousLayout = null } = {},
 ) {
   if (canExtendLayout(table, previousLayout)) {
-    const extended = extendLayout(table, previousLayout, connectionClearance);
-    if (extended) return extended;
+    try {
+      const extended = extendLayout(table, previousLayout, connectionClearance);
+      if (extended) return extended;
+    } catch {
+      // Una geometría incremental antigua puede haber reservado un corredor
+      // diferente al requerido por una jugada posterior hecha en otra vista.
+      // El snapshot reglamentario sigue siendo representable: se reconstruye
+      // de forma determinista y nunca se deja el tablero vacío.
+    }
   }
   return createInitialLayout(table, connectionClearance);
 }
