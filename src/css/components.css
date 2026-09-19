@@ -219,7 +219,7 @@
 }
 
 .score-team.is-score-feedback {
-  animation: score-arrival 520ms 4.05s ease-out both;
+  animation: score-arrival 600ms 6s ease-out both;
 }
 
 .score-team__delta {
@@ -236,7 +236,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   opacity: 0;
-  animation: score-delta 560ms 4.05s ease-out both;
+  animation: score-delta 700ms 5.8s ease-out both;
 }
 
 .score-team strong {
@@ -405,12 +405,16 @@
 .play-feedback.is-score-feedback {
   pointer-events: auto;
   cursor: pointer;
-  animation-duration: 4.65s;
+  animation-duration: 6.6s;
 }
 
 .scoring-feedback {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "lesson lesson lesson"
+    "source terms sum"
+    "division verdict outcome";
   align-items: center;
   gap: 0.25rem 0.6rem;
 }
@@ -419,6 +423,7 @@
 .scoring-feedback__terms,
 .scoring-feedback__sum,
 .scoring-feedback__divisibility,
+.scoring-feedback__verdict,
 .scoring-feedback__outcome {
   display: inline-flex;
   align-items: center;
@@ -428,6 +433,7 @@
 }
 
 .scoring-feedback__source {
+  grid-area: source;
   color: #d8c18e;
   font-size: 0.64rem;
   letter-spacing: 0.08em;
@@ -436,11 +442,17 @@
 }
 
 .scoring-feedback__terms {
+  grid-area: terms;
   min-width: 0;
   gap: 0.22rem;
   color: #ffe29a;
   white-space: nowrap;
-  animation-delay: 1150ms;
+  animation-delay: 2380ms;
+}
+
+.scoring-feedback__sigma {
+  color: #fff0bd;
+  font-size: 1rem;
 }
 
 .scoring-feedback__term {
@@ -454,57 +466,70 @@
   background: rgb(87 57 8 / 0.72);
   opacity: 0;
   animation: scoring-term-arrival 620ms ease-out both;
-  animation-delay: calc(1720ms + var(--term-index) * 90ms);
+  animation-delay: calc(2500ms + var(--term-index) * 90ms);
 }
 
 .scoring-feedback__operator {
   color: #bba978;
   opacity: 0;
-  animation: scoring-term-arrival 420ms 1780ms ease-out both;
+  animation: scoring-term-arrival 420ms 2550ms ease-out both;
 }
 
 .scoring-feedback__sum {
+  grid-area: sum;
   gap: 0.24rem;
   padding-inline: 0.52rem;
   border-inline-start: 1px solid rgb(255 255 255 / 0.18);
   color: #ffe29a;
   font-size: 1.12rem;
-  animation-delay: 2300ms;
+  animation-delay: 3600ms;
 }
 
 .scoring-feedback__equals,
-.scoring-feedback__result,
-.scoring-feedback__sum-label {
+.scoring-feedback__result {
   opacity: 0;
   animation: scoring-step 360ms ease-out both;
 }
 
-.scoring-feedback__equals { animation-delay: 2300ms; }
+.scoring-feedback__equals { animation-delay: 3600ms; }
 .scoring-feedback__result {
   color: #ffda70;
   font-size: 1.18rem;
-  animation-delay: 2480ms;
-}
-.scoring-feedback__sum-label {
-  margin-inline-start: 0.24rem;
-  padding-inline-start: 0.48rem;
-  border-inline-start: 1px solid rgb(255 255 255 / 0.18);
-  animation-delay: 2750ms;
+  animation-delay: 3820ms;
 }
 
 .scoring-feedback__divisibility {
+  grid-area: division;
   color: #d7ddd7;
   font-size: 0.72rem;
   flex-wrap: wrap;
   gap: 0.2rem;
-  animation-delay: 3150ms;
+  animation-delay: 4650ms;
+}
+
+.scoring-feedback__verdict {
+  grid-area: verdict;
+  min-width: 0;
+  color: #d7ddd7;
+  font-size: 0.73rem;
+  animation-delay: 5600ms;
+}
+
+.scoring-feedback__verdict.is-award {
+  color: #ffe29a;
+  font-weight: 900;
+}
+
+.scoring-feedback__verdict.is-no-award {
+  color: #d5c8b2;
 }
 
 .scoring-feedback__outcome {
+  grid-area: outcome;
   min-width: 5rem;
   color: #c8d0ca;
   font-size: 0.9rem;
-  animation-delay: 4100ms;
+  animation-delay: 5850ms;
 }
 
 .scoring-feedback__quotient,
@@ -514,9 +539,26 @@
   min-height: 1.55rem;
   place-items: center;
   border-radius: 0.42rem;
+  font-size: 1rem;
+}
+
+.scoring-feedback__quotient.is-score {
   color: #2a1d04;
   background: #ffda70;
-  font-size: 1rem;
+  box-shadow: 0 0 0.8rem rgb(255 210 82 / 0.5);
+  transform: scale(1.08);
+}
+
+.scoring-feedback__quotient.is-context {
+  border: 1px solid rgb(221 213 190 / 0.42);
+  color: #d7ddd7;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.scoring-feedback__remainder.is-focus {
+  color: #261d11;
+  background: #d8c5a6;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.08);
 }
 
 .scoring-feedback__remainder-label {
@@ -532,8 +574,8 @@
 
 .scoring-feedback__outcome.is-award.has-score-target {
   animation:
-    scoring-step 420ms 4100ms ease-out both,
-    scoring-award-transfer 620ms 4140ms ease-in both;
+    scoring-step 420ms 5850ms ease-out both,
+    scoring-award-transfer 720ms 5900ms ease-in both;
 }
 
 .scoring-feedback__outcome.is-no-award {
@@ -545,6 +587,7 @@
 }
 
 .scoring-feedback__lesson {
+  grid-area: lesson;
   grid-column: 1 / -1;
   color: #e5dcc4;
   font-size: 0.65rem;
@@ -580,8 +623,15 @@
     calc(var(--token-from-x) - 0.875rem),
     calc(var(--token-from-y) - 0.875rem)
   );
-  animation: scoring-token-flight 760ms
-    calc(1150ms + var(--token-order) * 90ms) ease-in-out both;
+  animation: scoring-token-flight 1050ms
+    calc(1300ms + var(--token-order) * 90ms) ease-in-out both;
+}
+
+.app-shell.is-ports-mode .play-feedback.is-score-feedback {
+  inset: 50% auto auto 50%;
+  width: min(30rem, calc(100% - 1.5rem));
+  transform: translate(-50%, -50%);
+  animation-name: port-scoring-stage-arrival;
 }
 
 .branch-feedback {
@@ -988,6 +1038,12 @@
   }
 }
 
+@keyframes port-scoring-stage-arrival {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + 0.45rem)) scale(0.94); }
+  12%, 92% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 0.2rem)) scale(0.98); }
+}
+
 .play-feedback.is-complete {
   opacity: 1;
   animation: none;
@@ -1000,13 +1056,17 @@
 .play-feedback.is-complete .scoring-feedback__sum,
 .play-feedback.is-complete .scoring-feedback__equals,
 .play-feedback.is-complete .scoring-feedback__result,
-.play-feedback.is-complete .scoring-feedback__sum-label,
 .play-feedback.is-complete .scoring-feedback__divisibility,
+.play-feedback.is-complete .scoring-feedback__verdict,
 .play-feedback.is-complete .scoring-feedback__outcome,
 .play-feedback.is-complete .scoring-feedback__outcome.is-award.has-score-target {
   opacity: 1;
   transform: none;
   animation: none;
+}
+
+.app-shell.is-ports-mode .play-feedback.is-complete {
+  transform: translate(-50%, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1021,8 +1081,8 @@
   .scoring-feedback__sum,
   .scoring-feedback__equals,
   .scoring-feedback__result,
-  .scoring-feedback__sum-label,
   .scoring-feedback__divisibility,
+  .scoring-feedback__verdict,
   .scoring-feedback__outcome {
     animation: none;
   }
@@ -1038,8 +1098,8 @@
   .scoring-feedback__sum,
   .scoring-feedback__equals,
   .scoring-feedback__result,
-  .scoring-feedback__sum-label,
   .scoring-feedback__divisibility,
+  .scoring-feedback__verdict,
   .scoring-feedback__outcome {
     opacity: 1;
   }
@@ -1149,13 +1209,14 @@
   }
 
   .scoring-feedback {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "lesson lesson"
+      "source source"
+      "terms sum"
+      "division division"
+      "verdict outcome";
     gap: 0.22rem 0.42rem;
-  }
-
-  .scoring-feedback__lesson,
-  .scoring-feedback__source {
-    grid-column: 1 / -1;
   }
 
   .scoring-feedback__terms {
@@ -1164,7 +1225,6 @@
   }
 
   .scoring-feedback__divisibility {
-    grid-column: 1 / 3;
     justify-content: flex-start;
   }
 

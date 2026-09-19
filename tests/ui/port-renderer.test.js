@@ -157,8 +157,8 @@ test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales
   assert.equal(markup.match(/aria-label="Valor \d;/g)?.length, 7);
   assert.equal(markup.match(/port-incidence is-potential/g)?.length ?? 0, 0);
   assert.match(renderPortStructureToggleMarkup(scene), /Ver estructura/);
-  assert.match(markup, /SUMAN AHORA/);
-  assert.match(markup, />S = 0</);
+  assert.match(markup, /Σ · EXTREMOS/);
+  assert.match(markup, />Σ = 0</);
   assert.equal(scene.visualState, "play");
 });
 
@@ -181,8 +181,8 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   assert.match(structureMarkup, /class="port-thread is-main(?:\s|")/);
   assert.match(structureMarkup, /class="port-bridge is-main(?:\s|")/);
   assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
-  assert.match(markup, /SUMAN AHORA/);
-  assert.match(markup, />S = \d+</);
+  assert.match(markup, /Σ · EXTREMOS/);
+  assert.match(markup, />Σ = \d+</);
   assert.doesNotMatch(markup, />\s*\+\d+\s+puntos/i);
 });
 
@@ -847,13 +847,12 @@ test("Puertos intensifica las fuentes reales y deja la resolución a la banda co
 
   assert.match(scoredMarkup, /port-graph is-play is-scoring-feedback/);
   assert.doesNotMatch(scoredMarkup, /port-cover__scoring/);
-  assert.match(scoredMarkup, /port-cover__current-score is-pending/);
-  assert.match(scoredMarkup, /S = …/);
+  assert.doesNotMatch(scoredMarkup, /port-cover__current-score/);
   assert.match(
     scoredMarkup,
     new RegExp(`data-scoring-anchor-value="${contributingTarget.value}"`),
   );
-  assert.doesNotMatch(scoredMarkup, /S = 10/);
+  assert.doesNotMatch(scoredMarkup, /Σ = 10/);
   const scoredScene = createPortScene(view, { scoringResolution });
   assert.equal(
     scoredScene.openTargets.filter((target) => target.isScoringTerm).length,
@@ -902,7 +901,7 @@ test("el contrato scoring disabled elimina el centro matemático sin afectar tar
 
   assert.equal(scene.scoringPresentation, null);
   assert.equal(scene.openTargets.length, view.portGraph.openTargets.length);
-  assert.doesNotMatch(markup, /SUMAN AHORA|S =/);
+  assert.doesNotMatch(markup, /Σ · EXTREMOS|Σ =/);
 });
 
 test("jugabilidad teal y scoring dorado pueden coexistir en un valor", () => {

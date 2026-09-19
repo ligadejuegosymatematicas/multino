@@ -499,7 +499,7 @@ test("al seleccionar ficha los compatibles dominan y muestran opción individual
   assert.match(markup, /class="open-target__option-index"/);
   assert.doesNotMatch(
     markup,
-    />\s*S\s*=|>\s*\+\d+\s+puntos|>\s*no puntúa/i,
+    />\s*[SΣ]\s*=|>\s*\+\d+\s+puntos|>\s*no puntúa/i,
   );
   assert.match(
     boardCss,

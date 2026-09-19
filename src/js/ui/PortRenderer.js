@@ -185,8 +185,8 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
   const displayedScoringMultiplicity = node.previewScoringMultiplicity ??
     node.scoringMultiplicity;
   const scoringLabel = displayedScoringMultiplicity > 0
-    ? `; aporta ${displayedScoringMultiplicity} ${displayedScoringMultiplicity === 1 ? "vez" : "veces"} a S${node.previewScoringMultiplicity !== null ? " en la previsualización" : ""}`
-    : "; no aporta actualmente a S";
+    ? `; aporta ${displayedScoringMultiplicity} ${displayedScoringMultiplicity === 1 ? "vez" : "veces"} a Σ${node.previewScoringMultiplicity !== null ? " en la previsualización" : ""}`
+    : "; no aporta actualmente a Σ";
   return `
     <g class="port-macro-node${isExpanded ? " is-expanded" : ""}${hasDoubleHub ? " has-double-hub" : ""}${node.isScoringFeedbackSource ? " is-scoring-feedback-source" : ""}${node.isDecisionPreview ? " is-decision-preview" : ""}" data-node-value="${node.value}" data-open-target-count="${node.openTargetCount}" data-decision-count="${node.strategicDecisionCount}" data-physical-target-count="${node.physicalCompatibleTargetCount}" data-scoring-multiplicity="${displayedScoringMultiplicity}" data-played-tile-count="${node.playedTileCount}"${node.previewScoringMultiplicity !== null ? ` data-current-scoring-multiplicity="${node.scoringMultiplicity}"` : ""} role="button" tabindex="0" aria-pressed="${isExpanded || node.isStrategicInspected}" aria-label="Valor ${node.value}; ${node.playedTileCount} de 7 fichas salieron; ${node.openTargetCount} ${node.openTargetCount === 1 ? "lugar abierto" : "lugares abiertos"}${scoringLabel}${compatibilityLabel}${ramifierLabel}">
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
@@ -288,8 +288,8 @@ export function renderPortStrategicInspectorMarkup(inspector) {
     ? `<p><strong>Doble central:</strong> ${inspector.ramifier.connectionCount}/4 conexiones${inspector.ramifier.isSaturated ? " · saturado" : ""}</p>`
     : "";
   const scoring = inspector.isScoringSource
-    ? `<p class="port-strategic-inspector__scoring"><strong>Suma en S:</strong> ${inspector.scoringTerms.map((term) => escapeAttribute(term.label)).join(" + ")}</p>`
-    : `<p class="port-strategic-inspector__muted">Este valor no aporta actualmente a S.</p>`;
+    ? `<p class="port-strategic-inspector__scoring"><strong>Aporte a Σ:</strong> ${inspector.scoringTerms.map((term) => escapeAttribute(term.label)).join(" + ")}</p>`
+    : `<p class="port-strategic-inspector__muted">Este valor no aporta actualmente a Σ.</p>`;
   return `
     <aside class="port-strategic-inspector" data-port-strategic-inspector role="dialog" aria-label="Detalle estratégico del valor ${inspector.value}">
       <button type="button" class="port-strategic-inspector__close" data-close-port-strategic aria-label="Cerrar detalle">×</button>
@@ -306,11 +306,7 @@ function renderCurrentScoring(scoring, cover, { pending = false } = {}) {
     return "";
   }
   if (pending) {
-    return `
-      <g class="port-cover__current-score is-pending" role="status" aria-label="Calculando la suma de las puntas">
-        <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 12}">PUNTAS QUE SUMAN</text>
-        <text class="port-cover__current-sum" x="${cover.cx}" y="${cover.cy + 28}">S = …</text>
-      </g>`;
+    return "";
   }
   const terms = scoring.terms;
   const chipGap = 10;
@@ -335,11 +331,11 @@ function renderCurrentScoring(scoring, cover, { pending = false } = {}) {
     ? `<text class="port-cover__current-expression" x="${cover.cx}" y="${cover.cy + 12}">${escapeAttribute(scoring.expression)}</text>`
     : "";
   return `
-    <g class="port-cover__current-score" role="status" aria-label="Suman ahora ${escapeAttribute(scoring.expression)}. S igual a ${scoring.sum}">
-      <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 67}">SUMAN AHORA</text>
+    <g class="port-cover__current-score" role="status" aria-label="Sigma se forma con ${escapeAttribute(scoring.expression)} y vale ${scoring.sum}">
+      <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 67}">Σ · EXTREMOS</text>
       ${chips}
       ${expression}
-      <text class="port-cover__current-sum" x="${cover.cx}" y="${cover.cy + 54}">S = ${scoring.sum}</text>
+      <text class="port-cover__current-sum" x="${cover.cx}" y="${cover.cy + 54}">Σ = ${scoring.sum}</text>
     </g>`;
 }
 
@@ -498,7 +494,7 @@ export function createPortDecisionPresentations(decisions) {
 
 /**
  * Separa lo común de un conjunto de decisiones y deja en cada tarjeta solo la
- * consecuencia que realmente la distingue. No expone S ni puntos futuros.
+ * consecuencia que realmente la distingue. No expone Σ ni puntos futuros.
  */
 export function createPortDecisionChoicePresentation(decisions) {
   const rawPresentations = decisions.map(createPortDecisionPresentation);

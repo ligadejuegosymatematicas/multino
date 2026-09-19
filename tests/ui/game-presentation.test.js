@@ -121,18 +121,25 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   assert.equal(scored.sourceMultiplicities[3], 1);
   assert.deepEqual(scored.stages, [
     "sources",
+    "tokens",
     "expression",
     "sum",
     "division",
+    "conclusion",
     "outcome",
   ]);
   assert.equal(missed.divisionText, "18 = 5 × 3 + 3");
-  assert.equal(missed.outcomeText, "No puntúa");
+  assert.equal(missed.verdictText, "Σ no es múltiplo de 5");
+  assert.equal(missed.outcomeText, "0 puntos");
+  assert.equal(scored.verdictText, "¡Múltiplo de 5!");
   assert.deepEqual(zero.terms, []);
   assert.equal(zero.divisionText, "0 puntos");
   assert.equal(zero.outcomeText, "0 puntos");
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 4000);
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 5000);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 6000);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 7000);
+  assert.equal(SCORING_FEEDBACK_TIMING.sourcesMs, 1300);
+  assert.equal(SCORING_FEEDBACK_TIMING.tokensMs, 1200);
+  assert.equal(SCORING_FEEDBACK_TIMING.transferMs, 900);
 });
 
 test("cada scoringTerm genera tokens canónicos, incluido cero y doble ×2", () => {
@@ -182,7 +189,7 @@ test("la ficha visual compartida conserva pips reales incluso con ceros", () => 
   }
 });
 
-test("S y el marcador esperan la etapa final del feedback", () => {
+test("Σ y el marcador esperan la etapa final del feedback", () => {
   const feedback = { teamId: "A", scoreAwarded: 4, scoring: { sum: 20 } };
   assert.equal(
     getDisplayedTeamScore({ teamId: "A", score: 9 }, feedback),
@@ -196,7 +203,7 @@ test("S y el marcador esperan la etapa final del feedback", () => {
     getScoringPanelPresentation({
       scoringPresentation: { enabled: true, sum: 20, expression: "4×5" },
     }, { feedback }),
-    { sumText: "S = …", expression: null, isPending: true },
+    { sumText: "Σ = …", expression: null, isPending: true },
   );
 });
 
@@ -274,10 +281,12 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(themeCss, /--game-gold-bright:\s*var\(--scoring\)/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
-  assert.match(componentsCss, /scoring-token-flight 760ms/);
-  assert.match(componentsCss, /score-delta 560ms 4\.05s/);
-  assert.match(componentsCss, /animation-duration:\s*4\.65s/);
+  assert.match(componentsCss, /scoring-token-flight 1050ms/);
+  assert.match(componentsCss, /score-delta 700ms 5\.8s/);
+  assert.match(componentsCss, /animation-duration:\s*6\.6s/);
   assert.match(componentsCss, /@keyframes scoring-award-transfer/);
+  assert.match(componentsCss, /scoring-feedback__quotient\.is-score/);
+  assert.match(componentsCss, /scoring-feedback__remainder\.is-focus/);
   assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
   assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
   assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
@@ -311,7 +320,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
   assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
   assert.match(mainSource, /"is-ports-mode"[\s\S]*?mode === BOARD_VIEW_MODES\.PORTS/);
-  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS/);
+  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS \|\| feedback\?\.scoring != null/);
   assert.match(themeCss, /\.app-shell\.is-ports-mode \.round-overview/);
   assert.match(turnSource, /player-status__remaining/);
   assert.match(turnSource, /remainingDominoCount/);

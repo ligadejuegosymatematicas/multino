@@ -4,13 +4,14 @@ function teamName(view, teamId) {
 }
 
 export const SCORING_FEEDBACK_TIMING = Object.freeze({
-  sourcesMs: 1150,
-  expressionMs: 1050,
-  sumMs: 850,
-  divisionMs: 950,
-  transferMs: 650,
-  totalMs: 4650,
-  reducedMotionMs: 800,
+  sourcesMs: 1300,
+  tokensMs: 1200,
+  expressionMs: 1100,
+  sumMs: 1000,
+  divisionMs: 1100,
+  transferMs: 900,
+  totalMs: 6600,
+  reducedMotionMs: 1400,
 });
 
 function sourceMultiplicities(terms) {
@@ -82,7 +83,12 @@ export function createScoringFeedbackPresentation(scoring, scoringTeamName) {
       ? "0 puntos"
       : scoring.scoreAwarded > 0
         ? `+${scoring.scoreAwarded} ${scoringTeamName}`
-        : "No puntúa",
+        : "0 puntos",
+    verdictText: isZero
+      ? ""
+      : scoring.scoreAwarded > 0
+        ? `¡Múltiplo de ${scoring.divisor}!`
+        : `Σ no es múltiplo de ${scoring.divisor}`,
     outcomeKind: isZero
       ? "zero"
       : scoring.scoreAwarded > 0
@@ -90,9 +96,11 @@ export function createScoringFeedbackPresentation(scoring, scoringTeamName) {
         : "no-award",
     stages: Object.freeze([
       "sources",
+      "tokens",
       "expression",
       "sum",
       "division",
+      "conclusion",
       "outcome",
     ]),
   };
@@ -153,12 +161,14 @@ function renderDivision(model) {
   const wrapper = document.createElement("span");
   wrapper.className = "scoring-feedback__divisibility";
   if (model.sum === 0) {
-    wrapper.textContent = "0 puntos";
+    wrapper.textContent = "Σ = 0";
     return wrapper;
   }
   wrapper.append(`${model.sum} = ${model.divisor} × `);
   const quotient = document.createElement("strong");
-  quotient.className = "scoring-feedback__quotient";
+  quotient.className = `scoring-feedback__quotient ${
+    model.isDivisible ? "is-score" : "is-context"
+  }`;
   quotient.textContent = String(
     model.isDivisible ? model.scoreAwarded : model.divisionQuotient,
   );
@@ -166,12 +176,12 @@ function renderDivision(model) {
   if (!model.isDivisible) {
     wrapper.append(" + ");
     const remainder = document.createElement("strong");
-    remainder.className = "scoring-feedback__remainder";
+    remainder.className = "scoring-feedback__remainder is-focus";
     remainder.textContent = String(model.remainder);
     wrapper.append(remainder);
     const remainderLabel = document.createElement("span");
     remainderLabel.className = "scoring-feedback__remainder-label";
-    remainderLabel.textContent = `resto ${model.remainder}`;
+    remainderLabel.textContent = `resto = ${model.remainder}`;
     wrapper.append(remainderLabel);
   }
   return wrapper;
@@ -289,9 +299,13 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
       );
     const source = document.createElement("span");
     source.className = "scoring-feedback__source";
-    source.textContent = "Puntas que suman";
+    source.textContent = "Extremos";
     const terms = document.createElement("span");
     terms.className = "scoring-feedback__terms";
+    const sigma = document.createElement("strong");
+    sigma.className = "scoring-feedback__sigma";
+    sigma.textContent = "Σ =";
+    terms.append(sigma);
     const tokenElements = [];
     for (const [index, token] of model.sourceTokens.entries()) {
       const chip = document.createElement("span");
@@ -319,11 +333,12 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
     const result = document.createElement("strong");
     result.className = "scoring-feedback__result";
     result.textContent = String(model.sum);
-    const sumLabel = document.createElement("strong");
-    sumLabel.className = "scoring-feedback__sum-label";
-    sumLabel.textContent = `S = ${model.sum}`;
-    sum.append(equals, result, sumLabel);
+    sum.append(equals, result);
     const divisibility = renderDivision(model);
+    const verdict = document.createElement("span");
+    verdict.className = `scoring-feedback__verdict is-${model.outcomeKind}`;
+    verdict.textContent = model.verdictText;
+    verdict.hidden = model.verdictText === "";
     const outcome = document.createElement("strong");
     outcome.className = `scoring-feedback__outcome is-${model.outcomeKind}`;
     outcome.textContent = model.outcomeText;
@@ -331,10 +346,10 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
       const lesson = document.createElement("span");
       lesson.className = "scoring-feedback__lesson";
       lesson.textContent =
-        `Suma las puntas. Si S es múltiplo de ${model.divisor}, anotas S÷${model.divisor}.`;
+        `Suma los extremos. Si Σ es múltiplo de ${model.divisor}, anotas Σ÷${model.divisor}.`;
       sequence.append(lesson);
     }
-    sequence.append(source, terms, sum, divisibility, outcome);
+    sequence.append(source, terms, sum, divisibility, verdict, outcome);
     container.append(sequence);
     const flightLayer = renderScoringFlightTokens(model, tokenElements);
     if (model.outcomeKind === "award") connectAwardToScore(outcome);

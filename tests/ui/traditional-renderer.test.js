@@ -807,7 +807,7 @@ test("la selección destaca solo extremos legales y conserva targets concretos",
   );
   assert.doesNotMatch(
     renderTraditionalTableMarkup(scene),
-    />\s*S\s*=|>\s*\+\d+\s+puntos|>\s*no puntúa/i,
+    />\s*[SΣ]\s*=|>\s*\+\d+\s*puntos|>\s*no puntúa/i,
   );
 });
 

@@ -43,9 +43,9 @@ export function getScoringPanelPresentation(view, { feedback = null } = {}) {
   const scoring = view.scoringPresentation;
   if (!scoring.enabled) return null;
   return feedback?.scoring
-    ? { sumText: "S = …", expression: null, isPending: true }
+    ? { sumText: "Σ = …", expression: null, isPending: true }
     : {
-        sumText: `S = ${scoring.sum}`,
+        sumText: `Σ = ${scoring.sum}`,
         expression: scoring.expression,
         isPending: false,
       };

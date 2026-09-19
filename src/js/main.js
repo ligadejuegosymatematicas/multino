@@ -253,7 +253,7 @@ function renderRound(presentation, mode, feedback) {
     { feedback },
   );
   scoringCard.hidden = !presentation.view.scoringPresentation.enabled ||
-    mode === BOARD_VIEW_MODES.PORTS;
+    mode === BOARD_VIEW_MODES.PORTS || feedback?.scoring != null;
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,

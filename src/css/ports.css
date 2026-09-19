@@ -272,7 +272,7 @@
 
 .port-graph.is-scoring-feedback .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
 .port-graph.is-scoring-feedback .port-macro-node.is-scoring-feedback-source .port-macro-node__scoring-badge {
-  animation: port-scoring-source 4.65s ease-out both;
+  animation: port-scoring-source 6.6s ease-out both;
 }
 
 .port-macro-node-shell.is-strategic-inspected .port-macro-node__rim {
@@ -808,7 +808,7 @@
 
 @keyframes port-target-pulse { 0%, 100% { opacity: 0.74; } 50% { opacity: 1; } }
 @keyframes port-cover-score { 0% { opacity: 0; transform: translateY(8px) scale(0.96); transform-origin: center; } 16%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
-@keyframes port-scoring-source { 0%, 100% { opacity: 1; filter: none; } 6%, 28% { opacity: 1; filter: drop-shadow(0 0 11px #ffd261); } }
+@keyframes port-scoring-source { 0%, 100% { opacity: 1; filter: none; } 4%, 20% { opacity: 1; filter: drop-shadow(0 0 11px #ffd261); } }
 
 @media (prefers-reduced-motion: reduce) {
   .port-thread,
