@@ -126,7 +126,22 @@
 .open-target.is-scoring-term .open-target__curve,
 .open-target.is-scoring-term .open-target__end,
 .graph-vertex.is-scoring-term .graph-vertex__circle {
-  animation: scoring-source-highlight 1.75s ease-out;
+  animation: scoring-source-highlight 3.3s ease-out;
+}
+
+.graph-vertex__scoring-multiplicity circle {
+  fill: #ffd261;
+  stroke: #fff0b8;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 7px rgb(255 202 82 / 0.72));
+}
+
+.graph-vertex__scoring-multiplicity text {
+  fill: #302204;
+  font-size: 12px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 .graph-family-root {
@@ -609,7 +624,7 @@
 
 @keyframes scoring-source-highlight {
   0%, 100% { filter: none; }
-  25%, 72% {
+  6%, 28% {
     stroke: var(--amber);
     stroke-width: 9;
     filter: drop-shadow(0 0 7px rgb(182 107 24 / 0.52));

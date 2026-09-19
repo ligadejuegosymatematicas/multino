@@ -157,7 +157,7 @@
 }
 
 .traditional-domino.is-scoring-term {
-  animation: traditional-scoring-source 1.75s ease-out;
+  animation: traditional-scoring-source 3.3s ease-out;
 }
 
 .traditional-domino__scoring-value,
@@ -178,8 +178,12 @@
   pointer-events: none;
 }
 
-.traditional-domino__scoring-value {
-  inset: -0.9rem -0.8rem auto auto;
+.traditional-domino__scoring-value.is-first {
+  inset: -0.9rem auto auto -0.8rem;
+}
+
+.traditional-domino__scoring-value.is-second {
+  inset: auto -0.8rem -0.9rem auto;
 }
 
 .traditional-target__scoring-value {
@@ -355,7 +359,7 @@
 }
 
 .traditional-target.is-scoring-term {
-  animation: traditional-scoring-target 1.75s ease-out;
+  animation: traditional-scoring-target 3.3s ease-out;
 }
 
 .traditional-target.is-potential .traditional-target__socket {
@@ -537,12 +541,12 @@
 
 @keyframes traditional-scoring-source {
   0%, 100% { filter: none; }
-  25%, 72% { filter: drop-shadow(0 0 8px #ffd277); }
+  6%, 28% { filter: drop-shadow(0 0 11px #ffd277); }
 }
 
 @keyframes traditional-scoring-target {
   0%, 100% { color: #263f3c; }
-  25%, 72% { color: #ffca70; }
+  6%, 28% { color: #ffca70; }
 }
 
 @media (prefers-reduced-motion: reduce) {

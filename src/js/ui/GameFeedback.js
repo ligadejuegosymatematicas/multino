@@ -3,6 +3,24 @@ function teamName(view, teamId) {
     ?.displayName ?? teamId;
 }
 
+export const SCORING_FEEDBACK_TIMING = Object.freeze({
+  sourcesMs: 900,
+  expressionMs: 800,
+  sumMs: 600,
+  divisionMs: 650,
+  transferMs: 350,
+  totalMs: 3300,
+  reducedMotionMs: 650,
+});
+
+function sourceMultiplicities(terms) {
+  const result = Array.from({ length: 7 }, () => 0);
+  for (const term of terms) {
+    result[term.value] += term.factor;
+  }
+  return result;
+}
+
 export function createScoringFeedbackPresentation(scoring, scoringTeamName) {
   if (!scoring) {
     return null;
@@ -14,10 +32,12 @@ export function createScoringFeedbackPresentation(scoring, scoringTeamName) {
     ? scoring.remainder
     : scoring.sum % scoring.divisor;
   const isZero = scoring.sum === 0;
-  return {
-    terms: scoring.terms.filter(
+  const terms = scoring.terms.filter(
       (term) => term.isDouble !== true || term.factor > 0,
-    ),
+    );
+  return {
+    terms,
+    sourceMultiplicities: sourceMultiplicities(terms),
     expression: scoring.expression,
     sum: scoring.sum,
     divisor: scoring.divisor,
@@ -41,6 +61,13 @@ export function createScoringFeedbackPresentation(scoring, scoringTeamName) {
       : scoring.scoreAwarded > 0
         ? "award"
         : "no-award",
+    stages: Object.freeze([
+      "sources",
+      "expression",
+      "sum",
+      "division",
+      "outcome",
+    ]),
   };
 }
 
@@ -95,14 +122,50 @@ export function getGameFeedback(view) {
   };
 }
 
-export function renderGameFeedback(container, feedback) {
+function renderDivision(model) {
+  const wrapper = document.createElement("span");
+  wrapper.className = "scoring-feedback__divisibility";
+  if (model.sum === 0) {
+    wrapper.textContent = "0 puntos";
+    return wrapper;
+  }
+  wrapper.append(`${model.sum} = ${model.divisor} × `);
+  const quotient = document.createElement("strong");
+  quotient.className = "scoring-feedback__quotient";
+  quotient.textContent = String(
+    model.isDivisible ? model.scoreAwarded : model.divisionQuotient,
+  );
+  wrapper.append(quotient);
+  if (!model.isDivisible) {
+    wrapper.append(" + ");
+    const remainder = document.createElement("strong");
+    remainder.className = "scoring-feedback__remainder";
+    remainder.textContent = String(model.remainder);
+    wrapper.append(remainder);
+    const remainderLabel = document.createElement("span");
+    remainderLabel.className = "scoring-feedback__remainder-label";
+    remainderLabel.textContent = `resto ${model.remainder}`;
+    wrapper.append(remainderLabel);
+  }
+  return wrapper;
+}
+
+export function renderGameFeedback(container, feedback, { onComplete } = {}) {
   if (!container) {
     return;
   }
   container.hidden = !feedback?.message;
   container.replaceChildren();
   container.removeAttribute("aria-label");
-  container.classList.remove("is-score-feedback", "is-branch-feedback");
+  container.removeAttribute("role");
+  container.removeAttribute("tabindex");
+  container.onclick = null;
+  container.onkeydown = null;
+  container.classList.remove(
+    "is-score-feedback",
+    "is-branch-feedback",
+    "is-complete",
+  );
   if (!feedback?.message) {
     return;
   }
@@ -116,7 +179,7 @@ export function renderGameFeedback(container, feedback) {
       );
     const source = document.createElement("span");
     source.className = "scoring-feedback__source";
-    source.textContent = "Suman las puntas";
+    source.textContent = "Puntas que suman";
     const terms = document.createElement("span");
     terms.className = "scoring-feedback__terms";
     for (const [index, term] of model.terms.entries()) {
@@ -138,9 +201,7 @@ export function renderGameFeedback(container, feedback) {
     const sum = document.createElement("strong");
     sum.className = "scoring-feedback__sum";
     sum.textContent = `S = ${model.sum}`;
-    const divisibility = document.createElement("span");
-    divisibility.className = "scoring-feedback__divisibility";
-    divisibility.textContent = model.divisionText;
+    const divisibility = renderDivision(model);
     const outcome = document.createElement("strong");
     outcome.className = `scoring-feedback__outcome is-${model.outcomeKind}`;
     outcome.textContent = model.outcomeText;
@@ -153,6 +214,23 @@ export function renderGameFeedback(container, feedback) {
     }
     sequence.append(source, terms, sum, divisibility, outcome);
     container.append(sequence);
+    container.setAttribute("role", "button");
+    container.setAttribute("tabindex", "0");
+    container.setAttribute(
+      "aria-label",
+      `${feedback.message}. Toca para completar la explicación.`,
+    );
+    const complete = () => {
+      container.classList.add("is-complete");
+      onComplete?.();
+    };
+    container.onclick = complete;
+    container.onkeydown = (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        complete();
+      }
+    };
   }
   if (feedback.openedBranchFamily) {
     const branch = document.createElement("span");
@@ -160,7 +238,9 @@ export function renderGameFeedback(container, feedback) {
     branch.textContent = `${feedback.openedBranchFamily} abierta`;
     container.append(branch);
   }
-  container.setAttribute("aria-label", feedback.message);
+  if (!feedback.scoring) {
+    container.setAttribute("aria-label", feedback.message);
+  }
   container.classList.toggle("is-score-feedback", feedback.scoring != null);
   container.classList.toggle(
     "is-branch-feedback",

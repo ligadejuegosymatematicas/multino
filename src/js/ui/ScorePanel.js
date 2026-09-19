@@ -3,6 +3,14 @@ function teamName(view, teamId) {
     ?.displayName ?? teamId;
 }
 
+export function getDisplayedTeamScore(team, feedback = null) {
+  const pendingAward = feedback?.teamId === team.teamId &&
+    feedback.scoreAwarded > 0
+    ? feedback.scoreAwarded
+    : 0;
+  return team.score - pendingAward;
+}
+
 export function renderScorePanel(container, view, { feedback = null } = {}) {
   if (!container) {
     return;
@@ -17,8 +25,9 @@ export function renderScorePanel(container, view, { feedback = null } = {}) {
     const name = document.createElement("span");
     name.textContent = team.displayName;
     const score = document.createElement("strong");
-    score.textContent = String(team.score);
-    score.setAttribute("aria-label", `${team.score} puntos`);
+    const displayedScore = getDisplayedTeamScore(team, feedback);
+    score.textContent = String(displayedScore);
+    score.setAttribute("aria-label", `${displayedScore} puntos`);
     item.append(name, score);
     if (hasAward) {
       const delta = document.createElement("span");
@@ -30,27 +39,42 @@ export function renderScorePanel(container, view, { feedback = null } = {}) {
   }
 }
 
-export function renderScoringPanel(container, view) {
+export function getScoringPanelPresentation(view, { feedback = null } = {}) {
+  const scoring = view.scoringPresentation;
+  if (!scoring.enabled) return null;
+  return feedback?.scoring
+    ? { sumText: "S = …", expression: null, isPending: true }
+    : {
+        sumText: `S = ${scoring.sum}`,
+        expression: scoring.expression,
+        isPending: false,
+      };
+}
+
+export function renderScoringPanel(container, view, { feedback = null } = {}) {
   if (!container) {
     return;
   }
-  const scoring = view.scoringPresentation;
-  container.hidden = !scoring.enabled;
+  const presentation = getScoringPanelPresentation(view, { feedback });
+  container.hidden = presentation === null;
   container.innerHTML = "";
-  if (!scoring.enabled) {
+  if (!presentation) {
     return;
   }
+  container.classList.toggle("is-pending", presentation.isPending);
   const sum = document.createElement("strong");
   sum.className = "scoring-sum";
-  sum.textContent = `S = ${scoring.sum}`;
+  sum.textContent = presentation.sumText;
+  container.append(sum);
+  if (presentation.expression === null) return;
   const details = document.createElement("details");
   details.className = "scoring-detail";
   const summary = document.createElement("summary");
   summary.textContent = "Ver suma";
   const expression = document.createElement("span");
-  expression.textContent = scoring.expression;
+  expression.textContent = presentation.expression;
   details.append(summary, expression);
-  container.append(sum, details);
+  container.append(details);
 }
 
 export function getRoundResultPresentation(view) {

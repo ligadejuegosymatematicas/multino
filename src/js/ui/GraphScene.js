@@ -291,6 +291,14 @@ export function createGraphScene(
       .filter((term) => term.isContributing)
       .map((term) => term.value),
   );
+  const scoringMultiplicityByValue = new Map();
+  for (const term of scoringResolution?.terms ?? []) {
+    if (!term.isContributing && term.contribution <= 0) continue;
+    scoringMultiplicityByValue.set(
+      term.value,
+      (scoringMultiplicityByValue.get(term.value) ?? 0) + term.factor,
+    );
+  }
   const hasSelection = selectedDominoId !== null;
   const topologyByPlacementId = new Map(
     view.topology.placements.map((placement) => [
@@ -431,6 +439,7 @@ export function createGraphScene(
       legalTargetIds: legalTargetIdsByValue.get(vertex.value) ?? [],
       isCompatible: legalTargetIdsByValue.has(vertex.value),
       isScoringTerm: scoringValues.has(vertex.value),
+      scoringMultiplicity: scoringMultiplicityByValue.get(vertex.value) ?? 0,
     })),
     potentialEdges: potentialStructure.edges,
     potentialLoops: potentialStructure.loops,

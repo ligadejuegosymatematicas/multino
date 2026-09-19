@@ -1,18 +1,4 @@
-import { renderPipsMarkup } from "./DominoPips.js";
-
-function renderHandPips(value) {
-  return renderPipsMarkup(value, {
-    gridClass: "hand-domino__pips",
-    pipClass: "hand-domino__pip",
-  });
-}
-
-function createDominoTile(domino) {
-  const tile = document.createElement("span");
-  tile.className = "hand-domino__tile";
-  tile.innerHTML = `<span class="hand-domino__half">${renderHandPips(domino.a)}</span><span aria-hidden="true" class="hand-domino__divider"></span><span class="hand-domino__half">${renderHandPips(domino.b)}</span>`;
-  return tile;
-}
+import { createDominoTileElement } from "./DominoTile.js";
 
 function createDominoButton(domino, selected, disabled, onSelect) {
   const button = document.createElement("button");
@@ -29,7 +15,7 @@ function createDominoButton(domino, selected, disabled, onSelect) {
     `Ficha ${domino.a}-${domino.b}, ${domino.legalTargetCount > 0 ? `${domino.legalTargetCount} destinos` : "sin jugada legal"}`,
   );
 
-  button.append(createDominoTile(domino));
+  button.append(createDominoTileElement(domino));
   if (domino.legalTargetCount > 1) {
     const status = document.createElement("span");
     status.className = "hand-domino__status";
@@ -68,8 +54,9 @@ export function renderTurnAction(container, presentation) {
   if (title.textContent !== "") copy.append(title);
   if (detail.textContent !== "") copy.append(detail);
   if (selected) {
-    const visual = createDominoTile(selected);
-    visual.classList.add("turn-action__tile");
+    const visual = createDominoTileElement(selected, {
+      className: "turn-action__tile",
+    });
     container.append(visual);
   }
   container.append(copy);

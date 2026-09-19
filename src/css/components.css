@@ -219,7 +219,7 @@
 }
 
 .score-team.is-score-feedback {
-  animation: score-arrival 720ms 1.08s ease-out both;
+  animation: score-arrival 420ms 2.85s ease-out both;
 }
 
 .score-team__delta {
@@ -236,7 +236,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   opacity: 0;
-  animation: score-delta 820ms 1.08s ease-out both;
+  animation: score-delta 430ms 2.85s ease-out both;
 }
 
 .score-team strong {
@@ -402,6 +402,12 @@
   backdrop-filter: blur(10px);
 }
 
+.play-feedback.is-score-feedback {
+  pointer-events: auto;
+  cursor: pointer;
+  animation-duration: 3.3s;
+}
+
 .scoring-feedback {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto;
@@ -418,7 +424,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  animation: scoring-step 1.9s ease-out both;
+  animation: scoring-step 520ms ease-out both;
 }
 
 .scoring-feedback__source {
@@ -426,7 +432,7 @@
   font-size: 0.64rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  animation-delay: 40ms;
+  animation-delay: 100ms;
 }
 
 .scoring-feedback__terms {
@@ -434,7 +440,7 @@
   gap: 0.22rem;
   color: #ffe29a;
   white-space: nowrap;
-  animation-delay: 220ms;
+  animation-delay: 900ms;
 }
 
 .scoring-feedback__term {
@@ -447,8 +453,8 @@
   border-radius: 0.42rem;
   background: rgb(87 57 8 / 0.72);
   opacity: 0;
-  animation: scoring-term-arrival 1.65s ease-out both;
-  animation-delay: calc(220ms + var(--term-index) * 75ms);
+  animation: scoring-term-arrival 520ms ease-out both;
+  animation-delay: calc(900ms + var(--term-index) * 90ms);
 }
 
 .scoring-feedback__operator {
@@ -460,20 +466,40 @@
   border-inline-start: 1px solid rgb(255 255 255 / 0.18);
   color: #ffe29a;
   font-size: 1.12rem;
-  animation-delay: 620ms;
+  animation-delay: 1720ms;
 }
 
 .scoring-feedback__divisibility {
   color: #d7ddd7;
   font-size: 0.72rem;
-  animation-delay: 930ms;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  animation-delay: 2240ms;
 }
 
 .scoring-feedback__outcome {
   min-width: 5rem;
   color: #c8d0ca;
   font-size: 0.9rem;
-  animation-delay: 1180ms;
+  animation-delay: 2780ms;
+}
+
+.scoring-feedback__quotient,
+.scoring-feedback__remainder {
+  display: inline-grid;
+  min-width: 1.55rem;
+  min-height: 1.55rem;
+  place-items: center;
+  border-radius: 0.42rem;
+  color: #2a1d04;
+  background: #ffda70;
+  font-size: 1rem;
+}
+
+.scoring-feedback__remainder-label {
+  color: #ffe29a;
+  font-size: 0.68rem;
+  text-transform: uppercase;
 }
 
 .scoring-feedback__outcome.is-award {
@@ -719,6 +745,7 @@
   overflow: hidden;
   border: 2px solid #283332;
   border-radius: 0.34rem;
+  color: #162527;
   background: #fffdf6;
   box-shadow: 0 0.14rem 0.3rem rgb(20 42 39 / 0.2);
 }
@@ -859,15 +886,29 @@
 }
 
 @keyframes scoring-step {
-  0%, 8% { opacity: 0; transform: translateY(0.25rem); }
-  22%, 86% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-0.08rem); }
+  from { opacity: 0; transform: translateY(0.25rem); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scoring-term-arrival {
-  0%, 10% { opacity: 0; transform: translateY(0.3rem) scale(0.9); }
-  25%, 84% { opacity: 1; transform: none; }
-  100% { opacity: 0; transform: translateY(-0.08rem); }
+  from { opacity: 0; transform: translateY(0.3rem) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+.play-feedback.is-complete {
+  opacity: 1;
+  animation: none;
+}
+
+.play-feedback.is-complete .scoring-feedback__source,
+.play-feedback.is-complete .scoring-feedback__terms,
+.play-feedback.is-complete .scoring-feedback__term,
+.play-feedback.is-complete .scoring-feedback__sum,
+.play-feedback.is-complete .scoring-feedback__divisibility,
+.play-feedback.is-complete .scoring-feedback__outcome {
+  opacity: 1;
+  transform: none;
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

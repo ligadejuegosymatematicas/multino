@@ -291,9 +291,16 @@ export function renderPortStrategicInspectorMarkup(inspector) {
     </aside>`;
 }
 
-function renderCurrentScoring(scoring, cover) {
+function renderCurrentScoring(scoring, cover, { pending = false } = {}) {
   if (!scoring) {
     return "";
+  }
+  if (pending) {
+    return `
+      <g class="port-cover__current-score is-pending" role="status" aria-label="Calculando la suma de las puntas">
+        <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 12}">PUNTAS QUE SUMAN</text>
+        <text class="port-cover__current-sum" x="${cover.cx}" y="${cover.cy + 28}">S = …</text>
+      </g>`;
   }
   const terms = scoring.terms;
   const chipGap = 10;
@@ -350,7 +357,9 @@ function renderCover(scene) {
       <circle class="port-cover__body" cx="${scene.cover.cx}" cy="${scene.cover.cy}" r="${Math.max(radius - 10, 48)}"></circle>
       ${title
           ? `<text class="port-cover__title" x="${scene.cover.cx}" y="${scene.cover.cy - 7}">${escapeAttribute(title)}</text><text class="port-cover__action" x="${scene.cover.cx}" y="${scene.cover.cy + 20}">${escapeAttribute(action)}</text>`
-          : renderCurrentScoring(scene.scoringPresentation, scene.cover)}
+          : renderCurrentScoring(scene.scoringPresentation, scene.cover, {
+              pending: scene.scoringResolution !== null,
+            })}
     </g>`;
 }
 

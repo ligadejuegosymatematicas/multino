@@ -208,8 +208,13 @@ test("el feedback destaca solo términos reales de S en el grafo", () => {
     scene.vertices.find((vertex) => vertex.value === 5).isScoringTerm,
     true,
   );
+  assert.equal(
+    scene.vertices.find((vertex) => vertex.value === 5).scoringMultiplicity,
+    2,
+  );
   assert.match(markup, /graph-loop is-main is-special-double[^\"]*is-scoring-term/);
   assert.match(markup, /graph-vertex [^"]*is-scoring-term/);
+  assert.match(markup, /graph-vertex__scoring-multiplicity[\s\S]+?>×2</);
 });
 
 test("una ficha ordinaria produce una arista identificable sin etiqueta redundante", () => {

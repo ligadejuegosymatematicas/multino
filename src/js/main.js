@@ -7,6 +7,7 @@ import { renderHand, renderTurnAction } from "./ui/HandRenderer.js";
 import {
   getGameFeedback,
   renderGameFeedback,
+  SCORING_FEEDBACK_TIMING,
 } from "./ui/GameFeedback.js";
 import {
   LOCAL_GAME_SCREENS,
@@ -88,6 +89,14 @@ function scheduleFeedbackHide(feedback) {
   if (!feedback?.message) {
     return;
   }
+  const reducedMotion = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  ).matches ?? false;
+  const duration = feedback.scoring
+    ? reducedMotion
+      ? SCORING_FEEDBACK_TIMING.reducedMotionMs
+      : SCORING_FEEDBACK_TIMING.totalMs
+    : 2100;
   feedbackHideTimer = window.setTimeout(() => {
     const session = sessionController?.getPresentation();
     if (session?.round) {
@@ -96,7 +105,18 @@ function scheduleFeedbackHide(feedback) {
       renderGameFeedback(playFeedback, null);
     }
     feedbackHideTimer = null;
-  }, 2100);
+  }, duration);
+}
+
+function completeScoringFeedback() {
+  if (feedbackHideTimer === null) return;
+  window.clearTimeout(feedbackHideTimer);
+  playFeedback.classList.add("is-complete");
+  feedbackHideTimer = window.setTimeout(() => {
+    const session = sessionController?.getPresentation();
+    if (session?.round) renderRound(session.round, session.viewMode, null);
+    feedbackHideTimer = null;
+  }, 280);
 }
 
 function runIntent(intent, successMessage) {
@@ -230,6 +250,7 @@ function renderRound(presentation, mode, feedback) {
   renderScoringPanel(
     document.querySelector("#scoring-panel"),
     presentation.view,
+    { feedback },
   );
   scoringCard.hidden = !presentation.view.scoringPresentation.enabled ||
     mode === BOARD_VIEW_MODES.PORTS;
@@ -237,7 +258,9 @@ function renderRound(presentation, mode, feedback) {
     document.querySelector("#round-result"),
     presentation.view,
   );
-  renderGameFeedback(playFeedback, feedback);
+  renderGameFeedback(playFeedback, feedback, {
+    onComplete: completeScoringFeedback,
+  });
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;

@@ -52,7 +52,7 @@ function renderTile(tile) {
       <span class="traditional-domino__divider" aria-hidden="true"></span>
       <span class="traditional-domino__half">${renderPips(tile.secondValue)}</span>
       ${tile.isSpecialDouble ? '<span class="traditional-domino__special" aria-hidden="true"></span>' : ""}
-      ${tile.isScoringTerm ? `<span class="traditional-domino__scoring-value" aria-hidden="true">2×${tile.firstValue}</span>` : ""}
+      ${tile.isScoringTerm ? `<span class="traditional-domino__scoring-value is-first" aria-hidden="true">${tile.firstValue}</span><span class="traditional-domino__scoring-value is-second" aria-hidden="true">${tile.secondValue}</span>` : ""}
     </div>`;
 }
 

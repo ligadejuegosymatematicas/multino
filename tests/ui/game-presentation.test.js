@@ -6,9 +6,15 @@ import { projectGraphView } from "../../src/js/game/index.js";
 import {
   createScoringFeedbackPresentation,
   getGameFeedback,
+  SCORING_FEEDBACK_TIMING,
 } from "../../src/js/ui/GameFeedback.js";
+import { renderDominoTileMarkup } from "../../src/js/ui/DominoTile.js";
 import { renderPipsMarkup } from "../../src/js/ui/DominoPips.js";
-import { getRoundResultPresentation } from "../../src/js/ui/ScorePanel.js";
+import {
+  getDisplayedTeamScore,
+  getRoundResultPresentation,
+  getScoringPanelPresentation,
+} from "../../src/js/ui/ScorePanel.js";
 import {
   createBoardScenario,
   playDomino,
@@ -106,11 +112,57 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   assert.deepEqual(scored.terms.map((term) => term.label), ["2×5", "3"]);
   assert.equal(scored.divisionText, "20 = 5 × 4");
   assert.equal(scored.outcomeText, "+4 Vector");
+  assert.equal(scored.sourceMultiplicities[5], 2);
+  assert.equal(scored.sourceMultiplicities[3], 1);
+  assert.deepEqual(scored.stages, [
+    "sources",
+    "expression",
+    "sum",
+    "division",
+    "outcome",
+  ]);
   assert.equal(missed.divisionText, "18 = 5 × 3 + 3");
   assert.equal(missed.outcomeText, "No puntúa");
   assert.deepEqual(zero.terms, []);
   assert.equal(zero.divisionText, "0 puntos");
   assert.equal(zero.outcomeText, "0 puntos");
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 2800);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 3500);
+});
+
+test("la ficha visual compartida conserva pips reales incluso con ceros", () => {
+  const cases = [
+    { domino: { a: 6, b: 6 }, visible: 12 },
+    { domino: { a: 4, b: 5 }, visible: 9 },
+    { domino: { a: 0, b: 3 }, visible: 3 },
+    { domino: { a: 0, b: 0 }, visible: 0 },
+  ];
+  for (const { domino, visible } of cases) {
+    const markup = renderDominoTileMarkup(domino, {
+      className: "turn-action__tile",
+    });
+    assert.match(markup, new RegExp(`data-domino-a="${domino.a}"`));
+    assert.match(markup, new RegExp(`data-domino-b="${domino.b}"`));
+    assert.equal(markup.match(/hand-domino__pip is-visible/g)?.length ?? 0, visible);
+  }
+});
+
+test("S y el marcador esperan la etapa final del feedback", () => {
+  const feedback = { teamId: "A", scoreAwarded: 4, scoring: { sum: 20 } };
+  assert.equal(
+    getDisplayedTeamScore({ teamId: "A", score: 9 }, feedback),
+    5,
+  );
+  assert.equal(
+    getDisplayedTeamScore({ teamId: "B", score: 7 }, feedback),
+    7,
+  );
+  assert.deepEqual(
+    getScoringPanelPresentation({
+      scoringPresentation: { enabled: true, sum: 20, expression: "4×5" },
+    }, { feedback }),
+    { sumText: "S = …", expression: null, isPending: true },
+  );
 });
 
 test("la primera ficha lateral produce feedback de nueva ramificación", () => {
@@ -211,7 +263,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(html, /Nueva partida independiente|Prototipo/);
   assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(mainSource, /lastFeedbackSequence/);
-  assert.match(mainSource, /window\.setTimeout[\s\S]+?2100/);
+  assert.match(mainSource, /SCORING_FEEDBACK_TIMING\.totalMs/);
   assert.match(mainSource, /handPanel\.hidden\s*=\s*presentation\.isFinished/);
   assert.match(mainSource, /passButton\.hidden\s*=\s*!presentation\.canPass/);
   assert.doesNotMatch(turnSource, /Acción \$\{/);
@@ -277,8 +329,9 @@ test("el empate final se presenta sin inventar ganador", () => {
 });
 
 test("la mano reutiliza puntos de dominó y omite el texto redundante de un destino", async () => {
-  const [handSource, componentsCss] = await Promise.all([
+  const [handSource, tileSource, componentsCss] = await Promise.all([
     readFile(new URL("../../src/js/ui/HandRenderer.js", import.meta.url), "utf8"),
+    readFile(new URL("../../src/js/ui/DominoTile.js", import.meta.url), "utf8"),
     readFile(new URL("../../src/css/components.css", import.meta.url), "utf8"),
   ]);
   const six = renderPipsMarkup(6, {
@@ -287,7 +340,8 @@ test("la mano reutiliza puntos de dominó y omite el texto redundante de un dest
   });
 
   assert.equal(six.match(/test-pip is-visible/g)?.length, 6);
-  assert.match(handSource, /hand-domino__tile/);
+  assert.match(handSource, /createDominoTileElement/);
+  assert.match(tileSource, /hand-domino__tile/);
   assert.match(handSource, /legalTargetCount > 1/);
   assert.doesNotMatch(handSource, /1 destino/);
   assert.match(componentsCss, /\.hand-domino__tile \{[\s\S]+?border:\s*2px solid/);
