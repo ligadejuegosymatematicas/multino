@@ -114,6 +114,7 @@ function renderNodeShell(node) {
     node.ramifier?.isSaturated ? "is-ramifier-saturated" : "",
     node.isScoringSource ? "is-scoring-source" : "",
     node.isScoringFeedbackSource ? "is-scoring-feedback-source" : "",
+    node.isDecisionPreview ? "is-decision-preview" : "",
   ].filter(Boolean).join(" ");
   return `
     <g class="port-macro-node-shell ${stateClasses}" aria-hidden="true">
@@ -164,11 +165,11 @@ function renderScoringMultiplicity(node) {
   if (displayedMultiplicity === 0 && node.scoringMultiplicity === 0) return "";
   const transition = previewActive &&
       displayedMultiplicity !== node.scoringMultiplicity
-    ? `Σ ×${node.scoringMultiplicity}→${displayedMultiplicity}`
-    : `Σ ×${displayedMultiplicity}`;
+    ? `×${node.scoringMultiplicity}→×${displayedMultiplicity}`
+    : `×${displayedMultiplicity}`;
   return `
     <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}"${node.isScoringFeedbackSource ? ` data-scoring-anchor-value="${node.value}"` : ""} aria-hidden="true">
-      <rect x="${node.x - 76}" y="${node.y - 59}" width="58" height="28" rx="14"></rect>
+      <rect x="${node.x - 76}" y="${node.y - 61}" width="58" height="32" rx="16"></rect>
       <text x="${node.x - 47}" y="${node.y - 45}">${transition}</text>
     </g>`;
 }
@@ -545,18 +546,44 @@ export function createPortDecisionChoicePresentation(decisions) {
     let structuralTitle = title === presentation.title
       ? null
       : presentation.title;
-    const badges = [...scoringDifferences, ...distinctBadges];
+    let badges = [...scoringDifferences, ...distinctBadges];
+    let transformation = null;
     if (criticalDoubleChoice) {
       if (decisions[index].decisionKind === "continue") {
-        title = "Otra punta";
-        structuralTitle = "Seguir punta";
+        title = "Mantener doble";
+        structuralTitle = "Otra punta";
+        badges = badges.filter(
+          (badge) => !["scoring-off", "playable"].includes(badge.kind),
+        );
         badges.unshift({
           kind: "scoring-keep",
-          text: `Σ doble ×${doubleScoringBefore} permanece`,
+          text: `Sigue sumando ×${doubleScoringBefore}`,
         });
+        transformation = {
+          kind: "keep-double",
+          before: doubleScoringBefore,
+          after: doubleScoringBefore,
+          unlocked: 0,
+        };
       } else if (decisions[index].decisionKind === "complete-cross") {
-        title = "Doble central";
-        structuralTitle = "Completar continuidad";
+        title = "Abrir el doble";
+        structuralTitle = "Doble central";
+        badges = badges.filter(
+          (badge) => !["scoring-off", "playable"].includes(badge.kind),
+        );
+        badges.unshift(
+          { kind: "scoring-off", text: "Deja de sumar" },
+          {
+            kind: "playable",
+            text: `Abre ${crossDecision.effects?.unlockedLateralCount ?? 2} ramas`,
+          },
+        );
+        transformation = {
+          kind: "open-double",
+          before: doubleScoringBefore,
+          after: 0,
+          unlocked: crossDecision.effects?.unlockedLateralCount ?? 2,
+        };
       }
     }
     const preview = {
@@ -568,12 +595,14 @@ export function createPortDecisionChoicePresentation(decisions) {
       title,
       structuralTitle,
       badges,
+      transformation,
       preview,
       visibleSignature: JSON.stringify({
         icon: presentation.icon,
         title,
         structuralTitle,
         badges: badges.map(({ kind, text }) => ({ kind, text })),
+        transformation,
       }),
     };
   });
@@ -587,6 +616,21 @@ export function createPortDecisionChoicePresentation(decisions) {
     signatures.add(presentation.visibleSignature);
   }
   return { commonBadges, options };
+}
+
+function renderDecisionTransformation(transformation) {
+  if (!transformation) return "";
+  const afterClass = transformation.after === 0 ? " is-off" : "";
+  const branches = transformation.unlocked > 0
+    ? `<span class="port-target-choice__branches" aria-hidden="true"><i></i><b>+${transformation.unlocked}</b><i></i></span>`
+    : "";
+  return `
+    <span class="port-target-choice__transformation is-${transformation.kind}" aria-hidden="true">
+      <span class="port-target-choice__score-orbit">×${transformation.before}</span>
+      <span class="port-target-choice__transform-arrow">→</span>
+      <span class="port-target-choice__score-orbit${afterClass}">×${transformation.after}</span>
+      ${branches}
+    </span>`;
 }
 
 function renderK7Background(scene) {
@@ -626,6 +670,7 @@ export function renderPortTargetChooserMarkup(
       <span class="port-target-choice__icon" aria-hidden="true">${presentation.icon}</span>
       <span class="port-target-choice__title">${presentation.title}</span>
       ${presentation.structuralTitle ? `<span class="port-target-choice__structure">${presentation.structuralTitle}</span>` : ""}
+      ${renderDecisionTransformation(presentation.transformation)}
       <span class="port-target-choice__effects">${badges}</span>
       ${isPreviewed ? '<span class="port-target-choice__confirm">Toca otra vez para jugar</span>' : ""}
     </button>`;
@@ -647,7 +692,7 @@ export function renderPortSemanticLegendMarkup(scene) {
   return `
     <aside class="port-semantic-legend${introClass}" aria-label="Leyenda de Puertos">
       <span class="is-playable"><b aria-hidden="true">↗</b> jugar</span>
-      <span class="is-scoring"><b aria-hidden="true">Σ</b> suma</span>
+      <span class="is-scoring"><b aria-hidden="true">×</b> suma</span>
       <span class="is-history"><b aria-hidden="true">▣</b> salieron</span>
     </aside>`;
 }

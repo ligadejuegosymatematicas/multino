@@ -289,7 +289,7 @@ test("las decisiones distintas usan efectos legibles y nunca Destino 1 o 2", () 
   assert.doesNotMatch(markup, /Destino \d|placement-|side:|branch:/);
 });
 
-test("otra punta y doble central comparan la transformación crítica", () => {
+test("mantener doble y abrir el doble comparan la transformación crítica", () => {
   const state = createOrdinaryAndCrossDecisionState();
   const groups = getStrategicDecisionGroups(
     state,
@@ -312,11 +312,17 @@ test("otra punta y doble central comparan la transformación crítica", () => {
   assert.equal(new Set(
     presentations.map((presentation) => presentation.visibleSignature),
   ).size, 2);
+  assert.match(markup, />Mantener doble</);
+  assert.match(markup, />Abrir el doble</);
   assert.match(markup, />Otra punta</);
   assert.match(markup, />Doble central</);
-  assert.match(markup, /Σ doble ×2 permanece/);
-  assert.match(markup, /Σ doble ×2 → 0/);
-  assert.match(markup, />↗ \+2 salidas</);
+  assert.match(markup, /Sigue sumando ×2/);
+  assert.match(markup, /Deja de sumar/);
+  assert.match(markup, /Abre 2 ramas/);
+  assert.match(markup, /port-target-choice__transformation is-keep-double/);
+  assert.match(markup, /port-target-choice__transformation is-open-double/);
+  assert.match(markup, /port-target-choice__score-orbit is-off">×0/);
+  assert.match(markup, /port-target-choice__branches/);
   assert.doesNotMatch(markup, /Doble 2\/4/);
   assert.doesNotMatch(markup, /Chancho|chancho/);
   assert.doesNotMatch(markup, />Continuar<\/span>[\s\S]*?>Continuar<\/span>/);
@@ -420,7 +426,7 @@ test("la previsualización local cambia medallón y mecanismo sin revelar S futu
     2,
   );
   assert.match(markup, /data-node-value="6"[^>]+data-scoring-multiplicity="1"/);
-  assert.match(markup, />Σ ×3→1</);
+  assert.match(markup, />×3→×1</);
   assert.match(
     renderPortTargetChooserMarkup(preview.targetChoice, {
       previewIndex: crossIndex,
@@ -515,7 +521,7 @@ test("la microleyenda fija icono, color y significado sin párrafos", () => {
 
   assert.match(earlyMarkup, /port-semantic-legend is-intro/);
   assert.match(earlyMarkup, />↗<\/b> jugar/);
-  assert.match(earlyMarkup, />Σ<\/b> suma/);
+  assert.match(earlyMarkup, />×<\/b> suma/);
   assert.match(earlyMarkup, />▣<\/b> salieron/);
   assert.match(denseMarkup, /port-semantic-legend is-subtle/);
   assert.doesNotMatch(earlyMarkup, /Destino|placement-|portId/);
@@ -533,7 +539,7 @@ test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", 
   assert.equal(five.playedTileCount, 1);
   assert.match(markup, /data-scoring-multiplicity="2"/);
   assert.match(markup, /port-macro-node__scoring-badge[\s\S]*?<rect/);
-  assert.match(markup, />Σ ×2<\/text>/);
+  assert.match(markup, />×2<\/text>/);
   assert.match(markup, />▣ 1\/7<\/text>/);
 });
 
@@ -1015,6 +1021,9 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-semantic-legend \{[\s\S]*?inset:\s*2\.95rem auto auto 50%/);
   assert.match(css, /\.port-macro-node-shell\.has-open-targets \.port-macro-node__playability-ring/);
   assert.match(css, /\.port-target-choice__effect\.is-scoring-keep/);
+  assert.match(css, /\.port-target-choice__transformation/);
+  assert.match(css, /\.port-target-choice__score-orbit/);
+  assert.match(css, /@keyframes port-preview-socket/);
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 31rem\)/);
   assert.doesNotMatch(css, /\.port-ramifier__[^{]+\{[^}]+#d4a331/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);

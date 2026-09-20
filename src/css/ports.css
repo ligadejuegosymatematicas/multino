@@ -204,9 +204,9 @@
 
 .port-macro-node-shell.has-open-targets .port-macro-node__playability-ring {
   stroke: #168b7f;
-  stroke-width: 4;
-  stroke-dasharray: 24 9;
-  opacity: 0.48;
+  stroke-width: 6;
+  stroke-dasharray: 20 7;
+  opacity: 0.72;
 }
 
 .port-macro-node__scoring-ring {
@@ -247,8 +247,8 @@
 
 .port-macro-node-shell.is-compatible .port-macro-node__playability-ring {
   stroke: #22c7ac;
-  stroke-width: 5;
-  opacity: 0.9;
+  stroke-width: 8;
+  opacity: 1;
 }
 
 .port-macro-node-shell.is-compatible .port-macro-node__rim {
@@ -274,8 +274,8 @@
 
 .port-macro-node-shell.is-scoring-source .port-macro-node__scoring-ring {
   stroke: #d4a331;
-  stroke-width: 5;
-  filter: drop-shadow(0 0 4px rgb(212 163 49 / 0.32));
+  stroke-width: 7;
+  filter: drop-shadow(0 0 7px rgb(212 163 49 / 0.48));
 }
 
 .port-graph.is-scoring-feedback .port-macro-node-shell:not(.is-scoring-feedback-source),
@@ -311,9 +311,9 @@
   text-anchor: middle;
 }
 
-.port-macro-node__value { font-size: 39px; font-weight: 900; }
+.port-macro-node__value { font-size: 36px; font-weight: 900; }
 .port-macro-node__target-badge rect { fill: #76858b; stroke: #fffefb; stroke-width: 3; }
-.port-macro-node__target-badge text { fill: #fff; font-size: 10px; font-weight: 950; }
+.port-macro-node__target-badge text { fill: #fff; font-size: 11px; font-weight: 950; }
 .port-macro-node__target-badge.has-targets rect { fill: #078b7d; }
 .port-macro-node__target-badge.is-compatible rect { fill: #078b7d; }
 .port-macro-node__target-badge.is-zero { opacity: 0.7; }
@@ -325,7 +325,7 @@
 }
 .port-macro-node__scoring-badge text {
   fill: #fff7dc;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 950;
 }
 .port-macro-node__played {
@@ -470,6 +470,60 @@
   flex-wrap: wrap;
   gap: 0.18rem;
 }
+.port-target-choice__transformation {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 0.28rem;
+  min-height: 2.3rem;
+  padding: 0.18rem 0.3rem;
+  border-radius: 0.55rem;
+  background: rgb(0 0 0 / 0.18);
+}
+.port-target-choice__score-orbit {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 3px solid var(--scoring);
+  border-radius: 999px;
+  color: #fff1b8;
+  box-shadow: 0 0 9px rgb(243 196 79 / 0.4);
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+.port-target-choice__score-orbit.is-off {
+  border-color: #72807c;
+  color: #aeb9b4;
+  box-shadow: none;
+  opacity: 0.65;
+}
+.port-target-choice__transform-arrow {
+  color: #d8d7c8;
+  font-size: 0.9rem;
+}
+.port-target-choice__branches {
+  display: inline-grid;
+  grid-template-columns: 1rem auto 1rem;
+  align-items: center;
+  gap: 0.14rem;
+  color: #9bfff0;
+}
+.port-target-choice__branches i {
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--playable);
+  box-shadow: 0 0 7px rgb(39 222 197 / 0.5);
+}
+.port-target-choice__branches i:first-child { transform: rotate(-32deg); }
+.port-target-choice__branches i:last-child { transform: rotate(32deg); }
+.port-target-choice__branches b { font-size: 0.72rem; }
+.port-target-choice__option.is-previewed .port-target-choice__transformation {
+  animation: port-decision-preview 1.2s ease-in-out infinite alternate;
+}
 .port-target-choice__effect {
   padding: 0.08rem 0.28rem;
   border: 1px solid currentColor;
@@ -532,9 +586,12 @@
 
 .port-semantic-legend b {
   display: inline-grid;
-  min-width: 1.05rem;
+  width: 1.15rem;
+  height: 1.15rem;
   place-items: center;
   margin-inline-end: 0.12rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
   font-size: 0.74rem;
 }
 
@@ -832,6 +889,16 @@
 @keyframes port-target-pulse { 0%, 100% { opacity: 0.74; } 50% { opacity: 1; } }
 @keyframes port-cover-score { 0% { opacity: 0; transform: translateY(8px) scale(0.96); transform-origin: center; } 16%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
 @keyframes port-scoring-source { 0%, 100% { opacity: 1; filter: none; } 4%, 20% { opacity: 1; filter: drop-shadow(0 0 11px #ffd261); } }
+@keyframes port-decision-preview { from { filter: brightness(0.92); } to { filter: brightness(1.18); } }
+@keyframes port-preview-socket { from { opacity: 0.58; } to { opacity: 1; filter: drop-shadow(0 0 5px var(--playable)); } }
+
+.port-macro-node.is-decision-preview .port-ramifier__socket.is-available {
+  animation: port-preview-socket 800ms ease-in-out infinite alternate;
+}
+.port-macro-node-shell.is-decision-preview .port-macro-node__scoring-ring,
+.port-macro-node.is-decision-preview .port-macro-node__scoring-badge {
+  transition: opacity 180ms ease, stroke-width 180ms ease;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .port-thread,
@@ -846,7 +913,11 @@
   .port-cover__scoring,
   .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
   .port-macro-node.is-scoring-feedback-source .port-macro-node__scoring-badge,
-  .port-ramifier-hint { animation: none; }
+  .port-ramifier-hint,
+  .port-target-choice__option.is-previewed .port-target-choice__transformation,
+  .port-macro-node.is-decision-preview .port-ramifier__socket.is-available {
+    animation: none;
+  }
 }
 
 @media (max-width: 36rem) {

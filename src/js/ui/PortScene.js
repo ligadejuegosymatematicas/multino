@@ -576,7 +576,13 @@ export function createPortScene(
       isInSelectedDomino: hasSelection && selectedValues.has(node.value),
       isTargetChoiceOpen: selectedTargetValue === node.value,
       ramifier: previewRamifier ?? currentRamifier,
-      isDecisionPreview: previewDecision !== null,
+      isDecisionPreview: previewDecision !== null && (
+        previewDecision.value === node.value ||
+        previewRamifier !== null ||
+        (previewScoringMultiplicityByValue?.get(node.value) ??
+          scoringMultiplicityByValue.get(node.value)) !==
+          scoringMultiplicityByValue.get(node.value)
+      ),
     };
   });
   const hubs = view.portGraph.doubleHubs.map((hub) => {
