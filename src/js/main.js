@@ -17,6 +17,7 @@ import {
   renderRoundResult,
   renderScorePanel,
   renderScoringPanel,
+  shouldDeferRoundResult,
 } from "./ui/ScorePanel.js";
 import {
   renderTurnPanel,
@@ -76,9 +77,36 @@ let sessionController;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
 let hasShownScoringLesson = false;
+const ROUND_RESULT_REVEAL_DELAY_MS = 520;
 
 function setMessage(text) {
   message.textContent = text;
+}
+
+function finishFeedbackPresentation(feedback) {
+  const session = sessionController?.getPresentation();
+  if (!session?.round) {
+    renderGameFeedback(playFeedback, null);
+    feedbackHideTimer = null;
+    return;
+  }
+  if (feedback?.scoring && feedback.endedRound) {
+    // Primero desaparece el cálculo y se aplica visualmente el marcador.
+    // El resultado final entra después de una pausa breve e independiente.
+    renderRound(session.round, session.viewMode, null, {
+      revealRoundResult: false,
+    });
+    feedbackHideTimer = window.setTimeout(() => {
+      const latest = sessionController?.getPresentation();
+      if (latest?.round) {
+        renderRound(latest.round, latest.viewMode, null);
+      }
+      feedbackHideTimer = null;
+    }, ROUND_RESULT_REVEAL_DELAY_MS);
+    return;
+  }
+  renderRound(session.round, session.viewMode, null);
+  feedbackHideTimer = null;
 }
 
 function scheduleFeedbackHide(feedback) {
@@ -98,13 +126,7 @@ function scheduleFeedbackHide(feedback) {
       : SCORING_FEEDBACK_TIMING.totalMs
     : 2100;
   feedbackHideTimer = window.setTimeout(() => {
-    const session = sessionController?.getPresentation();
-    if (session?.round) {
-      renderRound(session.round, session.viewMode, null);
-    } else {
-      renderGameFeedback(playFeedback, null);
-    }
-    feedbackHideTimer = null;
+    finishFeedbackPresentation(feedback);
   }, duration);
 }
 
@@ -114,8 +136,10 @@ function completeScoringFeedback() {
   playFeedback.classList.add("is-complete");
   feedbackHideTimer = window.setTimeout(() => {
     const session = sessionController?.getPresentation();
-    if (session?.round) renderRound(session.round, session.viewMode, null);
-    feedbackHideTimer = null;
+    const feedback = session?.round
+      ? getGameFeedback(session.round.view)
+      : null;
+    finishFeedbackPresentation(feedback);
   }, 280);
 }
 
@@ -148,7 +172,17 @@ function inspectStructure(structureId) {
   );
 }
 
-function renderRound(presentation, mode, feedback) {
+function renderRound(
+  presentation,
+  mode,
+  feedback,
+  { revealRoundResult = true } = {},
+) {
+  const roundResultDeferred = shouldDeferRoundResult({
+    isFinished: presentation.isFinished,
+    feedback,
+    revealRoundResult,
+  });
   const renderer = mode === BOARD_VIEW_MODES.GRAPH
     ? graphRenderer
     : mode === BOARD_VIEW_MODES.PORTS
@@ -257,6 +291,9 @@ function renderRound(presentation, mode, feedback) {
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,
+    {
+      deferred: roundResultDeferred,
+    },
   );
   renderGameFeedback(playFeedback, feedback, {
     onComplete: completeScoringFeedback,
@@ -264,7 +301,7 @@ function renderRound(presentation, mode, feedback) {
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;
-  roundActions.hidden = !presentation.isFinished;
+  roundActions.hidden = !presentation.isFinished || roundResultDeferred;
   const selectedCount = presentation.selectedLegalTargets.length;
   const strategicDecisionCount = presentation.strategicDecisionGroups?.length ?? 0;
   const selectionHint = document.querySelector("#selection-hint");

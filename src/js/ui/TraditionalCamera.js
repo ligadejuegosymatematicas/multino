@@ -9,6 +9,26 @@ function cameraLimits({ tableWidth, tableHeight, scale, viewportWidth, viewportH
   };
 }
 
+/**
+ * Proyecta un punto del mundo a las coordenadas finales del viewport. Incluye
+ * el centrado horizontal CSS del canvas cuando la mesa escalada es más angosta
+ * que el área visible.
+ */
+export function projectTraditionalWorldPointToViewport(
+  point,
+  camera,
+  { tableWidth, viewportWidth = camera.viewportWidth },
+) {
+  const canvasInsetX = Math.max(
+    0,
+    (viewportWidth - tableWidth * camera.scale) / 2,
+  );
+  return {
+    x: canvasInsetX + point.x * camera.scale - camera.left,
+    y: point.y * camera.scale - camera.top,
+  };
+}
+
 export function createTraditionalFitCamera({
   scale,
   contentBounds,

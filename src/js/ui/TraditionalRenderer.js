@@ -22,6 +22,22 @@ function escapeAttribute(value) {
     .replaceAll(">", "&gt;");
 }
 
+export function isTraditionalWorldContinuation(
+  previousPlacementIds,
+  currentPlacementIds,
+) {
+  if (previousPlacementIds.size === 0) {
+    // La mesa vacía usa un canvas pequeño. Heredar esa cámara al colocar la
+    // apertura proyectaba el nuevo mundo grande hacia abajo y a la derecha.
+    return currentPlacementIds.size === 0;
+  }
+  return currentPlacementIds.size >= previousPlacementIds.size &&
+    currentPlacementIds.size <= previousPlacementIds.size + 1 &&
+    [...previousPlacementIds].every((placementId) =>
+      currentPlacementIds.has(placementId)
+    );
+}
+
 function renderPips(value) {
   return renderPipsMarkup(value, {
     gridClass: "traditional-domino__pips",
@@ -175,15 +191,10 @@ export class TraditionalRenderer {
     const currentPlacementIds = new Set(
       scene.tiles.map((tile) => tile.placementId),
     );
-    const continuesWorld =
-      (previousPlacementIds.size === 0 && currentPlacementIds.size <= 1) ||
-      (
-        currentPlacementIds.size >= previousPlacementIds.size &&
-        currentPlacementIds.size <= previousPlacementIds.size + 1 &&
-        [...previousPlacementIds].every((placementId) =>
-          currentPlacementIds.has(placementId)
-        )
-      );
+    const continuesWorld = isTraditionalWorldContinuation(
+      previousPlacementIds,
+      currentPlacementIds,
+    );
     if (!continuesWorld) {
       this.cameraState = null;
       this.viewportSize = null;

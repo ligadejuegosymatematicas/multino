@@ -9,6 +9,7 @@ import {
   projectTraditionalView,
 } from "../../src/js/game/index.js";
 import {
+  isTraditionalWorldContinuation,
   renderTraditionalTableMarkup,
 } from "../../src/js/ui/TraditionalRenderer.js";
 import {
@@ -18,6 +19,7 @@ import {
   createTraditionalProgressiveCamera,
   isTraditionalOrientationChange,
   preserveTraditionalCamera,
+  projectTraditionalWorldPointToViewport,
   revealTraditionalWorldBounds,
   sampleTraditionalAutoPan,
   sampleTraditionalCameraTransition,
@@ -312,6 +314,40 @@ test("la primera ficha queda anclada al centro geométrico del tablero", () => {
   assert.equal(opening.y, scene.layoutState.softCenter.y);
   assert.equal(opening.x, 500);
   assert.equal(opening.y, 400);
+});
+
+test("la apertura reinicia la cámara vacía y queda centrada en pantalla", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "6-6" });
+  state = playDomino(state, "6-6");
+  const scene = createTraditionalScene(projectTraditionalView(state));
+  const [opening] = scene.tiles;
+  const viewport = { width: 360, height: 430 };
+  const scale = calculateTraditionalFitScale({
+    contentWidth: scene.contentBounds.width,
+    contentHeight: scene.contentBounds.height,
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
+  });
+  const camera = createTraditionalFitCamera({
+    scale,
+    contentBounds: scene.contentBounds,
+    tableWidth: scene.width,
+    tableHeight: scene.height,
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
+  });
+  const screenCenter = projectTraditionalWorldPointToViewport(
+    opening,
+    camera,
+    { tableWidth: scene.width, viewportWidth: viewport.width },
+  );
+
+  assert.equal(
+    isTraditionalWorldContinuation(new Set(), new Set([opening.placementId])),
+    false,
+  );
+  assert.ok(Math.abs(screenCenter.x - viewport.width / 2) < 0.001);
+  assert.ok(Math.abs(screenCenter.y - viewport.height / 2) < 0.001);
 });
 
 test("cada unión física enfrenta el valor exacto de su conexión lógica", () => {
@@ -1074,8 +1110,12 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.doesNotMatch(rendererSource, /\bstate\.board\b|\bview\.board\b/);
   assert.doesNotMatch(sceneSource, /\bstate\.board\b|\bview\.board\b/);
   assert.match(rendererSource, /aria-label="Mesa tradicional de dominó"/);
+  assert.match(sceneSource, /function previewGhostPlacement/);
+  assert.match(sceneSource, /catch \{[\s\S]+?socket legal sigue disponible/);
   assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*hidden/);
   assert.match(css, /touch-action:\s*none/);
+  assert.match(css, /\.traditional-ghost__tile \{[\s\S]+?border:\s*4px dashed/);
+  assert.match(css, /\.traditional-ghost__tile \{[\s\S]+?opacity:\s*0\.76/);
   assert.match(rendererSource, /data-fit-table/);
   assert.match(rendererSource, /aria-label="Ajustar tablero"/);
   assert.match(rendererSource, /cancelAnimationFrame/);

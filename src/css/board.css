@@ -662,7 +662,7 @@
 
 @media (max-width: 36rem) {
   .graph-root {
-    height: clamp(21rem, 46vh, 25rem);
+    height: clamp(23rem, 51vh, 27rem);
   }
 
   .start-action p {

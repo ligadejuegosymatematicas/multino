@@ -15,6 +15,22 @@ function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
 }
 
+function previewGhostPlacement(layout, target, domino) {
+  try {
+    return previewTraditionalPlacement(
+      layout,
+      target,
+      domino,
+      { connectionClearance: TRADITIONAL_CONNECTION_CLEARANCE },
+    );
+  } catch {
+    // Un corredor muy denso puede impedir una previsualización limpia para un
+    // target concreto. No debe cancelar los otros lugares físicos ni dejar la
+    // mesa sin render: el socket legal sigue disponible como fallback espacial.
+    return null;
+  }
+}
+
 function createTargetScene(
   target,
   x,
@@ -181,12 +197,7 @@ export function createTraditionalScene(
     ? []
     : openTargets
       .filter((target) => target.isLegal)
-      .map((target) => previewTraditionalPlacement(
-        layout,
-        target,
-        selectedDomino,
-        { connectionClearance: TRADITIONAL_CONNECTION_CLEARANCE },
-      ))
+      .map((target) => previewGhostPlacement(layout, target, selectedDomino))
       .filter(Boolean)
       .map((ghost) => ({
         ...ghost,

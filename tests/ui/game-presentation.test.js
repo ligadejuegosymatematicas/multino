@@ -16,6 +16,7 @@ import {
   getDisplayedTeamScore,
   getRoundResultPresentation,
   getScoringPanelPresentation,
+  shouldDeferRoundResult,
 } from "../../src/js/ui/ScorePanel.js";
 import {
   createBoardScenario,
@@ -220,6 +221,28 @@ test("Σ y el marcador esperan la etapa final del feedback", () => {
   );
 });
 
+test("el ganador espera al scoring y a la pausa posterior del marcador", () => {
+  const scoringFeedback = {
+    endedRound: true,
+    scoring: { sum: 15 },
+    scoreAwarded: 3,
+  };
+  assert.equal(shouldDeferRoundResult({
+    isFinished: true,
+    feedback: scoringFeedback,
+  }), true);
+  assert.equal(shouldDeferRoundResult({
+    isFinished: true,
+    feedback: null,
+    revealRoundResult: false,
+  }), true);
+  assert.equal(shouldDeferRoundResult({
+    isFinished: true,
+    feedback: null,
+    revealRoundResult: true,
+  }), false);
+});
+
 test("la primera ficha lateral produce feedback de nueva ramificación", () => {
   let state = createBoardScenario({ K: 1, firstDominoId: "4-4" });
   state = playDomino(state, "4-4");
@@ -302,6 +325,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(componentsCss, /scoring-feedback__quotient\.is-score/);
   assert.match(componentsCss, /scoring-feedback__remainder\.is-focus/);
   assert.match(boardCss, /height:\s*clamp\(26rem, calc\(100vh - 10\.5rem\), 39rem\)/);
+  assert.match(boardCss, /@media \(max-width: 36rem\)[\s\S]+?height:\s*clamp\(23rem, 51vh, 27rem\)/);
   assert.match(traditionalCss, /background-size:\s*4rem 4rem/);
   assert.match(traditionalCss, /\.traditional-table__surface \{[\s\S]+?isolation:\s*isolate/);
   assert.match(traditionalCss, /\.traditional-connection \{[\s\S]+?z-index:\s*1/);
@@ -326,6 +350,9 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(mainSource, /lastFeedbackSequence/);
   assert.match(mainSource, /SCORING_FEEDBACK_TIMING\.totalMs/);
+  assert.match(mainSource, /ROUND_RESULT_REVEAL_DELAY_MS\s*=\s*520/);
+  assert.match(mainSource, /finishFeedbackPresentation/);
+  assert.match(mainSource, /revealRoundResult:\s*false/);
   assert.match(mainSource, /handPanel\.hidden\s*=\s*presentation\.isFinished/);
   assert.match(mainSource, /passButton\.hidden\s*=\s*!presentation\.canPass/);
   assert.doesNotMatch(turnSource, /Acción \$\{/);

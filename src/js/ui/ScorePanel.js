@@ -51,6 +51,16 @@ export function getScoringPanelPresentation(view, { feedback = null } = {}) {
       };
 }
 
+export function shouldDeferRoundResult({
+  isFinished,
+  feedback = null,
+  revealRoundResult = true,
+}) {
+  return Boolean(
+    isFinished && (!revealRoundResult || feedback?.scoring),
+  );
+}
+
 export function renderScoringPanel(container, view, { feedback = null } = {}) {
   if (!container) {
     return;
@@ -102,20 +112,21 @@ export function getRoundResultPresentation(view) {
     traditionalWinner: result.traditionalWinnerTeamId
       ? teamName(view, result.traditionalWinnerTeamId)
       : "ninguno",
+    traditionalWinnerTeamId: result.traditionalWinnerTeamId,
     finalBonus: result.finalBonus,
     isTie: result.isTie,
     winnerTeamId: result.winnerTeamId,
   };
 }
 
-export function renderRoundResult(container, view) {
+export function renderRoundResult(container, view, { deferred = false } = {}) {
   if (!container) {
     return;
   }
   const result = getRoundResultPresentation(view);
-  container.hidden = !result;
+  container.hidden = !result || deferred;
   container.replaceChildren();
-  if (!result) {
+  if (!result || deferred) {
     return;
   }
   const title = document.createElement("h2");
@@ -129,17 +140,22 @@ export function renderRoundResult(container, view) {
   scoreTeams.textContent = result.scoreTeams;
   const reason = document.createElement("p");
   reason.textContent = result.reason;
-  const traditional = document.createElement("p");
-  traditional.textContent =
-    `Vencedor tradicional: ${result.traditionalWinner}`;
-  const bonus = document.createElement("p");
-  bonus.textContent =
-    `Bonificación final: ${result.finalBonus > 0 ? "+" : ""}${result.finalBonus}`;
   const explanation = document.createElement("div");
   explanation.className = "round-result__explanation";
-  explanation.append(reason, traditional, bonus);
-  const analysis = document.createElement("p");
-  analysis.className = "round-result__analysis";
-  analysis.textContent = "Explora la mesa en Tradicional, Puertos o Grafo.";
-  container.append(title, score, scoreTeams, explanation, analysis);
+  explanation.append(reason);
+  if (
+    result.traditionalWinnerTeamId !== null &&
+    result.traditionalWinnerTeamId !== result.winnerTeamId
+  ) {
+    const traditional = document.createElement("p");
+    traditional.textContent =
+      `Vencedor antes de la bonificación: ${result.traditionalWinner}`;
+    explanation.append(traditional);
+  }
+  if (result.finalBonus > 0) {
+    const bonus = document.createElement("p");
+    bonus.textContent = `Bonificación final: +${result.finalBonus}`;
+    explanation.append(bonus);
+  }
+  container.append(title, score, scoreTeams, explanation);
 }

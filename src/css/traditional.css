@@ -431,12 +431,18 @@
 .traditional-ghost__tile {
   width: 72px;
   height: 38px;
-  border: 3px dashed var(--game-teal-bright) !important;
-  opacity: 0.62;
+  border: 4px dashed var(--game-teal-bright) !important;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgb(39 222 197 / 0.18) 0 5px,
+      rgb(245 236 215 / 0.94) 5px 10px
+    ) !important;
+  opacity: 0.76;
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.7),
-    0 0 0 3px rgb(39 222 197 / 0.18),
-    0 0 13px rgb(39 222 197 / 0.55) !important;
+    0 0 0 4px rgb(39 222 197 / 0.24),
+    0 0 17px rgb(39 222 197 / 0.72) !important;
   pointer-events: none;
 }
 
@@ -446,7 +452,7 @@
 
 .traditional-ghost:hover .traditional-ghost__tile,
 .traditional-ghost:focus-visible .traditional-ghost__tile {
-  opacity: 0.84;
+  opacity: 0.94;
 }
 
 .traditional-ghost:focus-visible {

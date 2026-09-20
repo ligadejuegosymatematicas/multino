@@ -416,40 +416,47 @@ body {
 }
 
 @media (max-width: 36rem) {
-  .app-header { min-height: 2.7rem; padding: 0.32rem 0.5rem; }
-  .brand-mark { width: 1.15rem; height: 1.7rem; }
-  .brand-lockup h1 { font-size: 1.25rem; }
+  .app-header { min-height: 2.35rem; padding: 0.24rem 0.42rem; }
+  .brand-lockup { gap: 0.42rem; }
+  .brand-mark { width: 1rem; height: 1.5rem; }
+  .brand-lockup h1 { font-size: 1.1rem; }
   .session-badge { font-size: 0.62rem; }
   .round-overview { border-radius: 0.7rem; }
-  .overview-players { padding: 0.24rem 0.28rem; }
-  .turn-panel { gap: 0.18rem; }
+  .overview-players { padding: 0.18rem 0.22rem; }
+  .turn-panel { gap: 0.14rem; }
   .player-status {
     display: flex;
     flex-direction: column;
     gap: 0.08rem;
-    min-height: 3.25rem;
+    min-height: 2.7rem;
     justify-content: center;
-    padding: 0.2rem;
+    padding: 0.12rem;
     text-align: center;
   }
-  .player-status__avatar { width: 1.35rem; }
+  .player-status__avatar { width: 1.15rem; }
   .player-status__identity small { display: none; }
   .player-status__identity strong { max-width: 4.2rem; font-size: 0.65rem; }
-  .player-status__remaining { font-size: 0.62rem; }
+  .player-status__remaining { font-size: 0.58rem; }
   .player-status::after { inset-inline: 0.25rem; }
   .score-panel { min-width: 9.5rem; }
-  .graph-stage { padding: 0.3rem; }
+  .graph-stage { padding: 0.22rem; }
   .view-switch__button { padding-inline: 0.48rem; font-size: 0.68rem; }
 }
 
 @media (orientation: landscape) and (max-height: 34rem) {
-  .app-header { min-height: 2.25rem; padding-block: 0.22rem; }
-  .brand-mark { width: 1rem; height: 1.5rem; }
+  .app-header { min-height: 2.05rem; padding-block: 0.12rem; }
+  .brand-mark { width: 0.9rem; height: 1.35rem; }
   .round-overview { grid-template-columns: minmax(0, 1fr) auto auto; }
   .overview-players { grid-column: auto; }
-  .turn-panel { grid-template-columns: repeat(4, minmax(5.5rem, 1fr)); }
-  .player-status { grid-template-columns: 1.35rem minmax(0, 1fr) auto; min-height: 0; }
-  .player-status__avatar { width: 1.35rem; }
+  .turn-panel { grid-template-columns: repeat(4, minmax(5.5rem, 1fr)); gap: 0.2rem; }
+  .player-status {
+    grid-template-columns: 1.15rem minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 0.12rem 0.25rem;
+  }
+  .player-status__avatar { width: 1.15rem; }
+  .player-status__identity strong { font-size: 0.7rem; }
+  .player-status__remaining { font-size: 0.64rem; }
   .player-status__identity small { display: none; }
 }
 

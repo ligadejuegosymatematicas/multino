@@ -40,6 +40,7 @@
 
 .app-shell.is-playing {
   padding-block-start: 0.35rem;
+  padding-block-end: 0.25rem;
 }
 
 .app-shell.is-playing .app-header {
@@ -104,7 +105,7 @@
 @media (max-width: 36rem) {
   .app-shell {
     width: min(100% - 0.65rem, 86rem);
-    padding-block: 0.45rem 0.8rem;
+    padding-block: 0.28rem 0.65rem;
   }
 
   .app-header {
@@ -113,7 +114,7 @@
 
   .round-overview {
     grid-template-columns: 1.15fr 1.4fr 0.65fr;
-    margin-block-end: 0.25rem;
+    margin-block-end: 0.18rem;
   }
 
   .app-shell.is-ports-mode .round-overview {
@@ -121,7 +122,7 @@
   }
 
   .play-layout {
-    gap: 0.32rem;
+    gap: 0.24rem;
   }
 
   .round-sidebar {
@@ -137,7 +138,11 @@
 @media (orientation: landscape) and (max-height: 34rem) {
   .app-shell {
     width: min(94rem, calc(100% - 0.7rem));
-    padding-block: 0.28rem;
+    padding-block: 0;
+  }
+
+  .app-shell.is-playing {
+    padding-block: 0;
   }
 
   .app-header {
