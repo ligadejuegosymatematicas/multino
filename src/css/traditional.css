@@ -150,7 +150,7 @@
 }
 
 .traditional-domino.is-scoring-term {
-  animation: traditional-scoring-source 6.6s ease-out;
+  animation: traditional-scoring-source 8.6s ease-out;
 }
 
 .traditional-domino__scoring-value,
@@ -352,7 +352,7 @@
 }
 
 .traditional-target.is-scoring-term {
-  animation: traditional-scoring-target 6.6s ease-out;
+  animation: traditional-scoring-target 8.6s ease-out;
 }
 
 .traditional-target.is-potential .traditional-target__socket {

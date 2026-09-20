@@ -4,6 +4,7 @@ import test from "node:test";
 
 import { projectGraphView } from "../../src/js/game/index.js";
 import {
+  calculateScoringTokenTravel,
   createScoringSourceTokens,
   createScoringFeedbackPresentation,
   getGameFeedback,
@@ -135,11 +136,12 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   assert.deepEqual(zero.terms, []);
   assert.equal(zero.divisionText, "0 puntos");
   assert.equal(zero.outcomeText, "0 puntos");
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 6000);
-  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 7000);
-  assert.equal(SCORING_FEEDBACK_TIMING.sourcesMs, 1300);
-  assert.equal(SCORING_FEEDBACK_TIMING.tokensMs, 1200);
-  assert.equal(SCORING_FEEDBACK_TIMING.transferMs, 900);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs >= 8500);
+  assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 9000);
+  assert.equal(SCORING_FEEDBACK_TIMING.sourcesMs, 1400);
+  assert.equal(SCORING_FEEDBACK_TIMING.tokenEmergenceMs, 600);
+  assert.equal(SCORING_FEEDBACK_TIMING.tokenTravelMs, 1200);
+  assert.equal(SCORING_FEEDBACK_TIMING.conclusionMs, 1200);
 });
 
 test("cada scoringTerm genera tokens canónicos, incluido cero y doble ×2", () => {
@@ -170,6 +172,17 @@ test("cada scoringTerm genera tokens canónicos, incluido cero y doble ×2", () 
     tokens.reduce((sum, token) => sum + token.value, 0),
     10,
   );
+});
+
+test("el mismo token aterriza exactamente en el centro de su slot", () => {
+  const travel = calculateScoringTokenTravel(
+    { left: 125, top: 80, width: 30, height: 20 },
+    { left: 320, top: 210, width: 40, height: 28 },
+  );
+  assert.deepEqual(travel.source, { x: 140, y: 90 });
+  assert.deepEqual(travel.destination, { x: 340, y: 224 });
+  assert.equal(travel.destination.x + travel.deltaX, travel.source.x);
+  assert.equal(travel.destination.y + travel.deltaY, travel.source.y);
 });
 
 test("la ficha visual compartida conserva pips reales incluso con ceros", () => {
@@ -281,9 +294,10 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(themeCss, /--game-gold-bright:\s*var\(--scoring\)/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
-  assert.match(componentsCss, /scoring-token-flight 1050ms/);
-  assert.match(componentsCss, /score-delta 700ms 5\.8s/);
-  assert.match(componentsCss, /animation-duration:\s*6\.6s/);
+  assert.match(componentsCss, /scoring-token-continuity 1800ms/);
+  assert.doesNotMatch(componentsCss, /scoring-flight-layer|scoring-flight-token/);
+  assert.match(componentsCss, /score-delta 780ms 7\.75s/);
+  assert.match(componentsCss, /animation-duration:\s*8\.6s/);
   assert.match(componentsCss, /@keyframes scoring-award-transfer/);
   assert.match(componentsCss, /scoring-feedback__quotient\.is-score/);
   assert.match(componentsCss, /scoring-feedback__remainder\.is-focus/);

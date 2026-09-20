@@ -4,14 +4,15 @@ function teamName(view, teamId) {
 }
 
 export const SCORING_FEEDBACK_TIMING = Object.freeze({
-  sourcesMs: 1300,
-  tokensMs: 1200,
-  expressionMs: 1100,
-  sumMs: 1000,
-  divisionMs: 1100,
-  transferMs: 900,
-  totalMs: 6600,
-  reducedMotionMs: 1400,
+  sourcesMs: 1400,
+  tokenEmergenceMs: 600,
+  tokenTravelMs: 1200,
+  expressionMs: 1400,
+  sumMs: 1300,
+  divisionMs: 1500,
+  conclusionMs: 1200,
+  totalMs: 8600,
+  reducedMotionMs: 1700,
 });
 
 function sourceMultiplicities(terms) {
@@ -187,21 +188,31 @@ function renderDivision(model) {
   return wrapper;
 }
 
-function clearScoringFlightLayer() {
-  if (typeof document === "undefined") return;
-  document.querySelector("[data-scoring-flight-layer]")?.remove();
+function rectCenter(rect) {
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
 }
 
-function renderScoringFlightTokens(model, termElements) {
-  if (typeof document === "undefined") return null;
-  clearScoringFlightLayer();
+/** Both rectangles use viewport coordinates from getBoundingClientRect(). */
+export function calculateScoringTokenTravel(sourceRect, slotRect) {
+  const source = rectCenter(sourceRect);
+  const destination = rectCenter(slotRect);
+  return {
+    source,
+    destination,
+    deltaX: source.x - destination.x,
+    deltaY: source.y - destination.y,
+  };
+}
+
+function connectScoringTokensToSources(model, termElements) {
+  if (typeof document === "undefined") return;
   if (
     model.sourceTokens.length === 0 ||
     globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
-  ) return null;
-  const layer = document.createElement("span");
-  layer.className = "scoring-flight-layer";
-  layer.dataset.scoringFlightLayer = "";
+  ) return;
   const anchorsByValue = new Map();
   const anchorsById = new Map();
   for (const anchor of document.querySelectorAll(
@@ -223,30 +234,19 @@ function renderScoringFlightTokens(model, termElements) {
     if (!anchor || !destination) return;
     const sourceRect = anchor.getBoundingClientRect();
     const destinationRect = destination.getBoundingClientRect();
-    const flight = document.createElement("span");
-    flight.className = "scoring-flight-token";
-    flight.textContent = String(token.value);
-    flight.style.setProperty("--token-order", String(token.order));
-    flight.style.setProperty(
-      "--token-from-x",
-      `${sourceRect.left + sourceRect.width / 2}px`,
+    const travel = calculateScoringTokenTravel(sourceRect, destinationRect);
+    destination.classList.add("is-source-connected");
+    destination.dataset.scoringSourceAnchor = token.anchorId;
+    destination.style.setProperty("--token-order", String(token.order));
+    destination.style.setProperty(
+      "--token-source-dx",
+      `${travel.deltaX}px`,
     );
-    flight.style.setProperty(
-      "--token-from-y",
-      `${sourceRect.top + sourceRect.height / 2}px`,
+    destination.style.setProperty(
+      "--token-source-dy",
+      `${travel.deltaY}px`,
     );
-    flight.style.setProperty(
-      "--token-to-x",
-      `${destinationRect.left + destinationRect.width / 2}px`,
-    );
-    flight.style.setProperty(
-      "--token-to-y",
-      `${destinationRect.top + destinationRect.height / 2}px`,
-    );
-    layer.append(flight);
   });
-  document.body.append(layer);
-  return layer;
 }
 
 function connectAwardToScore(outcome) {
@@ -280,7 +280,6 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
   container.removeAttribute("tabindex");
   container.onclick = null;
   container.onkeydown = null;
-  clearScoringFlightLayer();
   container.classList.remove(
     "is-score-feedback",
     "is-branch-feedback",
@@ -299,7 +298,7 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
       );
     const source = document.createElement("span");
     source.className = "scoring-feedback__source";
-    source.textContent = "Extremos";
+    source.textContent = "Puntas que suman";
     const terms = document.createElement("span");
     terms.className = "scoring-feedback__terms";
     const sigma = document.createElement("strong");
@@ -323,13 +322,16 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
       }
     }
     if (model.sourceTokens.length === 0) {
-      terms.textContent = "0";
+      const zero = document.createElement("span");
+      zero.className = "scoring-feedback__term is-empty";
+      zero.textContent = "0";
+      terms.append(zero);
     }
     const sum = document.createElement("span");
     sum.className = "scoring-feedback__sum";
     const equals = document.createElement("span");
     equals.className = "scoring-feedback__equals";
-    equals.textContent = "=";
+    equals.textContent = "Σ =";
     const result = document.createElement("strong");
     result.className = "scoring-feedback__result";
     result.textContent = String(model.sum);
@@ -351,7 +353,7 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
     }
     sequence.append(source, terms, sum, divisibility, verdict, outcome);
     container.append(sequence);
-    const flightLayer = renderScoringFlightTokens(model, tokenElements);
+    connectScoringTokensToSources(model, tokenElements);
     if (model.outcomeKind === "award") connectAwardToScore(outcome);
     container.setAttribute("role", "button");
     container.setAttribute("tabindex", "0");
@@ -361,7 +363,6 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
     );
     const complete = () => {
       container.classList.add("is-complete");
-      flightLayer?.remove();
       onComplete?.();
     };
     container.onclick = complete;

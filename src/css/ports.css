@@ -285,7 +285,7 @@
 
 .port-graph.is-scoring-feedback .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
 .port-graph.is-scoring-feedback .port-macro-node.is-scoring-feedback-source .port-macro-node__scoring-badge {
-  animation: port-scoring-source 6.6s ease-out both;
+  animation: port-scoring-source 8.6s ease-out both;
 }
 
 .port-macro-node-shell.is-strategic-inspected .port-macro-node__rim {

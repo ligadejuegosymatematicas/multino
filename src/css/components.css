@@ -219,7 +219,7 @@
 }
 
 .score-team.is-score-feedback {
-  animation: score-arrival 600ms 6s ease-out both;
+  animation: score-arrival 650ms 7.9s ease-out both;
 }
 
 .score-team__delta {
@@ -236,7 +236,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   opacity: 0;
-  animation: score-delta 700ms 5.8s ease-out both;
+  animation: score-delta 780ms 7.75s ease-out both;
 }
 
 .score-team strong {
@@ -405,18 +405,24 @@
 .play-feedback.is-score-feedback {
   pointer-events: auto;
   cursor: pointer;
-  animation-duration: 6.6s;
+  animation-name: scoring-stage-visibility;
+  animation-duration: 8.6s;
+  animation-timing-function: linear;
 }
 
 .scoring-feedback {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "lesson lesson lesson"
-    "source terms sum"
-    "division verdict outcome";
+    "lesson lesson"
+    "source source"
+    "terms terms"
+    "sum sum"
+    "division division"
+    "verdict outcome";
   align-items: center;
-  gap: 0.25rem 0.6rem;
+  justify-items: center;
+  gap: 0.2rem 0.65rem;
 }
 
 .scoring-feedback__source,
@@ -447,12 +453,15 @@
   gap: 0.22rem;
   color: #ffe29a;
   white-space: nowrap;
-  animation-delay: 2380ms;
+  opacity: 1;
+  animation: none;
 }
 
 .scoring-feedback__sigma {
   color: #fff0bd;
   font-size: 1rem;
+  opacity: 0;
+  animation: scoring-step 360ms 3150ms ease-out both;
 }
 
 .scoring-feedback__term {
@@ -465,24 +474,28 @@
   border-radius: 0.42rem;
   background: rgb(87 57 8 / 0.72);
   opacity: 0;
-  animation: scoring-term-arrival 620ms ease-out both;
-  animation-delay: calc(2500ms + var(--term-index) * 90ms);
+  animation: scoring-term-arrival 420ms 3150ms ease-out both;
+}
+
+.scoring-feedback__term.is-source-connected {
+  animation: scoring-token-continuity 1800ms
+    calc(1400ms + var(--token-order) * 90ms) ease-in-out both;
 }
 
 .scoring-feedback__operator {
   color: #bba978;
   opacity: 0;
-  animation: scoring-term-arrival 420ms 2550ms ease-out both;
+  animation: scoring-term-arrival 420ms 3150ms ease-out both;
 }
 
 .scoring-feedback__sum {
   grid-area: sum;
   gap: 0.24rem;
   padding-inline: 0.52rem;
-  border-inline-start: 1px solid rgb(255 255 255 / 0.18);
+  border-block-start: 1px solid rgb(255 255 255 / 0.18);
   color: #ffe29a;
   font-size: 1.12rem;
-  animation-delay: 3600ms;
+  animation-delay: 4600ms;
 }
 
 .scoring-feedback__equals,
@@ -491,11 +504,11 @@
   animation: scoring-step 360ms ease-out both;
 }
 
-.scoring-feedback__equals { animation-delay: 3600ms; }
+.scoring-feedback__equals { animation-delay: 4600ms; }
 .scoring-feedback__result {
   color: #ffda70;
   font-size: 1.18rem;
-  animation-delay: 3820ms;
+  animation-delay: 4820ms;
 }
 
 .scoring-feedback__divisibility {
@@ -504,7 +517,7 @@
   font-size: 0.72rem;
   flex-wrap: wrap;
   gap: 0.2rem;
-  animation-delay: 4650ms;
+  animation-delay: 5900ms;
 }
 
 .scoring-feedback__verdict {
@@ -512,7 +525,7 @@
   min-width: 0;
   color: #d7ddd7;
   font-size: 0.73rem;
-  animation-delay: 5600ms;
+  animation-delay: 7400ms;
 }
 
 .scoring-feedback__verdict.is-award {
@@ -529,7 +542,7 @@
   min-width: 5rem;
   color: #c8d0ca;
   font-size: 0.9rem;
-  animation-delay: 5850ms;
+  animation-delay: 7750ms;
 }
 
 .scoring-feedback__quotient,
@@ -574,8 +587,8 @@
 
 .scoring-feedback__outcome.is-award.has-score-target {
   animation:
-    scoring-step 420ms 5850ms ease-out both,
-    scoring-award-transfer 720ms 5900ms ease-in both;
+    scoring-step 420ms 7750ms ease-out both,
+    scoring-award-transfer 800ms 7800ms ease-in both;
 }
 
 .scoring-feedback__outcome.is-no-award {
@@ -594,44 +607,10 @@
   font-weight: 650;
 }
 
-.scoring-flight-layer {
-  position: fixed;
-  z-index: 9999;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.scoring-flight-token {
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
-  place-items: center;
-  border: 1px solid #ffe29a;
-  border-radius: 999px;
-  color: #332306;
-  background: #ffd261;
-  box-shadow: 0 0 12px rgb(255 202 82 / 0.82);
-  font-size: 0.72rem;
-  font-weight: 950;
-  opacity: 0;
-  transform: translate(
-    calc(var(--token-from-x) - 0.875rem),
-    calc(var(--token-from-y) - 0.875rem)
-  );
-  animation: scoring-token-flight 1050ms
-    calc(1300ms + var(--token-order) * 90ms) ease-in-out both;
-}
-
 .app-shell.is-ports-mode .play-feedback.is-score-feedback {
   inset: 50% auto auto 50%;
   width: min(30rem, calc(100% - 1.5rem));
   transform: translate(-50%, -50%);
-  animation-name: port-scoring-stage-arrival;
 }
 
 .branch-feedback {
@@ -1007,22 +986,31 @@
   to { opacity: 1; transform: none; }
 }
 
-@keyframes scoring-token-flight {
+@keyframes scoring-token-continuity {
   0% {
     opacity: 0;
     transform: translate(
-      calc(var(--token-from-x) - 0.875rem),
-      calc(var(--token-from-y) - 0.875rem)
+      var(--token-source-dx),
+      var(--token-source-dy)
     ) scale(0.72);
   }
-  15% { opacity: 1; }
-  78% { opacity: 1; }
-  100% {
-    opacity: 0;
+  8% {
+    opacity: 1;
     transform: translate(
-      calc(var(--token-to-x) - 0.875rem),
-      calc(var(--token-to-y) - 0.875rem)
+      var(--token-source-dx),
+      var(--token-source-dy)
     ) scale(1);
+  }
+  33% {
+    opacity: 1;
+    transform: translate(
+      var(--token-source-dx),
+      var(--token-source-dy)
+    ) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
   }
 }
 
@@ -1038,10 +1026,9 @@
   }
 }
 
-@keyframes port-scoring-stage-arrival {
-  0% { opacity: 0; transform: translate(-50%, calc(-50% + 0.45rem)) scale(0.94); }
-  12%, 92% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, calc(-50% - 0.2rem)) scale(0.98); }
+@keyframes scoring-stage-visibility {
+  0% { opacity: 0; }
+  3%, 100% { opacity: 1; }
 }
 
 .play-feedback.is-complete {
@@ -1051,6 +1038,7 @@
 
 .play-feedback.is-complete .scoring-feedback__source,
 .play-feedback.is-complete .scoring-feedback__terms,
+.play-feedback.is-complete .scoring-feedback__sigma,
 .play-feedback.is-complete .scoring-feedback__term,
 .play-feedback.is-complete .scoring-feedback__operator,
 .play-feedback.is-complete .scoring-feedback__sum,
@@ -1085,10 +1073,6 @@
   .scoring-feedback__verdict,
   .scoring-feedback__outcome {
     animation: none;
-  }
-
-  .scoring-flight-layer {
-    display: none;
   }
 
   .scoring-feedback__source,
