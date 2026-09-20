@@ -117,6 +117,7 @@ function renderNodeShell(node) {
   ].filter(Boolean).join(" ");
   return `
     <g class="port-macro-node-shell ${stateClasses}" aria-hidden="true">
+      <circle class="port-macro-node__playability-ring" cx="${node.x}" cy="${node.y}" r="68"></circle>
       <circle class="port-macro-node__active-ring" cx="${node.x}" cy="${node.y}" r="69"></circle>
       <circle class="port-macro-node__shadow" cx="${node.x}" cy="${node.y + 4}" r="64"></circle>
       <circle class="port-macro-node__rim" cx="${node.x}" cy="${node.y}" r="63"></circle>
@@ -163,12 +164,12 @@ function renderScoringMultiplicity(node) {
   if (displayedMultiplicity === 0 && node.scoringMultiplicity === 0) return "";
   const transition = previewActive &&
       displayedMultiplicity !== node.scoringMultiplicity
-    ? `Σ×${node.scoringMultiplicity}→${displayedMultiplicity}`
-    : `Σ×${displayedMultiplicity}`;
+    ? `Σ ×${node.scoringMultiplicity}→${displayedMultiplicity}`
+    : `Σ ×${displayedMultiplicity}`;
   return `
     <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}"${node.isScoringFeedbackSource ? ` data-scoring-anchor-value="${node.value}"` : ""} aria-hidden="true">
-      <circle cx="${node.x - 49}" cy="${node.y - 43}" r="17"></circle>
-      <text x="${node.x - 49}" y="${node.y - 43}">${transition}</text>
+      <rect x="${node.x - 76}" y="${node.y - 59}" width="58" height="28" rx="14"></rect>
+      <text x="${node.x - 47}" y="${node.y - 45}">${transition}</text>
     </g>`;
 }
 
@@ -439,24 +440,14 @@ export function createPortDecisionPresentation(decision) {
   if (ramifierScoringChange) {
     badges.push({
       kind: "scoring-off",
-      text: `Σ ${ramifierScoringChange.value} ×${ramifierScoringChange.before} → —`,
+      text: `Σ doble ×${ramifierScoringChange.before} → 0`,
       value: ramifierScoringChange.value,
     });
   }
   if ((effects.unlockedLateralCount ?? 0) > 0) {
     badges.push({
       kind: "playable",
-      text: `↗ +${effects.unlockedLateralCount} ramas`,
-    });
-  }
-  if (
-    effects.branchingConnectionCountAfter !== null &&
-    effects.branchingConnectionCountAfter !==
-      effects.branchingConnectionCountBefore
-  ) {
-    badges.push({
-      kind: "structure",
-      text: `Doble ${effects.branchingConnectionCountAfter}/4`,
+      text: `↗ +${effects.unlockedLateralCount} salidas`,
     });
   }
   if (badges.length === 0) {
@@ -498,6 +489,13 @@ export function createPortDecisionPresentations(decisions) {
  */
 export function createPortDecisionChoicePresentation(decisions) {
   const rawPresentations = decisions.map(createPortDecisionPresentation);
+  const crossDecision = decisions.find(
+    (decision) => decision.decisionKind === "complete-cross",
+  );
+  const criticalDoubleChoice = crossDecision !== undefined &&
+    decisions.some((decision) => decision.decisionKind === "continue");
+  const doubleScoringBefore =
+    crossDecision?.effects?.ramifierScoringChange?.before ?? 2;
   const commonBadgeIds = rawPresentations.length === 0
     ? new Set()
     : new Set(rawPresentations[0].badges.map(badgeIdentity));
@@ -524,7 +522,7 @@ export function createPortDecisionChoicePresentation(decisions) {
         !commonBadgeIds.has(badgeIdentity(badge)) &&
         !(badge.kind === "scoring" && differingScoringValues.includes(badge.value)),
     );
-    const scoringDifferences = differingScoringValues
+    let scoringDifferences = differingScoringValues
       .filter((value) => !distinctBadges.some(
         (badge) => badge.kind === "scoring-off" && badge.value === value,
       ))
@@ -534,13 +532,33 @@ export function createPortDecisionChoicePresentation(decisions) {
         value,
         multiplicity: multiplicities[index][value],
       }));
-    const title = structuralTitles.size === 1 && scoringDifferences.length > 0
+    if (criticalDoubleChoice) {
+      const doubleValue =
+        crossDecision.effects?.ramifierScoringChange?.value ?? null;
+      scoringDifferences = scoringDifferences.filter(
+        (difference) => difference.value !== doubleValue,
+      );
+    }
+    let title = structuralTitles.size === 1 && scoringDifferences.length > 0
       ? scoringDifferences[0].text
       : presentation.title;
-    const structuralTitle = title === presentation.title
+    let structuralTitle = title === presentation.title
       ? null
       : presentation.title;
     const badges = [...scoringDifferences, ...distinctBadges];
+    if (criticalDoubleChoice) {
+      if (decisions[index].decisionKind === "continue") {
+        title = "Otra punta";
+        structuralTitle = "Seguir punta";
+        badges.unshift({
+          kind: "scoring-keep",
+          text: `Σ doble ×${doubleScoringBefore} permanece`,
+        });
+      } else if (decisions[index].decisionKind === "complete-cross") {
+        title = "Doble central";
+        structuralTitle = "Completar continuidad";
+      }
+    }
     const preview = {
       scoringMultiplicities: multiplicities[index],
       branchingDouble: decisions[index].outcome?.branchingDouble ?? null,

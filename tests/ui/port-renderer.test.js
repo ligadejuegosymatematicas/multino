@@ -289,7 +289,7 @@ test("las decisiones distintas usan efectos legibles y nunca Destino 1 o 2", () 
   assert.doesNotMatch(markup, /Destino \d|placement-|side:|branch:/);
 });
 
-test("continuar y completar cruce son opciones inequívocas para el mismo valor", () => {
+test("otra punta y doble central comparan la transformación crítica", () => {
   const state = createOrdinaryAndCrossDecisionState();
   const groups = getStrategicDecisionGroups(
     state,
@@ -312,10 +312,12 @@ test("continuar y completar cruce son opciones inequívocas para el mismo valor"
   assert.equal(new Set(
     presentations.map((presentation) => presentation.visibleSignature),
   ).size, 2);
-  assert.match(markup, />Seguir punta</);
-  assert.match(markup, />Completar cruce</);
-  assert.match(markup, /Σ 6 ×2 → —/);
-  assert.match(markup, />↗ \+2 ramas</);
+  assert.match(markup, />Otra punta</);
+  assert.match(markup, />Doble central</);
+  assert.match(markup, /Σ doble ×2 permanece/);
+  assert.match(markup, /Σ doble ×2 → 0/);
+  assert.match(markup, />↗ \+2 salidas</);
+  assert.doesNotMatch(markup, /Doble 2\/4/);
   assert.doesNotMatch(markup, /Chancho|chancho/);
   assert.doesNotMatch(markup, />Continuar<\/span>[\s\S]*?>Continuar<\/span>/);
   assert.doesNotMatch(markup, /placement-|main:|side:/);
@@ -418,7 +420,7 @@ test("la previsualización local cambia medallón y mecanismo sin revelar S futu
     2,
   );
   assert.match(markup, /data-node-value="6"[^>]+data-scoring-multiplicity="1"/);
-  assert.match(markup, />Σ×3→1</);
+  assert.match(markup, />Σ ×3→1</);
   assert.match(
     renderPortTargetChooserMarkup(preview.targetChoice, {
       previewIndex: crossIndex,
@@ -442,6 +444,7 @@ test("sin selección los badges hacen visibles extremos reales sin exponer incid
     scene.openTargets.length,
   );
   assert.equal(markup.match(/port-macro-node__target-badge/g)?.length, 7);
+  assert.equal(markup.match(/port-macro-node__playability-ring/g)?.length, 7);
   assert.doesNotMatch(markup, /port-open-target__option/);
 });
 
@@ -496,6 +499,7 @@ test("cada medallón separa destinos, multiplicidad de S y fichas jugadas", () =
   assert.match(markup, /data-node-value="4" data-open-target-count="2" data-decision-count="0" data-physical-target-count="0" data-scoring-multiplicity="0" data-played-tile-count="3"/);
   assert.equal(markup.match(/data-semantic="playability"/g)?.length, 7);
   assert.equal(markup.match(/data-semantic="history"/g)?.length, 7);
+  assert.match(markup, /port-macro-node__scoring-ring/);
   assert.match(markup, />↗ 2<\/text>/);
   assert.match(markup, />▣ 3\/7<\/text>/);
 });
@@ -528,8 +532,8 @@ test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", 
   assert.equal(five.scoringMultiplicity, 2);
   assert.equal(five.playedTileCount, 1);
   assert.match(markup, /data-scoring-multiplicity="2"/);
-  assert.match(markup, /port-macro-node__scoring-badge/);
-  assert.match(markup, />Σ×2<\/text>/);
+  assert.match(markup, /port-macro-node__scoring-badge[\s\S]*?<rect/);
+  assert.match(markup, />Σ ×2<\/text>/);
   assert.match(markup, />▣ 1\/7<\/text>/);
 });
 
@@ -1006,8 +1010,11 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-macro-node__body \{ fill: #f3ead6/);
   assert.match(css, /\.port-semantic-legend \{/);
   assert.match(css, /\.port-target-choice \{[\s\S]*?inset:\s*auto auto 0\.5rem 50%/);
-  assert.match(css, /\.port-graph \{[\s\S]*?inset:\s*2\.85rem 0 auto/);
+  assert.match(css, /\.port-graph \{[\s\S]*?inset:\s*4\.75rem 0 auto/);
   assert.match(css, /\.has-port-target-choice \.port-graph \{[\s\S]*?height:\s*calc\(100% - 11\.25rem\)/);
+  assert.match(css, /\.port-semantic-legend \{[\s\S]*?inset:\s*2\.95rem auto auto 50%/);
+  assert.match(css, /\.port-macro-node-shell\.has-open-targets \.port-macro-node__playability-ring/);
+  assert.match(css, /\.port-target-choice__effect\.is-scoring-keep/);
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 31rem\)/);
   assert.doesNotMatch(css, /\.port-ramifier__[^{]+\{[^}]+#d4a331/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
