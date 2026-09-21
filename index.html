@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Dominó múltiplo de 5 jugable en modos Tradicional, Puertos y Grafo.">
-    <title>Dominó múltiplo de 5</title>
+    <title>Juego de dominó</title>
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
     <link rel="stylesheet" href="./src/css/board.css">
@@ -19,7 +19,7 @@
       <header class="app-header">
         <div class="brand-lockup">
           <span class="brand-mark" aria-hidden="true"><i></i></span>
-          <h1>Dominó <span>×5</span></h1>
+          <h1 id="app-title">Juego de dominó</h1>
         </div>
         <p id="session-badge" class="session-badge">Múltiplos de 5</p>
       </header>
@@ -56,6 +56,45 @@
                 <span>Puertos</span>
               </label>
             </div>
+          </fieldset>
+
+          <fieldset class="setup-field setup-seats">
+            <legend>Mesa local · equipos alternados</legend>
+            <div class="seat-grid">
+              <div class="seat-config" data-seat-index="0">
+                <span class="seat-config__position">Asiento 1 · Órbita</span>
+                <select data-seat-control aria-label="Control del asiento 1">
+                  <option value="HUMAN" selected>Humano</option>
+                  <option value="CPU">CPU</option>
+                </select>
+                <input data-seat-nick aria-label="Nick del asiento 1" maxlength="24" value="Jugador 1">
+              </div>
+              <div class="seat-config" data-seat-index="1">
+                <span class="seat-config__position">Asiento 2 · Vector</span>
+                <select data-seat-control aria-label="Control del asiento 2">
+                  <option value="HUMAN">Humano</option>
+                  <option value="CPU" selected>CPU</option>
+                </select>
+                <input data-seat-nick aria-label="Nick del asiento 2" maxlength="24" value="CPU 2" disabled>
+              </div>
+              <div class="seat-config" data-seat-index="2">
+                <span class="seat-config__position">Asiento 3 · Órbita</span>
+                <select data-seat-control aria-label="Control del asiento 3">
+                  <option value="HUMAN">Humano</option>
+                  <option value="CPU" selected>CPU</option>
+                </select>
+                <input data-seat-nick aria-label="Nick del asiento 3" maxlength="24" value="CPU 3" disabled>
+              </div>
+              <div class="seat-config" data-seat-index="3">
+                <span class="seat-config__position">Asiento 4 · Vector</span>
+                <select data-seat-control aria-label="Control del asiento 4">
+                  <option value="HUMAN">Humano</option>
+                  <option value="CPU" selected>CPU</option>
+                </select>
+                <input data-seat-nick aria-label="Nick del asiento 4" maxlength="24" value="CPU 4" disabled>
+              </div>
+            </div>
+            <small>Siempre 4 jugadores · Órbita y Vector ocupan asientos alternados.</small>
           </fieldset>
 
           <p class="setup-scoring">Puntuación: múltiplos de 5</p>
@@ -102,7 +141,7 @@
           <section id="hand-panel" class="hand-panel" aria-label="Mano del jugador actual">
             <div id="hand-privacy" class="hand-privacy" hidden>
               <h2 id="hand-privacy-title">Turno del siguiente jugador</h2>
-              <button id="reveal-hand-action" type="button" class="primary-action">Mostrar mano</button>
+              <button id="reveal-hand-action" type="button" class="primary-action">Ver mi mano</button>
             </div>
             <div id="hand-content">
               <div class="panel-heading hand-heading-row">

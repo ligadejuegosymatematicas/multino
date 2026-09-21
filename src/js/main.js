@@ -25,23 +25,17 @@ import {
 import {
   BOARD_VIEW_MODES,
 } from "./ui/ViewModeController.js";
-import { ROUND_STRUCTURE_MODES } from "./game/index.js";
-
-const participantConfig = {
-  players: [
-    { id: "P1", teamId: "A", displayName: "Ada" },
-    { id: "P2", teamId: "B", displayName: "Bruno" },
-    { id: "P3", teamId: "A", displayName: "Celia" },
-    { id: "P4", teamId: "B", displayName: "Diego" },
-  ],
-  teams: [
-    { id: "A", playerIds: ["P1", "P3"], displayName: "Órbita" },
-    { id: "B", playerIds: ["P2", "P4"], displayName: "Vector" },
-  ],
-  seating: {
-    counterclockwisePlayerIds: ["P1", "P2", "P3", "P4"],
-  },
-};
+import {
+  createDefaultSeats,
+  createSeat,
+  ROUND_STRUCTURE_MODES,
+  SEAT_CONTROL_TYPES,
+} from "./game/index.js";
+import { APP_NAME } from "./config/AppConfig.js";
+import {
+  LocalMatchHistoryStore,
+  LocalProfileStore,
+} from "./storage/LocalStores.js";
 
 const boardRoot = document.querySelector("#board-root");
 const graphRenderer = new GraphRenderer(boardRoot);
@@ -56,6 +50,9 @@ const gameScreen = document.querySelector("#game-screen");
 const setupForm = document.querySelector("#setup-form");
 const setupRoundMode = document.querySelector("#setup-round-mode");
 const setupRoundModeHelp = document.querySelector("#setup-round-mode-help");
+const seatConfigElements = [
+  ...document.querySelectorAll("[data-seat-index]"),
+];
 const initialModeInputs = [
   ...document.querySelectorAll("[name='initial-view-mode']"),
 ];
@@ -78,6 +75,35 @@ let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
 let hasShownScoringLesson = false;
 const ROUND_RESULT_REVEAL_DELAY_MS = 520;
+const profileStore = new LocalProfileStore();
+const historyStore = new LocalMatchHistoryStore();
+document.title = APP_NAME;
+document.querySelector("#app-title").textContent = APP_NAME;
+
+function collectSetupSeats() {
+  return seatConfigElements.map((element, seatIndex) => {
+    const controlType = element.querySelector("[data-seat-control]").value;
+    const nickInput = element.querySelector("[data-seat-nick]");
+    return createSeat({
+      seatIndex,
+      controlType,
+      nick: controlType === SEAT_CONTROL_TYPES.CPU
+        ? `CPU ${seatIndex + 1}`
+        : nickInput.value,
+    });
+  });
+}
+
+function renderSeatSetup(seats) {
+  for (const seat of seats) {
+    const element = seatConfigElements[seat.seatIndex];
+    const control = element.querySelector("[data-seat-control]");
+    const nick = element.querySelector("[data-seat-nick]");
+    control.value = seat.controlType;
+    nick.disabled = seat.controlType === SEAT_CONTROL_TYPES.CPU;
+    if (document.activeElement !== nick) nick.value = seat.nick;
+  }
+}
 
 function setMessage(text) {
   message.textContent = text;
@@ -252,8 +278,10 @@ function renderRound(
   handPanel.hidden = presentation.isFinished;
   handContent.hidden = !handIsVisible;
   handPrivacy.hidden = handIsVisible || presentation.isFinished;
-  handPrivacyTitle.textContent =
-    `Turno de ${presentation.handPrivacy.displayName}`;
+  handPrivacyTitle.textContent = presentation.handPrivacy.isCpu
+    ? `${presentation.handPrivacy.displayName} está pensando…`
+    : `Turno de ${presentation.handPrivacy.displayName} · entrega el dispositivo`;
+  revealHandButton.hidden = !presentation.handPrivacy.canReveal;
   if (handIsVisible) {
     renderHand(document.querySelector("#hand-root"), presentation, {
       onSelect: (dominoId) =>
@@ -352,14 +380,23 @@ function renderSession(session) {
     scheduleFeedbackHide(feedback);
     lastFeedbackSequence = nextFeedback?.sequence ?? null;
   } else {
+    renderSeatSetup(session.seats);
     lastFeedbackSequence = null;
     renderGameFeedback(playFeedback, null);
     scheduleFeedbackHide(null);
   }
 }
 
+const savedProfile = profileStore.load();
 sessionController = new LocalGameSessionController({
-  participants: participantConfig,
+  seats: createDefaultSeats({
+    humanCount: 1,
+    nick: savedProfile.nick || "Jugador 1",
+  }),
+  historyStore,
+  cpuTurnDelayMs: ({ state }) => state.history.length === 0
+    ? 650
+    : SCORING_FEEDBACK_TIMING.totalMs + 550,
   onChange: renderSession,
 });
 
@@ -382,6 +419,17 @@ setupRoundMode.addEventListener("change", () => {
   sessionController.setRoundMode(setupRoundMode.value);
 });
 
+for (const element of seatConfigElements) {
+  const control = element.querySelector("[data-seat-control]");
+  const nick = element.querySelector("[data-seat-nick]");
+  control.addEventListener("change", () => {
+    runIntent(() => sessionController.setSeats(collectSetupSeats()), "");
+  });
+  nick.addEventListener("change", () => {
+    runIntent(() => sessionController.setSeats(collectSetupSeats()), "");
+  });
+}
+
 for (const input of initialModeInputs) {
   input.addEventListener("change", () => {
     if (input.checked) {
@@ -393,7 +441,15 @@ for (const input of initialModeInputs) {
 setupForm.addEventListener("submit", (event) => {
   event.preventDefault();
   runIntent(
-    () => sessionController.startNewGame(),
+    () => {
+      const seats = collectSetupSeats();
+      sessionController.setSeats(seats);
+      const firstHuman = seats.find(
+        (seat) => seat.controlType === SEAT_CONTROL_TYPES.HUMAN,
+      );
+      profileStore.save({ nick: firstHuman?.nick ?? "" });
+      sessionController.startNewGame();
+    },
     "",
   );
 });

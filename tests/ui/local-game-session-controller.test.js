@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  createDefaultSeats,
   createMatch,
   getAvailableActions,
   ROUND_STRUCTURE_MODES,
@@ -57,8 +58,13 @@ test("la aplicación inicia en configuración sin crear ni repartir una ronda", 
       initialViewMode: BOARD_VIEW_MODES.TRADITIONAL,
     },
     viewMode: BOARD_VIEW_MODES.TRADITIONAL,
+    seats: presentations.at(-1).seats,
     round: null,
   });
+  assert.deepEqual(
+    presentations.at(-1).seats.map((seat) => seat.teamId),
+    ["A", "B", "A", "B"],
+  );
   assert.equal(session.getRoundState(), null);
 });
 
@@ -154,6 +160,50 @@ test("la barrera local oculta la mano entre turnos sin modificar el snapshot", (
   assert.equal(presentation.round.selectedDominoId, null);
   assert.deepEqual(presentation.round.strategicDecisionGroups, []);
   assert.notEqual(session.getRoundState().currentPlayerId, initial.currentPlayerId);
+});
+
+test("la CPU actúa automáticamente sin revelar su mano", () => {
+  const scheduled = [];
+  const session = new LocalGameSessionController({
+    seats: createDefaultSeats({ humanCount: 1 }),
+    randomSourceFactory: () => () => 0.999999,
+    scheduleCpuTask: (callback) => {
+      scheduled.push(callback);
+      return callback;
+    },
+    cancelCpuTask: () => {},
+  });
+  session.startNewGame();
+  const before = session.getRoundState();
+  assert.equal(session.getPresentation().round.handPrivacy.isCpu, true);
+  assert.equal(session.getPresentation().round.handPrivacy.canReveal, false);
+  assert.deepEqual(session.getPresentation().round.view.hand, []);
+  assert.equal(scheduled.length, 1);
+
+  scheduled.shift()();
+  assert.equal(session.getRoundState().turnNumber, before.turnNumber + 1);
+  assert.equal(session.getRoundState().history.length, 1);
+});
+
+test("una ronda terminada se archiva una sola vez con replay completo", () => {
+  const archived = [];
+  let clock = 0;
+  const session = createSession({
+    historyStore: { save: (record) => archived.push(record) },
+    now: () => `t-${clock++}`,
+  });
+  session.startNewGame();
+  const initial = structuredClone(session.getRoundState());
+  const terminal = finishCurrentGame(session);
+
+  assert.equal(archived.length, 1);
+  assert.equal(archived[0].matchId, terminal.matchId);
+  assert.deepEqual(archived[0].initialSnapshot, initial);
+  assert.deepEqual(archived[0].moves, terminal.history);
+  assert.deepEqual(archived[0].scores, terminal.score.teams);
+  assert.equal(archived[0].winner, terminal.roundResult.winnerTeamId);
+  session.start();
+  assert.equal(archived.length, 1);
 });
 
 test("cambiar Tradicional ↔ Puertos ↔ Grafo conserva privacidad y snapshot", () => {
@@ -278,6 +328,9 @@ test("la UI expone configuración simple y acciones terminales sin divisor edita
   assert.match(html, /Puntuación: múltiplos de 5/);
   assert.match(html, /id="play-again-action"/);
   assert.match(html, /id="change-config-action"/);
+  assert.equal((html.match(/data-seat-index=/g) ?? []).length, 4);
+  assert.match(html, /data-seat-control/);
+  assert.match(html, /data-seat-nick/);
   assert.doesNotMatch(html, /name="(?:n|divisor)"/);
   assert.doesNotMatch(source, /GraphRenderer|TraditionalRenderer|state\.board/);
 });

@@ -36,6 +36,22 @@ export { getCounterclockwiseSuccessor } from "./setup/Seating.js";
 export { shuffle } from "./setup/Shuffle.js";
 export { findStartingPlayerId } from "./setup/StartingPlayer.js";
 export {
+  CPU_DIFFICULTIES,
+  createDefaultSeats,
+  createSeat,
+  participantsFromSeats,
+  SEAT_CONNECTION_STATES,
+  SEAT_CONTROL_TYPES,
+  seatForPlayerId,
+  seatsFromParticipants,
+  validateSeats,
+} from "./session/Seats.js";
+export {
+  chooseCpuAction,
+  createCpuSeatView,
+} from "./cpu/CpuPlayer.js";
+export { createMatchRecord } from "./history/MatchRecord.js";
+export {
   getDerivedBranches,
   getOpenEndTargets,
 } from "./engine/BoardQueries.js";

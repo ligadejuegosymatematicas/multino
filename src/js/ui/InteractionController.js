@@ -19,6 +19,15 @@ function targetsMatch(actionTarget, projectedTarget) {
   );
 }
 
+function actionsMatch(first, second) {
+  if (first.type !== second.type || first.playerId !== second.playerId) {
+    return false;
+  }
+  if (first.type === "PASS") return true;
+  return first.dominoId === second.dominoId &&
+    targetsMatch(first.target, second.target);
+}
+
 /** Frontera entre intención visual y acciones reglamentarias canónicas. */
 export class InteractionController {
   constructor({
@@ -164,6 +173,17 @@ export class InteractionController {
       throw new Error("PASS no está disponible en este turno.");
     }
     return this.#applyAction(action);
+  }
+
+  /** Aplica una intención ya escogida por un controlador local/CPU. */
+  submitAction(action) {
+    const canonical = getAvailableActions(this.state).find(
+      (candidate) => actionsMatch(candidate, action),
+    );
+    if (!canonical) {
+      throw new Error("La acción solicitada no pertenece al turno actual.");
+    }
+    return this.#applyAction(canonical);
   }
 
   #applyAction(action) {
