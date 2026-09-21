@@ -6,6 +6,7 @@
   "description": "Base arquitectónica para Dominó múltiplo de 5",
   "scripts": {
     "start": "node scripts/serve.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
     "test": "node --test",
     "check": "node --check src/js/main.js && node --test"
   },
@@ -13,4 +14,3 @@
     "node": ">=20"
   }
 }
-
