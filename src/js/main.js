@@ -312,9 +312,11 @@ function renderRound(
       : presentation.selectedLegalTargets.some((target) => target.kind === "START")
         ? ""
         : mode === BOARD_VIEW_MODES.PORTS && strategicDecisionCount > 1
-          ? `${strategicDecisionCount} decisiones distintas`
+          ? `${strategicDecisionCount} opciones`
+        : mode === BOARD_VIEW_MODES.PORTS && selectedCount > 1
+          ? `${selectedCount} opciones`
         : selectedCount > 1
-          ? `${selectedCount} destinos`
+          ? `${selectedCount} lugares`
           : "";
   selectionHint.hidden = selectionHint.textContent === "";
 }

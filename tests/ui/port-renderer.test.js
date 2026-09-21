@@ -157,7 +157,7 @@ test("la escena vacía conserva siete sacos y cuarenta y dos puertos potenciales
   assert.equal(markup.match(/aria-label="Valor \d;/g)?.length, 7);
   assert.equal(markup.match(/port-incidence is-potential/g)?.length ?? 0, 0);
   assert.match(renderPortStructureToggleMarkup(scene), /Ver estructura/);
-  assert.match(markup, /Σ · EXTREMOS/);
+  assert.match(markup, /PUNTAS · Σ/);
   assert.match(markup, />Σ = 0</);
   assert.equal(scene.visualState, "play");
 });
@@ -181,7 +181,7 @@ test("hilos exteriores y costuras interiores se materializan por separado", () =
   assert.match(structureMarkup, /class="port-thread is-main(?:\s|")/);
   assert.match(structureMarkup, /class="port-bridge is-main(?:\s|")/);
   assert.ok(scene.threads.every((thread) => thread.path.includes(" Q ")));
-  assert.match(markup, /Σ · EXTREMOS/);
+  assert.match(markup, /PUNTAS · Σ/);
   assert.match(markup, />Σ = \d+</);
   assert.doesNotMatch(markup, />\s*\+\d+\s+puntos/i);
 });

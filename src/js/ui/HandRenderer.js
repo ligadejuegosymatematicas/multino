@@ -12,14 +12,14 @@ function createDominoButton(domino, selected, disabled, onSelect) {
   button.setAttribute("aria-pressed", String(selected));
   button.setAttribute(
     "aria-label",
-    `Ficha ${domino.a}-${domino.b}, ${domino.legalTargetCount > 0 ? `${domino.legalTargetCount} destinos` : "sin jugada legal"}`,
+    `Ficha ${domino.a}-${domino.b}, ${domino.legalTargetCount > 0 ? `${domino.legalTargetCount} lugares` : "sin lugares disponibles"}`,
   );
 
   button.append(createDominoTileElement(domino));
   if (domino.legalTargetCount > 1) {
     const status = document.createElement("span");
     status.className = "hand-domino__status";
-    status.textContent = `${domino.legalTargetCount} destinos`;
+    status.textContent = `${domino.legalTargetCount} lugares`;
     button.append(status);
   }
   button.addEventListener("click", () => onSelect?.(domino.dominoId));
@@ -48,7 +48,7 @@ export function renderTurnAction(container, presentation) {
   const detail = document.createElement("span");
   detail.className = "turn-action__detail";
   detail.textContent = selected
-    ? `${presentation.selectedLegalTargets.length} ${presentation.selectedLegalTargets.length === 1 ? "destino legal" : "destinos legales"}`
+    ? `${presentation.selectedLegalTargets.length} ${presentation.selectedLegalTargets.length === 1 ? "lugar" : "lugares"}`
     : "";
   copy.append(kicker);
   if (title.textContent !== "") copy.append(title);

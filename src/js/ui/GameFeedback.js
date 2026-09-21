@@ -15,6 +15,11 @@ export const SCORING_FEEDBACK_TIMING = Object.freeze({
   reducedMotionMs: 1700,
 });
 
+const TOKEN_SEQUENCE_START_MS = SCORING_FEEDBACK_TIMING.sourcesMs;
+const TOKEN_SEQUENCE_DURATION_MS =
+  SCORING_FEEDBACK_TIMING.tokenEmergenceMs +
+  SCORING_FEEDBACK_TIMING.tokenTravelMs;
+
 function sourceMultiplicities(terms) {
   const result = Array.from({ length: 7 }, () => 0);
   for (const term of terms) {
@@ -137,8 +142,8 @@ export function getGameFeedback(view) {
       (candidate) => candidate.placementId === latest.placementId,
     );
     if (placement?.region === "branch" && placement.depth === 1) {
-      openedBranchFamily = "Nuevo brazo";
-      messages.push("Nuevo brazo abierto");
+      openedBranchFamily = "Nueva rama";
+      messages.push("Nueva rama abierta");
     }
   }
 
@@ -207,6 +212,55 @@ export function calculateScoringTokenTravel(sourceRect, slotRect) {
   };
 }
 
+function setTokenAtSource(tokenElement, travel) {
+  tokenElement.style.setProperty("--token-source-dx", `${travel.deltaX}px`);
+  tokenElement.style.setProperty("--token-source-dy", `${travel.deltaY}px`);
+}
+
+/**
+ * FLIP en un único espacio de coordenadas: ambos rectángulos proceden de
+ * getBoundingClientRect() y, por tanto, ya incluyen cámara, zoom y scroll.
+ * El nodo que se mueve es el mismo que queda dentro del slot de Σ.
+ */
+function animateTokenIntoSlot(tokenElement, travel, order) {
+  setTokenAtSource(tokenElement, travel);
+  tokenElement.dataset.scoringTokenState = "source";
+  tokenElement.classList.add("is-source-connected");
+  if (typeof tokenElement.animate !== "function") return;
+
+  tokenElement.getAnimations?.().forEach((animation) => animation.cancel());
+  const delay = TOKEN_SEQUENCE_START_MS + order * 90;
+  const animation = tokenElement.animate(
+    [
+      {
+        opacity: 0,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(.72)`,
+        offset: 0,
+      },
+      {
+        opacity: 1,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
+        offset: 0.1,
+      },
+      {
+        opacity: 1,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
+        offset: 0.38,
+      },
+      { opacity: 1, transform: "translate(0, 0) scale(1)", offset: 1 },
+    ],
+    {
+      duration: TOKEN_SEQUENCE_DURATION_MS,
+      delay,
+      easing: "cubic-bezier(.22,.72,.2,1)",
+      fill: "both",
+    },
+  );
+  animation.addEventListener("finish", () => {
+    tokenElement.dataset.scoringTokenState = "slot";
+  }, { once: true });
+}
+
 function connectScoringTokensToSources(model, termElements) {
   if (typeof document === "undefined") return;
   if (
@@ -235,17 +289,9 @@ function connectScoringTokensToSources(model, termElements) {
     const sourceRect = anchor.getBoundingClientRect();
     const destinationRect = destination.getBoundingClientRect();
     const travel = calculateScoringTokenTravel(sourceRect, destinationRect);
-    destination.classList.add("is-source-connected");
     destination.dataset.scoringSourceAnchor = token.anchorId;
     destination.style.setProperty("--token-order", String(token.order));
-    destination.style.setProperty(
-      "--token-source-dx",
-      `${travel.deltaX}px`,
-    );
-    destination.style.setProperty(
-      "--token-source-dy",
-      `${travel.deltaY}px`,
-    );
+    animateTokenIntoSlot(destination, travel, token.order);
   });
 }
 
@@ -301,18 +347,25 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
     source.textContent = "Puntas que suman";
     const terms = document.createElement("span");
     terms.className = "scoring-feedback__terms";
+    terms.dataset.scoringExpression = "slots";
     const sigma = document.createElement("strong");
     sigma.className = "scoring-feedback__sigma";
     sigma.textContent = "Σ =";
     terms.append(sigma);
     const tokenElements = [];
     for (const [index, token] of model.sourceTokens.entries()) {
+      const slot = document.createElement("span");
+      slot.className = "scoring-feedback__slot";
+      slot.dataset.scoringSlotId = token.id;
+      slot.setAttribute("aria-hidden", "true");
       const chip = document.createElement("span");
       chip.className = "scoring-feedback__term";
       chip.style.setProperty("--term-index", String(index));
       chip.dataset.scoringTokenId = token.id;
+      chip.dataset.scoringTokenState = "pending";
       chip.textContent = String(token.value);
-      terms.append(chip);
+      slot.append(chip);
+      terms.append(slot);
       tokenElements.push(chip);
       if (index < model.sourceTokens.length - 1) {
         const plus = document.createElement("span");
@@ -348,7 +401,7 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
       const lesson = document.createElement("span");
       lesson.className = "scoring-feedback__lesson";
       lesson.textContent =
-        `Suma los extremos. Si Σ es múltiplo de ${model.divisor}, anotas Σ÷${model.divisor}.`;
+        `Suma las puntas. Si Σ es múltiplo de ${model.divisor}, ganas Σ÷${model.divisor} puntos.`;
       sequence.append(lesson);
     }
     sequence.append(source, terms, sum, divisibility, verdict, outcome);

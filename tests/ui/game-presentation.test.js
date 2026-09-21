@@ -264,8 +264,23 @@ test("la primera ficha lateral produce feedback de nueva ramificación", () => {
 
   const feedback = getGameFeedback(projectGraphView(state));
 
-  assert.equal(feedback.openedBranchFamily, "Nuevo brazo");
-  assert.match(feedback.message, /Nuevo brazo abierto/);
+  assert.equal(feedback.openedBranchFamily, "Nueva rama");
+  assert.match(feedback.message, /Nueva rama abierta/);
+});
+
+test("los slots de Σ conservan el mismo nodo token desde la punta hasta la expresión", async () => {
+  const [source, css] = await Promise.all([
+    readFile(new URL("../../src/js/ui/GameFeedback.js", import.meta.url), "utf8"),
+    readFile(new URL("../../src/css/components.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(source, /slot\.dataset\.scoringSlotId = token\.id/);
+  assert.match(source, /chip\.dataset\.scoringTokenId = token\.id/);
+  assert.match(source, /slot\.append\(chip\)/);
+  assert.match(source, /animateTokenIntoSlot\(destination, travel, token\.order\)/);
+  assert.doesNotMatch(source, /cloneNode|scoring-flight-token/);
+  assert.match(css, /\.scoring-feedback__slot::before[\s\S]+content:\s*"□"/);
+  assert.match(css, /\.scoring-feedback__term\[data-scoring-token-state="slot"\]/);
 });
 
 test("PASS no inventa puntos ni un mensaje estructural", () => {

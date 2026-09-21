@@ -334,7 +334,7 @@ function renderCurrentScoring(scoring, cover, { pending = false } = {}) {
     : "";
   return `
     <g class="port-cover__current-score" role="status" aria-label="Sigma se forma con ${escapeAttribute(scoring.expression)} y vale ${scoring.sum}">
-      <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 67}">Σ · EXTREMOS</text>
+      <text class="port-cover__kicker" x="${cover.cx}" y="${cover.cy - 67}">PUNTAS · Σ</text>
       ${chips}
       ${expression}
       <text class="port-cover__current-sum" x="${cover.cx}" y="${cover.cy + 54}">Σ = ${scoring.sum}</text>
