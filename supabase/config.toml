@@ -1,0 +1,10 @@
+project_id = "multino-local-placeholder"
+
+[auth]
+enable_anonymous_sign_ins = true
+
+[functions.game-action]
+verify_jwt = true
+
+[functions.room-lobby]
+verify_jwt = true
