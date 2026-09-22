@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { access, readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { buildPages } from "../../scripts/build-pages.mjs";
 
-const root = resolve(new URL("../..", import.meta.url).pathname.slice(1));
+const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const dist = resolve(root, "dist");
 
 test("el build de Pages publica solo frontend y configuración pública", async () => {
@@ -21,6 +22,8 @@ test("el build de Pages publica solo frontend y configuración pública", async 
   assert.match(html, /\.\/runtime-config\.js/);
   assert.match(html, /Jugar local/i);
   assert.match(html, /Jugar online/i);
+  assert.match(runtime, /kefdfpalennsnnfnjwpc\.supabase\.co/);
+  assert.match(runtime, /sb_publishable_/);
   assert.doesNotMatch(runtime, /SUPABASE_SERVICE_ROLE_KEY/);
   await rm(dist, { recursive: true, force: true });
 });
