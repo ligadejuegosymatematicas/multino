@@ -32,6 +32,12 @@ import {
   SEAT_CONTROL_TYPES,
 } from "./game/index.js";
 import { APP_NAME } from "./config/AppConfig.js";
+import { getRuntimeConfig } from "./config/RuntimeConfig.js";
+import {
+  ONLINE_SCREENS,
+  OnlineGameSessionController,
+} from "./online/OnlineGameSessionController.js";
+import { createBrowserSupabaseGateway } from "./online/SupabaseBrowserClient.js";
 import {
   LocalMatchHistoryStore,
   LocalProfileStore,
@@ -46,6 +52,18 @@ const message = document.querySelector("#game-message");
 const boardHeading = document.querySelector("#board-heading");
 const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
 const setupScreen = document.querySelector("#setup-screen");
+const entryScreen = document.querySelector("#entry-screen");
+const onlineScreen = document.querySelector("#online-screen");
+const onlineCard = onlineScreen.querySelector(".online-card");
+const onlineJoinForm = document.querySelector("#online-join-form");
+const onlineLobby = document.querySelector("#online-lobby");
+const onlineStatus = document.querySelector("#online-status");
+const onlineNick = document.querySelector("#online-nick");
+const onlineRoomCode = document.querySelector("#online-room-code");
+const onlineRoomCodeValue = document.querySelector("#online-room-code-value");
+const onlineSeatList = document.querySelector("#online-seat-list");
+const onlineRoundMode = document.querySelector("#online-round-mode");
+const startOnlineButton = document.querySelector("#start-online-game-action");
 const gameScreen = document.querySelector("#game-screen");
 const setupForm = document.querySelector("#setup-form");
 const setupRoundMode = document.querySelector("#setup-round-mode");
@@ -71,6 +89,8 @@ const turnActionPanel = document.querySelector("#turn-action-panel");
 const turnActionSummary = document.querySelector("#turn-action-summary");
 const scoringCard = document.querySelector("#scoring-card");
 let sessionController;
+let localSessionController = null;
+let onlineSessionController = null;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
 let hasShownScoringLesson = false;
@@ -79,6 +99,10 @@ const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
 document.title = APP_NAME;
 document.querySelector("#app-title").textContent = APP_NAME;
+const runtimeConfig = getRuntimeConfig();
+document.querySelector("#online-availability").textContent = runtimeConfig.onlineEnabled
+  ? "Salas privadas online disponibles."
+  : "El modo online aún no está configurado.";
 
 function collectSetupSeats() {
   return seatConfigElements.map((element, seatIndex) => {
@@ -169,9 +193,9 @@ function completeScoringFeedback() {
   }, 280);
 }
 
-function runIntent(intent, successMessage) {
+async function runIntent(intent, successMessage) {
   try {
-    intent();
+    await intent();
     setMessage(successMessage);
   } catch (error) {
     setMessage(error.message);
@@ -273,7 +297,8 @@ function renderRound(
       ),
     onMessage: setMessage,
   });
-  const handIsVisible = presentation.handPrivacy.isRevealed &&
+  const handIsVisible = (presentation.handPrivacy.isRevealed ||
+      presentation.handPrivacy.alwaysVisible) &&
     !presentation.isFinished;
   handPanel.hidden = presentation.isFinished;
   handContent.hidden = !handIsVisible;
@@ -293,8 +318,9 @@ function renderRound(
   } else {
     document.querySelector("#hand-root").replaceChildren();
   }
-  turnActionPanel.hidden = !handIsVisible || presentation.isFinished;
-  if (handIsVisible) {
+  const canAct = presentation.handPrivacy.canAct ?? handIsVisible;
+  turnActionPanel.hidden = !canAct || presentation.isFinished;
+  if (canAct) {
     renderTurnAction(turnActionSummary, presentation);
   } else {
     turnActionSummary.replaceChildren();
@@ -329,7 +355,8 @@ function renderRound(
 
   passButton.disabled = !presentation.canPass || presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;
-  roundActions.hidden = !presentation.isFinished || roundResultDeferred;
+  roundActions.hidden = presentation.sessionKind === "ONLINE" ||
+    !presentation.isFinished || roundResultDeferred;
   const selectedCount = presentation.selectedLegalTargets.length;
   const strategicDecisionCount = presentation.strategicDecisionGroups?.length ?? 0;
   const selectionHint = document.querySelector("#selection-hint");
@@ -351,6 +378,8 @@ function renderRound(
 
 function renderSession(session) {
   const isConfiguring = session.screen === LOCAL_GAME_SCREENS.CONFIGURATION;
+  entryScreen.hidden = true;
+  onlineScreen.hidden = true;
   setupScreen.hidden = !isConfiguring;
   gameScreen.hidden = isConfiguring;
   appShell.classList.toggle("is-playing", !isConfiguring);
@@ -387,21 +416,167 @@ function renderSession(session) {
   }
 }
 
-const savedProfile = profileStore.load();
-sessionController = new LocalGameSessionController({
-  seats: createDefaultSeats({
-    humanCount: 1,
-    nick: savedProfile.nick || "Jugador 1",
-  }),
-  historyStore,
-  cpuTurnDelayMs: ({ state }) => state.history.length === 0
-    ? 650
-    : SCORING_FEEDBACK_TIMING.totalMs + 550,
-  onChange: renderSession,
-});
+function renderOnlineLobby(session) {
+  const room = session.room;
+  onlineRoomCodeValue.textContent = room.roomCode;
+  onlineSeatList.replaceChildren();
+  const isHost = room.ownerUserId === session.userId;
+  for (const seat of room.seats) {
+    const item = document.createElement("li");
+    item.className = "online-seat";
+    item.classList.toggle("is-connected", seat.connectionState === "CONNECTED");
+    item.classList.toggle("is-cpu", seat.controlType === "CPU");
+    const identity = document.createElement("div");
+    identity.className = "online-seat__identity";
+    const title = document.createElement("strong");
+    const isSelf = seat.userId === session.userId;
+    title.textContent = `${seat.nick}${isSelf ? " · tú" : ""}`;
+    const detail = document.createElement("small");
+    detail.textContent = `Asiento ${seat.seatIndex + 1} · ${seat.teamId === "A" ? "Órbita" : "Vector"} · ${seat.controlType === "CPU" ? "CPU" : seat.connectionState === "CONNECTED" ? "conectado" : "libre"}`;
+    identity.append(title, detail);
+    item.append(identity);
+    const mayToggle = isHost && (!seat.userId || isSelf) && seat.seatIndex !== 0;
+    if (mayToggle) {
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "secondary-action";
+      toggle.textContent = seat.controlType === "CPU" ? "Dejar libre" : "Usar CPU";
+      toggle.addEventListener("click", () => void withOnlineBusy(() =>
+        onlineSessionController.setSeatControl(
+          seat.seatIndex,
+          seat.controlType === "CPU" ? "HUMAN" : "CPU",
+        )
+      ));
+      item.append(toggle);
+    }
+    onlineSeatList.append(item);
+  }
+  const allResolved = room.seats.length === 4 && room.seats.every((seat) =>
+    seat.controlType === "CPU" || seat.connectionState === "CONNECTED"
+  );
+  startOnlineButton.hidden = !isHost;
+  startOnlineButton.disabled = !allResolved;
+  onlineStatus.textContent = isHost
+    ? allResolved
+      ? "La mesa está completa."
+      : "Invita jugadores o completa los asientos libres con CPU."
+    : "Esperando que el anfitrión complete la mesa.";
+}
+
+function renderOnlineSession(session) {
+  entryScreen.hidden = true;
+  setupScreen.hidden = true;
+  const isRound = session.screen === ONLINE_SCREENS.ROUND && session.round;
+  onlineScreen.hidden = isRound;
+  gameScreen.hidden = !isRound;
+  appShell.classList.toggle("is-playing", Boolean(isRound));
+  if (isRound) {
+    sessionBadge.textContent = `Online · ${session.room.roomCode}`;
+    const nextFeedback = getGameFeedback(session.round.view);
+    let feedback = nextFeedback?.sequence !== lastFeedbackSequence
+      ? nextFeedback
+      : null;
+    if (feedback?.scoring && !hasShownScoringLesson) {
+      feedback = { ...feedback, showScoringLesson: true };
+      hasShownScoringLesson = true;
+    }
+    renderRound(session.round, session.viewMode, feedback);
+    scheduleFeedbackHide(feedback);
+    lastFeedbackSequence = nextFeedback?.sequence ?? null;
+    return;
+  }
+  sessionBadge.textContent = session.room
+    ? `Sala ${session.room.roomCode}`
+    : "Online";
+  onlineScreen.hidden = false;
+  const isLobby = session.screen === ONLINE_SCREENS.LOBBY && session.room;
+  onlineJoinForm.hidden = isLobby;
+  onlineLobby.hidden = !isLobby;
+  if (isLobby) renderOnlineLobby(session);
+  else {
+    onlineRoomCode.value = session.pendingRoomCode;
+    onlineStatus.textContent = session.pendingRoomCode
+      ? `Ingresa tu nick para unirte a ${session.pendingRoomCode}.`
+      : "Crea una sala privada o abre una invitación.";
+  }
+}
+
+function startLocalMode() {
+  onlineSessionController?.dispose();
+  onlineSessionController = null;
+  if (!localSessionController) {
+    const savedProfile = profileStore.load();
+    localSessionController = new LocalGameSessionController({
+      seats: createDefaultSeats({
+        humanCount: 1,
+        nick: savedProfile.nick || "Jugador 1",
+      }),
+      historyStore,
+      cpuTurnDelayMs: ({ state }) => state.history.length === 0
+        ? 650
+        : SCORING_FEEDBACK_TIMING.totalMs + 550,
+      onChange: renderSession,
+    });
+  }
+  sessionController = localSessionController;
+  sessionController.start();
+}
+
+async function startOnlineMode(roomCode = "") {
+  if (!runtimeConfig.onlineEnabled) {
+    onlineStatus.textContent = "El modo online aún no está configurado.";
+    return;
+  }
+  entryScreen.hidden = true;
+  setupScreen.hidden = true;
+  gameScreen.hidden = true;
+  onlineScreen.hidden = false;
+  onlineCard.classList.add("is-busy");
+  onlineStatus.textContent = "Conectando con la sala…";
+  try {
+    const gateway = await createBrowserSupabaseGateway();
+    onlineSessionController?.dispose();
+    onlineSessionController = new OnlineGameSessionController({
+      gateway,
+      onChange: renderOnlineSession,
+    });
+    sessionController = onlineSessionController;
+    await onlineSessionController.start({ roomCode });
+  } catch (error) {
+    onlineStatus.textContent = error.message;
+  } finally {
+    onlineCard.classList.remove("is-busy");
+  }
+}
+
+async function withOnlineBusy(operation) {
+  onlineCard.classList.add("is-busy");
+  try {
+    await operation();
+  } catch (error) {
+    onlineStatus.textContent = error.message;
+  } finally {
+    onlineCard.classList.remove("is-busy");
+  }
+}
+
+function showEntry() {
+  onlineSessionController?.dispose();
+  onlineSessionController = null;
+  sessionController = null;
+  entryScreen.hidden = false;
+  setupScreen.hidden = true;
+  onlineScreen.hidden = true;
+  gameScreen.hidden = true;
+  appShell.classList.remove("is-playing", "is-ports-mode");
+  sessionBadge.textContent = "Múltiplos de 5";
+  const url = new URL(window.location.href);
+  url.searchParams.delete("room");
+  window.history.replaceState(null, "", url);
+}
 
 revealHandButton.addEventListener("click", () =>
-  runIntent(() => sessionController.revealCurrentHand(), ""),
+  runIntent(() => sessionController?.revealCurrentHand?.(), ""),
 );
 
 passButton.addEventListener("click", () =>
@@ -470,4 +645,75 @@ changeConfigButton.addEventListener("click", () => {
   }
 });
 
-sessionController.start();
+document.querySelector("#choose-local-action").addEventListener(
+  "click",
+  startLocalMode,
+);
+
+document.querySelector("#choose-online-action").addEventListener(
+  "click",
+  () => void startOnlineMode(),
+);
+
+document.querySelector("#local-back-action").addEventListener(
+  "click",
+  showEntry,
+);
+
+document.querySelector("#online-back-action").addEventListener(
+  "click",
+  showEntry,
+);
+
+document.querySelector("#create-room-action").addEventListener("click", () => {
+  void withOnlineBusy(async () => {
+    const nick = onlineNick.value.trim();
+    if (!nick) throw new Error("Escribe tu nick.");
+    profileStore.save({ nick });
+    await onlineSessionController.createRoom(nick);
+    const url = new URL(window.location.href);
+    url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
+    window.history.replaceState(null, "", url);
+  });
+});
+
+onlineJoinForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void withOnlineBusy(async () => {
+    const nick = onlineNick.value.trim();
+    const roomCode = onlineRoomCode.value.trim();
+    if (!nick) throw new Error("Escribe tu nick.");
+    if (!roomCode) throw new Error("Escribe el código de sala.");
+    profileStore.save({ nick });
+    await onlineSessionController.joinRoom({ roomCode, nick });
+    const url = new URL(window.location.href);
+    url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
+    window.history.replaceState(null, "", url);
+  });
+});
+
+document.querySelector("#copy-room-link-action").addEventListener(
+  "click",
+  () => void withOnlineBusy(async () => {
+    const roomCode = onlineSessionController.getPresentation().room.roomCode;
+    const url = new URL(window.location.href);
+    url.searchParams.set("room", roomCode);
+    await navigator.clipboard.writeText(url.href);
+    onlineStatus.textContent = "Enlace copiado.";
+  }),
+);
+
+startOnlineButton.addEventListener("click", () => {
+  void withOnlineBusy(() =>
+    onlineSessionController.startMatch(onlineRoundMode.value)
+  );
+});
+
+const savedProfile = profileStore.load();
+onlineNick.value = savedProfile.nick || "";
+const initialRoomCode = new URL(window.location.href).searchParams.get("room") ?? "";
+if (initialRoomCode) {
+  void startOnlineMode(initialRoomCode);
+} else {
+  showEntry();
+}

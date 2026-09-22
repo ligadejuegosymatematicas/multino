@@ -19,6 +19,8 @@ test("el build de Pages publica solo frontend y configuración pública", async 
   const runtime = await readFile(resolve(dist, "runtime-config.js"), "utf8");
   assert.match(html, /\.\/src\/js\/main\.js/);
   assert.match(html, /\.\/runtime-config\.js/);
+  assert.match(html, /Jugar local/i);
+  assert.match(html, /Jugar online/i);
   assert.doesNotMatch(runtime, /SUPABASE_SERVICE_ROLE_KEY/);
   await rm(dist, { recursive: true, force: true });
 });

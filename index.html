@@ -24,7 +24,64 @@
         <p id="session-badge" class="session-badge">Múltiplos de 5</p>
       </header>
 
-      <section id="setup-screen" class="setup-screen" aria-labelledby="setup-heading">
+      <section id="entry-screen" class="setup-screen" aria-labelledby="entry-heading">
+        <div class="setup-card entry-card">
+          <div>
+            <h2 id="entry-heading">Jugar MULTINÓ</h2>
+            <p class="setup-intro">Siempre cuatro jugadores, dos equipos y asientos alternados.</p>
+          </div>
+          <div class="entry-actions">
+            <button id="choose-local-action" type="button" class="primary-action">Jugar local</button>
+            <button id="choose-online-action" type="button" class="secondary-action">Jugar online</button>
+          </div>
+          <p id="online-availability" class="setup-scoring" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section id="online-screen" class="setup-screen" aria-labelledby="online-heading" hidden>
+        <div class="setup-card online-card">
+          <div>
+            <h2 id="online-heading">Sala online</h2>
+            <p id="online-status" class="setup-intro" aria-live="polite">Crea una sala privada o abre una invitación.</p>
+          </div>
+
+          <form id="online-join-form" class="online-form">
+            <label class="setup-field" for="online-nick">
+              <span>Tu nick</span>
+              <input id="online-nick" name="nick" maxlength="24" autocomplete="nickname" required>
+            </label>
+            <label class="setup-field" for="online-room-code">
+              <span>Código de sala</span>
+              <input id="online-room-code" name="room-code" maxlength="8" autocomplete="off" placeholder="ABCDE">
+            </label>
+            <div class="entry-actions">
+              <button id="create-room-action" type="button" class="primary-action">Crear sala</button>
+              <button id="join-room-action" type="submit" class="secondary-action">Unirse</button>
+            </div>
+          </form>
+
+          <section id="online-lobby" class="online-lobby" hidden aria-label="Lobby online">
+            <div class="online-room-code">
+              <span>Sala</span>
+              <strong id="online-room-code-value"></strong>
+              <button id="copy-room-link-action" type="button" class="secondary-action">Copiar enlace</button>
+            </div>
+            <ol id="online-seat-list" class="online-seat-list"></ol>
+            <label class="setup-field" for="online-round-mode">
+              <span>Modo</span>
+              <select id="online-round-mode">
+                <option value="RAMIFICADO" selected>Ramificado</option>
+                <option value="LINEAL">Lineal</option>
+              </select>
+            </label>
+            <button id="start-online-game-action" type="button" class="primary-action">Iniciar partida</button>
+          </section>
+
+          <button id="online-back-action" type="button" class="text-action">Volver</button>
+        </div>
+      </section>
+
+      <section id="setup-screen" class="setup-screen" aria-labelledby="setup-heading" hidden>
         <form id="setup-form" class="setup-card">
           <div>
             <h2 id="setup-heading">Nueva partida</h2>
@@ -99,6 +156,7 @@
 
           <p class="setup-scoring">Puntuación: múltiplos de 5</p>
           <button id="start-game-action" type="submit" class="primary-action">Jugar</button>
+          <button id="local-back-action" type="button" class="text-action">Volver</button>
         </form>
       </section>
 

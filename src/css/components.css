@@ -39,6 +39,107 @@
   color: var(--muted);
 }
 
+.entry-card {
+  width: min(100%, 28rem);
+}
+
+.entry-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.online-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.setup-field input {
+  min-height: 3rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #aebfbb;
+  border-radius: 0.7rem;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+}
+
+.online-room-code {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface-soft);
+}
+
+.online-room-code strong {
+  color: var(--teal-dark);
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+}
+
+.online-seat-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.online-seat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.62rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+}
+
+.online-seat__identity {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.online-seat__identity small {
+  color: var(--muted);
+}
+
+.online-seat.is-connected {
+  border-inline-start: 4px solid var(--teal);
+}
+
+.online-seat.is-cpu {
+  border-inline-start: 4px solid var(--amber);
+}
+
+.online-seat .secondary-action,
+.online-room-code .secondary-action {
+  min-height: 2.2rem;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.72rem;
+}
+
+.text-action {
+  justify-self: center;
+  padding: 0.35rem 0.7rem;
+  border: 0;
+  color: var(--teal-dark);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.online-card.is-busy {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .setup-field {
   display: grid;
   gap: 0.55rem;
@@ -1009,6 +1110,10 @@
 }
 
 .round-actions[hidden],
+.online-lobby[hidden],
+.online-form[hidden],
+.entry-screen[hidden],
+.online-screen[hidden],
 .setup-screen[hidden],
 .game-screen[hidden] {
   display: none;
@@ -1188,6 +1293,18 @@
   .setup-card {
     gap: 1rem;
     padding: 1rem;
+  }
+
+  .entry-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .online-room-code {
+    grid-template-columns: auto 1fr;
+  }
+
+  .online-room-code .secondary-action {
+    grid-column: 1 / -1;
   }
 
   .seat-grid {

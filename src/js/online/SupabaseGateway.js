@@ -25,21 +25,15 @@ export class SupabaseGateway {
   }
 
   async sendIntent({ roomCode, expectedVersion, intent }) {
-    const { data, error } = await this.client.functions.invoke(
-      this.actionEndpoint,
-      { body: { roomCode, expectedVersion, intent } },
-    );
-    if (error) throw error;
-    return data;
+    return this.#invoke(this.actionEndpoint, {
+      roomCode,
+      expectedVersion,
+      intent,
+    });
   }
 
   async sendLobbyIntent(intent) {
-    const { data, error } = await this.client.functions.invoke(
-      this.lobbyEndpoint,
-      { body: intent },
-    );
-    if (error) throw error;
-    return data;
+    return this.#invoke(this.lobbyEndpoint, intent);
   }
 
   async syncMatch(roomCode) {
@@ -77,5 +71,23 @@ export class SupabaseGateway {
       )
       .subscribe();
     return () => this.client.removeChannel(channel);
+  }
+
+  async #invoke(endpoint, body) {
+    const { data, error } = await this.client.functions.invoke(
+      endpoint,
+      { body },
+    );
+    if (!error) return data;
+    let details = null;
+    try {
+      details = await error.context?.json?.();
+    } catch {
+      // El SDK conserva igualmente el mensaje de transporte.
+    }
+    throw Object.assign(
+      new Error(details?.message ?? details?.code ?? error.message),
+      { code: details?.code ?? error.name, details },
+    );
   }
 }
