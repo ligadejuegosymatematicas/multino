@@ -97,6 +97,46 @@ alter table public.match_players enable row level security;
 alter table public.moves enable row level security;
 alter table public.match_state_private enable row level security;
 
+-- Este proyecto no expone tablas nuevas automáticamente. Concedemos solo lo
+-- que cada rol necesita para que RLS siga siendo la frontera de seguridad.
+grant usage on schema public to authenticated, service_role;
+
+grant select, insert, update on table public.profiles to authenticated;
+grant select on table public.rooms to authenticated;
+grant select on table public.room_seats to authenticated;
+grant select on table public.matches to authenticated;
+grant select on table public.match_players to authenticated;
+grant select on table public.moves to authenticated;
+
+grant select, insert, update on table public.profiles to service_role;
+grant select, insert, update on table public.rooms to service_role;
+grant select, insert, update on table public.room_seats to service_role;
+grant select, insert, update on table public.matches to service_role;
+grant select, insert on table public.match_players to service_role;
+grant select, insert on table public.moves to service_role;
+grant select, insert, update on table public.match_state_private to service_role;
+grant usage, select on sequence public.moves_id_seq to service_role;
+
+revoke all on table public.match_state_private from public, anon, authenticated;
+
+-- El cliente escucha solamente cambios versionados del lobby. Realtime aplica
+-- igualmente las políticas RLS de lectura de rooms.
+do $$
+begin
+  if exists (
+    select 1 from pg_publication where pubname = 'supabase_realtime'
+  ) and not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'rooms'
+  ) then
+    alter publication supabase_realtime add table public.rooms;
+  end if;
+end;
+$$;
+
 create function public.is_room_member(candidate_room_id uuid)
 returns boolean
 language sql
@@ -164,6 +204,10 @@ declare
   current_version bigint;
   next_version bigint;
 begin
+  if not pg_try_advisory_xact_lock(hashtextextended(p_match_id::text, 0)) then
+    raise exception 'STALE_VERSION' using errcode = '40001';
+  end if;
+
   select version into current_version
   from public.match_state_private
   where match_id = p_match_id
@@ -279,7 +323,7 @@ begin
   update public.rooms
     set status = case when p_private_state->>'phase' = 'finished'
       then 'FINISHED'::public.room_status else 'PLAYING'::public.room_status end,
-        version = version + 1,
+        version = rooms.version + 1,
         updated_at = now()
     where id = p_room_id;
 
@@ -404,5 +448,19 @@ revoke all on function public.join_private_room(text, uuid, text)
 revoke all on function public.set_room_seat_control(
   uuid, uuid, smallint, public.seat_control_type
 ) from public, anon, authenticated;
+
+grant execute on function public.create_private_room(text, uuid, text)
+  to service_role;
+grant execute on function public.join_private_room(text, uuid, text)
+  to service_role;
+grant execute on function public.set_room_seat_control(
+  uuid, uuid, smallint, public.seat_control_type
+) to service_role;
+grant execute on function public.start_authoritative_match(
+  uuid, bigint, text, jsonb, jsonb, jsonb, jsonb
+) to service_role;
+grant execute on function public.commit_game_transition(
+  uuid, bigint, jsonb, jsonb, jsonb, boolean, text, text
+) to service_role;
 
 -- match_state_private permanece default-deny: intencionalmente no hay policy.

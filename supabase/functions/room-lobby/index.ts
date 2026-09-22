@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getSupabaseServerEnvironment } from "../_shared/supabase-env.ts";
 
 const headers = {
   "access-control-allow-origin": "*",
@@ -19,23 +20,27 @@ function roomCode() {
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   try {
-    const url = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !anonKey || !serviceKey) return response(503, { code: "SERVER_NOT_CONFIGURED" });
+    const { url, publishableKey, secretKey } = getSupabaseServerEnvironment();
+    if (!url || !publishableKey || !secretKey) {
+      return response(503, { code: "SERVER_NOT_CONFIGURED" });
+    }
     const authorization = request.headers.get("authorization") ?? "";
-    const auth = createClient(url, anonKey, {
+    const auth = createClient(url, publishableKey, {
       global: { headers: { Authorization: authorization } },
     });
     const { data: authData, error: authError } = await auth.auth.getUser();
     if (authError || !authData.user) return response(401, { code: "AUTH_REQUIRED" });
-    const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+    const admin = createClient(url, secretKey, { auth: { persistSession: false } });
     const body = await request.json();
+    const allowedTypes = new Set(["CREATE_ROOM", "JOIN_ROOM", "GET_ROOM", "SET_SEAT_CONTROL"]);
+    if (!allowedTypes.has(body.type)) return response(400, { code: "UNKNOWN_INTENT" });
     const nick = String(body.nick ?? "").trim().slice(0, 24);
     if ((body.type === "CREATE_ROOM" || body.type === "JOIN_ROOM") && !nick) {
       return response(400, { code: "NICK_REQUIRED" });
     }
-    await admin.from("profiles").upsert({ id: authData.user.id, nick: nick || "Jugador" });
+    if (body.type === "CREATE_ROOM" || body.type === "JOIN_ROOM") {
+      await admin.from("profiles").upsert({ id: authData.user.id, nick });
+    }
 
     let code = String(body.roomCode ?? "").toUpperCase();
     if (body.type === "CREATE_ROOM") {

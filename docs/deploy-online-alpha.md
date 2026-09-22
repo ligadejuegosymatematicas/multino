@@ -6,16 +6,24 @@ El frontend es estático y usa rutas relativas, por lo que funciona tanto en
 ese artefacto. La carpeta `supabase/`, el repositorio y cualquier secreto quedan
 fuera del sitio público.
 
-## Checkpoint de Supabase
+## Estado de Supabase
 
-1. Crear un proyecto Supabase.
-2. En Auth, habilitar **Anonymous Sign-Ins**.
-3. Copiar **Project URL** y la clave **publishable/anon** de cliente.
-4. Autenticar Supabase CLI localmente y enlazar este directorio al proyecto.
-5. Aplicar `supabase/migrations/202609210001_online_alpha.sql`.
-6. Desplegar `room-lobby` y `game-action` y configurar
-   `SUPABASE_SERVICE_ROLE_KEY` solo como secret server-side de las funciones.
-7. Ejecutar el harness end-to-end de dos navegadores antes de habilitar Alpha.
+El proyecto `kefdfpalennsnnfnjwpc` está enlazado, tiene Anonymous Sign-Ins
+habilitado y recibió las migraciones versionadas de `supabase/migrations/`.
+Las funciones `room-lobby` y `game-action` están desplegadas. Las funciones
+prefieren las variables administradas por Supabase `SUPABASE_PUBLISHABLE_KEYS`
+y `SUPABASE_SECRET_KEYS`, con compatibilidad para los nombres legacy que la
+plataforma todavía suministra. No se configura ninguna clave privilegiada en
+el navegador.
+
+La comprobación integrada real se ejecuta con:
+
+```powershell
+node scripts/verify-supabase-alpha.mjs
+```
+
+El harness crea identidades anónimas y una sala efímera, prueba Realtime,
+concurrencia, privacidad, reconexión, CPU servidor y completa una ronda.
 
 Nunca colocar la service-role key en GitHub Pages, `runtime-config.js`, variables
 del frontend ni commits. Pages necesita únicamente estas Repository Variables:

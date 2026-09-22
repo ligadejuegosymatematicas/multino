@@ -42,11 +42,21 @@ export class SupabaseGateway {
     return data;
   }
 
+  async syncMatch(roomCode) {
+    return this.sendIntent({
+      roomCode,
+      expectedVersion: null,
+      intent: { type: "SYNC_MATCH" },
+    });
+  }
+
   async listRecentMatches(limit = 10) {
+    const { data: authData, error: authError } = await this.client.auth.getUser();
+    if (authError) throw authError;
     const { data, error } = await this.client
       .from("match_players")
       .select("match_id,nick,team_id,matches(started_at,finished_at,winner_team_id,termination_reason,public_state)")
-      .not("user_id", "is", null)
+      .eq("user_id", authData.user.id)
       .order("match_id", { ascending: false })
       .limit(limit);
     if (error) throw error;
@@ -58,7 +68,12 @@ export class SupabaseGateway {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
-        ({ new: next }) => onVersion(next.version),
+        ({ new: next }) => onVersion(next.version, { scope: "room" }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches", filter: `room_id=eq.${roomId}` },
+        ({ new: next }) => onVersion(next.version, { scope: "match" }),
       )
       .subscribe();
     return () => this.client.removeChannel(channel);

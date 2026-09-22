@@ -1,5 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { createPublicOnlineState } from "../../../src/js/online/AuthoritativeRoomService.js";
+import {
+  createPrivateOnlineState,
+  createPublicOnlineState,
+} from "../../../src/js/online/AuthoritativeRoomService.js";
 import { RULESET_VERSION } from "../../../src/js/config/AppConfig.js";
 import {
   createMatch,
@@ -10,6 +13,7 @@ import {
   applyAuthenticatedIntent,
   drainServerCpuTurns,
 } from "../_shared/authoritative-action.js";
+import { getSupabaseServerEnvironment } from "../_shared/supabase-env.ts";
 
 const headers = {
   "access-control-allow-origin": "*",
@@ -19,6 +23,10 @@ const headers = {
 
 function response(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers });
+}
+
+function isStaleDatabaseError(error: { code?: string; message?: string } | null) {
+  return error?.code === "40001" || error?.message?.includes("STALE_VERSION");
 }
 
 function serializeMoves(moves, seats) {
@@ -39,20 +47,18 @@ function serializeMoves(moves, seats) {
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers });
   try {
-    const url = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !anonKey || !serviceKey) {
+    const { url, publishableKey, secretKey } = getSupabaseServerEnvironment();
+    if (!url || !publishableKey || !secretKey) {
       return response(503, { code: "SERVER_NOT_CONFIGURED" });
     }
     const authorization = request.headers.get("authorization") ?? "";
-    const authClient = createClient(url, anonKey, {
+    const authClient = createClient(url, publishableKey, {
       global: { headers: { Authorization: authorization } },
     });
     const { data: authData, error: authError } = await authClient.auth.getUser();
     if (authError || !authData.user) return response(401, { code: "AUTH_REQUIRED" });
 
-    const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+    const admin = createClient(url, secretKey, { auth: { persistSession: false } });
     const { roomCode, expectedVersion, intent } = await request.json();
     const { data: room } = await admin.from("rooms")
       .select("id,version,status,host_user_id")
@@ -118,7 +124,7 @@ Deno.serve(async (request) => {
         },
       );
       if (startError) {
-        const stale = startError.message?.includes("STALE_VERSION");
+        const stale = isStaleDatabaseError(startError);
         return response(stale ? 409 : 500, { code: stale ? "STALE_VERSION" : "START_FAILED" });
       }
       const seatId = `seat-${callerSeat.seat_index + 1}`;
@@ -126,7 +132,7 @@ Deno.serve(async (request) => {
         matchId: started?.[0]?.match_id,
         version: started?.[0]?.version,
         publicMatch: createPublicOnlineState(state),
-        privateHand: state.hands[seatId],
+        privateMatch: createPrivateOnlineState(state, seatId),
       });
     }
 
@@ -136,15 +142,37 @@ Deno.serve(async (request) => {
       .eq("status", "PLAYING")
       .single();
     if (!match) return response(409, { code: "MATCH_NOT_PLAYING" });
-    if (match.version !== expectedVersion) {
-      return response(409, { code: "STALE_VERSION", currentVersion: match.version });
-    }
     const { data: privateState } = await admin.from("match_state_private")
       .select("state,version")
       .eq("match_id", match.id)
       .single();
     const seatId = `seat-${callerSeat.seat_index + 1}`;
+    if (intent?.type === "SYNC_MATCH") {
+      return response(200, {
+        matchId: match.id,
+        version: privateState.version,
+        publicMatch: createPublicOnlineState(privateState.state),
+        privateMatch: createPrivateOnlineState(privateState.state, seatId),
+      });
+    }
+    if (match.version !== expectedVersion || privateState.version !== expectedVersion) {
+      return response(409, {
+        code: "STALE_VERSION",
+        currentVersion: Math.max(match.version, privateState.version),
+      });
+    }
     let nextState = applyAuthenticatedIntent(privateState.state, seatId, intent);
+    const { data: claimed, error: claimError } = await admin.rpc(
+      "claim_match_transition",
+      {
+        p_match_id: match.id,
+        p_expected_version: expectedVersion,
+      },
+    );
+    if (claimError) return response(500, { code: "CLAIM_FAILED" });
+    if (!claimed) {
+      return response(409, { code: "STALE_VERSION", currentVersion: privateState.version });
+    }
     const newMoves = [structuredClone(nextState.history.at(-1))];
     const cpuSeatIds = new Set(
       (seats ?? [])
@@ -170,13 +198,13 @@ Deno.serve(async (request) => {
       },
     );
     if (commitError) {
-      const stale = commitError.message?.includes("STALE_VERSION");
+      const stale = isStaleDatabaseError(commitError);
       return response(stale ? 409 : 500, { code: stale ? "STALE_VERSION" : "COMMIT_FAILED" });
     }
     return response(200, {
       version: nextVersion,
       publicMatch: createPublicOnlineState(nextState),
-      privateHand: nextState.hands[seatId],
+      privateMatch: createPrivateOnlineState(nextState, seatId),
     });
   } catch (error) {
     return response(400, { code: error?.code ?? "INVALID_REQUEST", message: error?.message });

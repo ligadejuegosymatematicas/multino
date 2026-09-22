@@ -93,7 +93,7 @@ function protectProjection(projection, isCurrentPlayer) {
   };
 }
 
-function createPrivateMatchView(state, seatId) {
+export function createPrivateOnlineState(state, seatId) {
   const isCurrentPlayer = state.phase === "playing" &&
     state.currentPlayerId === seatId;
   return {
@@ -371,7 +371,7 @@ export class AuthoritativeRoomService {
       },
       publicMatch: createPublicOnlineState(state),
       privateMatch: state && seat
-        ? createPrivateMatchView(state, seat.seatId)
+        ? createPrivateOnlineState(state, seat.seatId)
         : null,
     });
   }

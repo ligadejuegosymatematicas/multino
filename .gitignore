@@ -8,3 +8,4 @@ dist/
 .env.*
 !.env.example
 .codex-remote-attachments/
+supabase/.temp/

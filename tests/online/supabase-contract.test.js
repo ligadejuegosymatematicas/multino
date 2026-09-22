@@ -25,6 +25,32 @@ test("la migración define el modelo mínimo y RLS default-deny", async () => {
   assert.match(sql, /STALE_VERSION/);
   assert.match(sql, /for update/);
   assert.match(sql, /revoke all on function public\.commit_game_transition/);
+  assert.match(sql, /grant select on table public\.rooms to authenticated/);
+  assert.match(sql, /revoke all on table public\.match_state_private from public, anon, authenticated/);
+  assert.match(sql, /alter publication supabase_realtime add table public\.rooms/);
+});
+
+test("los reclamos concurrentes son privados y no bloqueantes", async () => {
+  const claimSql = await readFile(
+    new URL("../../supabase/migrations/202609210005_match_action_claims.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(claimSql, /create table public\.match_action_claims/);
+  assert.match(claimSql, /enable row level security/);
+  assert.match(claimSql, /revoke all on table public\.match_action_claims from public, anon, authenticated/);
+  assert.match(claimSql, /on conflict do nothing/);
+  assert.match(claimSql, /claim_match_transition/);
+});
+
+test("Realtime publica lobby y versiones de partida sin publicar estado privado", async () => {
+  const initial = await readFile(migrationUrl, "utf8");
+  const realtime = await readFile(
+    new URL("../../supabase/migrations/202609210002_realtime_matches.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(initial, /add table public\.rooms/);
+  assert.match(realtime, /add table public\.matches/);
+  assert.doesNotMatch(initial + realtime, /add table public\.match_state_private/);
 });
 
 test("service_role queda únicamente dentro de funciones servidor", async () => {
@@ -36,10 +62,19 @@ test("service_role queda únicamente dentro de funciones servidor", async () => 
     new URL("../../supabase/functions/game-action/index.ts", import.meta.url),
     "utf8",
   );
+  const environment = await readFile(
+    new URL("../../supabase/functions/_shared/supabase-env.ts", import.meta.url),
+    "utf8",
+  );
   assert.doesNotMatch(gateway, /SUPABASE_SERVICE_ROLE_KEY/);
-  assert.match(action, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(environment, /SUPABASE_SECRET_KEYS/);
+  assert.match(environment, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(action, /getSupabaseServerEnvironment/);
   assert.match(action, /auth\.getUser/);
   assert.match(action, /commit_game_transition/);
+  assert.match(action, /createPrivateOnlineState/);
+  assert.match(action, /SYNC_MATCH/);
+  assert.doesNotMatch(action, /privateHand:/);
 });
 
 test("la función servidor reutiliza el motor y no acepta snapshots del cliente", async () => {
