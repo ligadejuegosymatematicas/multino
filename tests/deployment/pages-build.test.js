@@ -34,6 +34,7 @@ test("el workflow usa el artefacto dist y solo variables públicas", async () =>
     "utf8",
   );
   assert.match(workflow, /path: dist/);
+  assert.match(workflow, /enablement:\s*true/);
   assert.match(workflow, /vars\.SUPABASE_URL/);
   assert.match(workflow, /vars\.SUPABASE_PUBLIC_KEY/);
   assert.doesNotMatch(workflow, /SERVICE_ROLE/);
