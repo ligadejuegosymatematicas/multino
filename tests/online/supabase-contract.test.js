@@ -42,6 +42,23 @@ test("los reclamos concurrentes son privados y no bloqueantes", async () => {
   assert.match(claimSql, /claim_match_transition/);
 });
 
+test("STALE_VERSION usa un conflicto no reintentable por PostgREST", async () => {
+  const staleSql = await readFile(
+    new URL(
+      "../../supabase/migrations/202609220006_nonretryable_stale_version.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(staleSql, /raise sqlstate 'PT409' using message = 'STALE_VERSION'/);
+  assert.equal(
+    (staleSql.match(/raise sqlstate 'PT409'/g) ?? []).length,
+    2,
+    "el lock ocupado y la versión obsoleta deben terminar sin reintento",
+  );
+  assert.doesNotMatch(staleSql, /errcode\s*=\s*'40001'/);
+});
+
 test("Realtime publica lobby y versiones de partida sin publicar estado privado", async () => {
   const initial = await readFile(migrationUrl, "utf8");
   const realtime = await readFile(
