@@ -24,10 +24,18 @@ export function isPresentationBarrierActive({
 }
 
 export function getOnlineIdleTurnMessage({
-  displayName = "Jugador",
-  controlType = "HUMAN",
+  currentPlayerId = null,
+  players = [],
+  seats = [],
 } = {}) {
-  return controlType === "CPU"
+  const currentPlayer = players.find(
+    (player) => player.playerId === currentPlayerId,
+  );
+  const currentSeat = seats.find(
+    (seat) => seat.seatId === currentPlayerId,
+  );
+  const displayName = currentPlayer?.displayName ?? currentSeat?.nick ?? "Jugador";
+  return currentSeat?.controlType === "CPU"
     ? `${displayName} está jugando…`
     : `Turno de ${displayName}`;
 }

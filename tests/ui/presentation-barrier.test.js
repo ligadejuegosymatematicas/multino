@@ -55,13 +55,23 @@ test("la CPU local espera el scoring, pero PASS conserva un settle corto", () =>
 });
 
 test("al vaciar la cola, el mensaje cambia del actor presentado al turno autoritativo", () => {
+  const players = [
+    { playerId: "seat-3", displayName: "Catalina" },
+    { playerId: "seat-4", displayName: "CPU 4" },
+  ];
+  const seats = [
+    { seatId: "seat-3", nick: "Catalina", controlType: "HUMAN" },
+    { seatId: "seat-4", nick: "CPU 4", controlType: "CPU" },
+  ];
   assert.equal(getOnlineIdleTurnMessage({
-    displayName: "Catalina",
-    controlType: "HUMAN",
+    currentPlayerId: "seat-3",
+    players,
+    seats,
   }), "Turno de Catalina");
   assert.equal(getOnlineIdleTurnMessage({
-    displayName: "CPU 4",
-    controlType: "CPU",
+    currentPlayerId: "seat-4",
+    players,
+    seats,
   }), "CPU 4 está jugando…");
 });
 

@@ -611,15 +611,10 @@ function renderOnlineSession(session) {
       revealRoundResult: !roundResultPending,
     });
     if (queue.phase === "idle") {
-      const currentPlayer = session.round.view.players.find(
-        (player) => player.playerId === session.round.view.turn.currentPlayerId,
-      );
-      const currentSeat = session.room.seats.find(
-        (seat) => seat.seatId === session.round.view.turn.currentPlayerId,
-      );
       setMessage(getOnlineIdleTurnMessage({
-        displayName: currentPlayer?.displayName ?? currentSeat?.nick ?? "Jugador",
-        controlType: currentSeat?.controlType ?? "HUMAN",
+        currentPlayerId: session.round.view.turn.currentPlayerId,
+        players: session.round.view.participants.players,
+        seats: session.room.seats,
       }));
     }
     if (roundResultPending) {
