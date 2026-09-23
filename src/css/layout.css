@@ -12,6 +12,10 @@
   margin-block-end: 0.35rem;
 }
 
+.app-shell:not(.is-playing) .app-header {
+  display: none;
+}
+
 .round-overview {
   display: grid;
   grid-template-columns: minmax(9rem, 1fr) minmax(13rem, 1.15fr) minmax(6rem, 0.55fr);

@@ -18,6 +18,8 @@ test("la marca pública usa los assets oficiales y una configuración única", (
   assert.match(html, /data-app-name/);
   assert.match(main, /element\.textContent = APP_NAME/);
   assert.doesNotMatch(html, /brand-mark/);
+  assert.doesNotMatch(html, /Jugar MULTINÓ/);
+  assert.match(html, /Elige cómo jugar/);
 });
 
 test("crear sala no solicita un nombre o código y el lobby ofrece ambas copias", () => {
