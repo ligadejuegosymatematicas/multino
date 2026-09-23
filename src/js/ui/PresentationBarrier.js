@@ -24,10 +24,12 @@ export function isPresentationBarrierActive({
 }
 
 export function getOnlineIdleTurnMessage({
+  isFinished = false,
   currentPlayerId = null,
   players = [],
   seats = [],
 } = {}) {
+  if (isFinished) return "";
   const currentPlayer = players.find(
     (player) => player.playerId === currentPlayerId,
   );

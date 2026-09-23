@@ -614,6 +614,7 @@ function renderOnlineSession(session) {
     });
     if (queue.phase === "idle") {
       setMessage(getOnlineIdleTurnMessage({
+        isFinished: session.round.isFinished,
         currentPlayerId: session.round.view.turn.currentPlayerId,
         players: session.round.view.participants.players,
         seats: session.room.seats,

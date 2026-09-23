@@ -73,6 +73,12 @@ test("al vaciar la cola, el mensaje cambia del actor presentado al turno autorit
     players,
     seats,
   }), "CPU 4 está jugando…");
+  assert.equal(getOnlineIdleTurnMessage({
+    isFinished: true,
+    currentPlayerId: "seat-4",
+    players,
+    seats,
+  }), "");
 });
 
 test("la UI no permite saltar scoring, revelar mano ni cambiar vista", async () => {
