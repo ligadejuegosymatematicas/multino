@@ -5,6 +5,7 @@ import test from "node:test";
 import { projectGraphView } from "../../src/js/game/index.js";
 import {
   calculateScoringTokenTravel,
+  createScoringTokenMotion,
   createScoringSourceTokens,
   createScoringFeedbackPresentation,
   getGameFeedback,
@@ -141,7 +142,7 @@ test("la secuencia pedagógica distingue múltiplo, resto y cero sin inventar re
   assert.ok(SCORING_FEEDBACK_TIMING.totalMs <= 9000);
   assert.equal(SCORING_FEEDBACK_TIMING.sourcesMs, 1400);
   assert.equal(SCORING_FEEDBACK_TIMING.tokenEmergenceMs, 600);
-  assert.equal(SCORING_FEEDBACK_TIMING.tokenTravelMs, 1200);
+  assert.equal(SCORING_FEEDBACK_TIMING.tokenTravelMs, 1000);
   assert.equal(SCORING_FEEDBACK_TIMING.conclusionMs, 1200);
 });
 
@@ -184,6 +185,15 @@ test("el mismo token aterriza exactamente en el centro de su slot", () => {
   assert.deepEqual(travel.destination, { x: 340, y: 224 });
   assert.equal(travel.destination.x + travel.deltaX, travel.source.x);
   assert.equal(travel.destination.y + travel.deltaY, travel.source.y);
+  const motion = createScoringTokenMotion(travel);
+  assert.deepEqual(motion.start, travel.source);
+  assert.deepEqual(motion.end, travel.destination);
+  assert.notDeepEqual(motion.midpoint, motion.start);
+  assert.notDeepEqual(motion.midpoint, motion.end);
+  assert.ok(motion.midpoint.x > motion.start.x);
+  assert.ok(motion.midpoint.x < motion.end.x);
+  assert.equal(motion.keyframes[0].offset, 0);
+  assert.equal(motion.keyframes.at(-1).offset, 1);
 });
 
 test("la ficha visual compartida conserva pips reales incluso con ceros", () => {
@@ -332,10 +342,14 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(themeCss, /--game-gold-bright:\s*var\(--scoring\)/);
   assert.match(componentsCss, /\.hand-grid \{[\s\S]+?flex-wrap:\s*wrap/);
   assert.match(componentsCss, /\.turn-action-panel \{[\s\S]+?display:\s*flex/);
-  assert.match(componentsCss, /scoring-token-continuity 1800ms/);
+  assert.match(componentsCss, /\.scoring-feedback__term\.is-source-connected \{[\s\S]+?will-change:\s*transform, opacity/);
+  assert.doesNotMatch(componentsCss, /@keyframes scoring-token-continuity/);
+  assert.match(componentsCss, /\.scoring-feedback__terms \{[\s\S]+?overflow:\s*visible/);
+  assert.doesNotMatch(componentsCss, /@keyframes scoring-slot-reveal\s*\{[^}]*transform:/s);
   assert.doesNotMatch(componentsCss, /scoring-flight-layer|scoring-flight-token/);
-  assert.match(componentsCss, /score-delta 780ms 7\.75s/);
-  assert.match(componentsCss, /animation-duration:\s*8\.6s/);
+  assert.match(componentsCss, /score-delta 500ms 8\.35s/);
+  assert.match(componentsCss, /score-arrival 500ms 8\.35s/);
+  assert.match(componentsCss, /animation-duration:\s*9s/);
   assert.match(componentsCss, /@keyframes scoring-award-transfer/);
   assert.match(componentsCss, /scoring-feedback__quotient\.is-score/);
   assert.match(componentsCss, /scoring-feedback__remainder\.is-focus/);

@@ -6,12 +6,12 @@ function teamName(view, teamId) {
 export const SCORING_FEEDBACK_TIMING = Object.freeze({
   sourcesMs: 1400,
   tokenEmergenceMs: 600,
-  tokenTravelMs: 1200,
+  tokenTravelMs: 1000,
   expressionMs: 1400,
   sumMs: 1300,
   divisionMs: 1500,
   conclusionMs: 1200,
-  totalMs: 8600,
+  totalMs: 9000,
   reducedMotionMs: 1700,
 });
 
@@ -19,6 +19,7 @@ const TOKEN_SEQUENCE_START_MS = SCORING_FEEDBACK_TIMING.sourcesMs;
 const TOKEN_SEQUENCE_DURATION_MS =
   SCORING_FEEDBACK_TIMING.tokenEmergenceMs +
   SCORING_FEEDBACK_TIMING.tokenTravelMs;
+const TOKEN_STAGGER_MS = 160;
 
 function sourceMultiplicities(terms) {
   const result = Array.from({ length: 7 }, () => 0);
@@ -212,6 +213,46 @@ export function calculateScoringTokenTravel(sourceRect, slotRect) {
   };
 }
 
+export function createScoringTokenMotion(travel) {
+  const distance = Math.hypot(travel.deltaX, travel.deltaY);
+  const arc = Math.min(52, Math.max(18, distance * 0.09));
+  const midpointDelta = {
+    x: travel.deltaX * 0.48,
+    y: travel.deltaY * 0.48 - arc,
+  };
+  return {
+    start: travel.source,
+    midpoint: {
+      x: travel.destination.x + midpointDelta.x,
+      y: travel.destination.y + midpointDelta.y,
+    },
+    end: travel.destination,
+    keyframes: [
+      {
+        opacity: 0,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(.72)`,
+        offset: 0,
+      },
+      {
+        opacity: 1,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
+        offset: 0.1,
+      },
+      {
+        opacity: 1,
+        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
+        offset: 0.42,
+      },
+      {
+        opacity: 1,
+        transform: `translate(${midpointDelta.x}px, ${midpointDelta.y}px) scale(1.08)`,
+        offset: 0.7,
+      },
+      { opacity: 1, transform: "translate(0, 0) scale(1)", offset: 1 },
+    ],
+  };
+}
+
 function setTokenAtSource(tokenElement, travel) {
   tokenElement.style.setProperty("--token-source-dx", `${travel.deltaX}px`);
   tokenElement.style.setProperty("--token-source-dy", `${travel.deltaY}px`);
@@ -229,26 +270,17 @@ function animateTokenIntoSlot(tokenElement, travel, order) {
   if (typeof tokenElement.animate !== "function") return;
 
   tokenElement.getAnimations?.().forEach((animation) => animation.cancel());
-  const delay = TOKEN_SEQUENCE_START_MS + order * 90;
+  const delay = TOKEN_SEQUENCE_START_MS +
+    Math.min(order * TOKEN_STAGGER_MS, 720);
+  const motion = createScoringTokenMotion(travel);
+  tokenElement.dataset.scoringTokenStartX = String(motion.start.x);
+  tokenElement.dataset.scoringTokenStartY = String(motion.start.y);
+  tokenElement.dataset.scoringTokenMidX = String(motion.midpoint.x);
+  tokenElement.dataset.scoringTokenMidY = String(motion.midpoint.y);
+  tokenElement.dataset.scoringTokenEndX = String(motion.end.x);
+  tokenElement.dataset.scoringTokenEndY = String(motion.end.y);
   const animation = tokenElement.animate(
-    [
-      {
-        opacity: 0,
-        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(.72)`,
-        offset: 0,
-      },
-      {
-        opacity: 1,
-        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
-        offset: 0.1,
-      },
-      {
-        opacity: 1,
-        transform: `translate(${travel.deltaX}px, ${travel.deltaY}px) scale(1)`,
-        offset: 0.38,
-      },
-      { opacity: 1, transform: "translate(0, 0) scale(1)", offset: 1 },
-    ],
+    motion.keyframes,
     {
       duration: TOKEN_SEQUENCE_DURATION_MS,
       delay,

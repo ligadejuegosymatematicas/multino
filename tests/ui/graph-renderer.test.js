@@ -248,7 +248,8 @@ test("el feedback destaca solo términos reales de S en el grafo", () => {
   assert.match(markup, /graph-loop is-main is-special-double[^\"]*is-scoring-term/);
   assert.match(markup, /graph-vertex [^"]*is-scoring-term/);
   assert.match(markup, /graph-vertex__scoring-multiplicity[\s\S]+?>×2</);
-  assert.match(markup, /data-scoring-anchor-value="5"/);
+  assert.match(markup, /graph-vertex__scoring-multiplicity[^>]+data-scoring-anchor-value="5"/);
+  assert.doesNotMatch(markup, /class="graph-vertex [^"]*"[^>]+data-scoring-anchor-value/);
 });
 
 test("Grafo conserva el token cero y excluye un ramificador no contribuyente", () => {

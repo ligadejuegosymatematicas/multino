@@ -438,7 +438,7 @@
 }
 
 .score-team.is-score-feedback {
-  animation: score-arrival 650ms 7.9s ease-out both;
+  animation: score-arrival 500ms 8.35s ease-out both;
 }
 
 .score-team__delta {
@@ -455,7 +455,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   opacity: 0;
-  animation: score-delta 780ms 7.75s ease-out both;
+  animation: score-delta 500ms 8.35s ease-out both;
 }
 
 .score-team strong {
@@ -625,7 +625,7 @@
   pointer-events: auto;
   cursor: pointer;
   animation-name: scoring-stage-visibility;
-  animation-duration: 8.6s;
+  animation-duration: 9s;
   animation-timing-function: linear;
 }
 
@@ -702,7 +702,7 @@
   color: #fff0bd;
   font-size: 1rem;
   opacity: 0;
-  animation: scoring-step 360ms 3150ms ease-out both;
+  animation: scoring-step 360ms 1400ms ease-out both;
 }
 
 .scoring-feedback__term {
@@ -726,14 +726,13 @@
 }
 
 .scoring-feedback__term.is-source-connected {
-  animation: scoring-token-continuity 1800ms
-    calc(1400ms + var(--token-order) * 90ms) ease-in-out both;
+  will-change: transform, opacity;
 }
 
 .scoring-feedback__operator {
   color: #bba978;
   opacity: 0;
-  animation: scoring-term-arrival 420ms 3150ms ease-out both;
+  animation: scoring-term-arrival 420ms 1400ms ease-out both;
 }
 
 .scoring-feedback__sum {
@@ -743,7 +742,7 @@
   border-block-start: 1px solid rgb(255 255 255 / 0.18);
   color: #ffe29a;
   font-size: 1.12rem;
-  animation-delay: 4600ms;
+  animation-delay: 4900ms;
 }
 
 .scoring-feedback__equals,
@@ -752,11 +751,11 @@
   animation: scoring-step 360ms ease-out both;
 }
 
-.scoring-feedback__equals { animation-delay: 4600ms; }
+.scoring-feedback__equals { animation-delay: 4900ms; }
 .scoring-feedback__result {
   color: #ffda70;
   font-size: 1.18rem;
-  animation-delay: 4820ms;
+  animation-delay: 5120ms;
 }
 
 .scoring-feedback__divisibility {
@@ -765,7 +764,7 @@
   font-size: 0.72rem;
   flex-wrap: wrap;
   gap: 0.2rem;
-  animation-delay: 5900ms;
+  animation-delay: 6200ms;
 }
 
 .scoring-feedback__verdict {
@@ -773,7 +772,7 @@
   min-width: 0;
   color: #d7ddd7;
   font-size: 0.73rem;
-  animation-delay: 7400ms;
+  animation-delay: 7300ms;
 }
 
 .scoring-feedback__verdict.is-award {
@@ -790,7 +789,7 @@
   min-width: 5rem;
   color: #c8d0ca;
   font-size: 0.9rem;
-  animation-delay: 7750ms;
+  animation-delay: 7600ms;
 }
 
 .scoring-feedback__quotient,
@@ -835,8 +834,8 @@
 
 .scoring-feedback__outcome.is-award.has-score-target {
   animation:
-    scoring-step 420ms 7750ms ease-out both,
-    scoring-award-transfer 800ms 7800ms ease-in both;
+    scoring-step 420ms 7600ms ease-out both,
+    scoring-award-transfer 700ms 7650ms ease-in both;
 }
 
 .scoring-feedback__outcome.is-no-award {
@@ -1239,36 +1238,8 @@
 }
 
 @keyframes scoring-slot-reveal {
-  from { opacity: 0; transform: scale(0.88); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes scoring-token-continuity {
-  0% {
-    opacity: 0;
-    transform: translate(
-      var(--token-source-dx),
-      var(--token-source-dy)
-    ) scale(0.72);
-  }
-  8% {
-    opacity: 1;
-    transform: translate(
-      var(--token-source-dx),
-      var(--token-source-dy)
-    ) scale(1);
-  }
-  33% {
-    opacity: 1;
-    transform: translate(
-      var(--token-source-dx),
-      var(--token-source-dy)
-    ) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scoring-award-transfer {
@@ -1508,7 +1479,7 @@
 
   .scoring-feedback__terms {
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .scoring-feedback__divisibility {
