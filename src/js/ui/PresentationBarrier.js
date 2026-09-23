@@ -23,6 +23,15 @@ export function isPresentationBarrierActive({
   );
 }
 
+export function getOnlineIdleTurnMessage({
+  displayName = "Jugador",
+  controlType = "HUMAN",
+} = {}) {
+  return controlType === "CPU"
+    ? `${displayName} está jugando…`
+    : `Turno de ${displayName}`;
+}
+
 export function getLocalCpuPresentationDelay({
   state,
   scoringDurationMs,

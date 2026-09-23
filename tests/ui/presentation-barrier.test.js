@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   getLocalCpuPresentationDelay,
+  getOnlineIdleTurnMessage,
   isPresentationBarrierActive,
   resolvePresentedFeedback,
 } from "../../src/js/ui/PresentationBarrier.js";
@@ -51,6 +52,17 @@ test("la CPU local espera el scoring, pero PASS conserva un settle corto", () =>
     state: { history: [{ type: "PASS" }] },
     scoringDurationMs,
   }), 850);
+});
+
+test("al vaciar la cola, el mensaje cambia del actor presentado al turno autoritativo", () => {
+  assert.equal(getOnlineIdleTurnMessage({
+    displayName: "Catalina",
+    controlType: "HUMAN",
+  }), "Turno de Catalina");
+  assert.equal(getOnlineIdleTurnMessage({
+    displayName: "CPU 4",
+    controlType: "CPU",
+  }), "CPU 4 está jugando…");
 });
 
 test("la UI no permite saltar scoring, revelar mano ni cambiar vista", async () => {

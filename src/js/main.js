@@ -44,6 +44,7 @@ import {
 } from "./storage/LocalStores.js";
 import {
   getLocalCpuPresentationDelay,
+  getOnlineIdleTurnMessage,
   isPresentationBarrierActive,
   resolvePresentedFeedback,
 } from "./ui/PresentationBarrier.js";
@@ -609,6 +610,18 @@ function renderOnlineSession(session) {
     renderRound(session.round, session.viewMode, feedback, {
       revealRoundResult: !roundResultPending,
     });
+    if (queue.phase === "idle") {
+      const currentPlayer = session.round.view.players.find(
+        (player) => player.playerId === session.round.view.turn.currentPlayerId,
+      );
+      const currentSeat = session.room.seats.find(
+        (seat) => seat.seatId === session.round.view.turn.currentPlayerId,
+      );
+      setMessage(getOnlineIdleTurnMessage({
+        displayName: currentPlayer?.displayName ?? currentSeat?.nick ?? "Jugador",
+        controlType: currentSeat?.controlType ?? "HUMAN",
+      }));
+    }
     if (roundResultPending) {
       lastFeedbackSequence = nextFeedback?.sequence ?? null;
       return;
