@@ -280,6 +280,12 @@ function renderRound(
   feedback,
   { revealRoundResult = true } = {},
 ) {
+  if (mode !== BOARD_VIEW_MODES.TRADITIONAL) {
+    // El viewport tradicional será reemplazado por otro renderer. Capturamos
+    // su cámara y desconectamos el observer antes de que el nodo quede suelto;
+    // un callback tardío con tamaño 0 no puede provocar otro auto-fit.
+    traditionalRenderer.deactivate();
+  }
   const roundResultDeferred = shouldDeferRoundResult({
     isFinished: presentation.isFinished,
     feedback,

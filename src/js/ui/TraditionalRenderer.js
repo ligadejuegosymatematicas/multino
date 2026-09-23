@@ -32,7 +32,6 @@ export function isTraditionalWorldContinuation(
     return currentPlacementIds.size === 0;
   }
   return currentPlacementIds.size >= previousPlacementIds.size &&
-    currentPlacementIds.size <= previousPlacementIds.size + 1 &&
     [...previousPlacementIds].every((placementId) =>
       currentPlacementIds.has(placementId)
     );
@@ -166,17 +165,15 @@ export class TraditionalRenderer {
     this.autoPanToken = 0;
   }
 
+  deactivate() {
+    this.#captureCamera();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    this.#cancelAutoPan();
+  }
+
   render(presentation, { onTarget, onStart } = {}) {
-    const previousViewport = this.container.querySelector(
-      "[data-table-viewport]",
-    );
-    if (previousViewport && this.cameraState) {
-      this.cameraState = {
-        ...this.cameraState,
-        left: previousViewport.scrollLeft,
-        top: previousViewport.scrollTop,
-      };
-    }
+    this.#captureCamera();
     this.#cancelAutoPan();
     const previousPlacementIds = new Set(
       this.layoutState?.tiles?.map((tile) => tile.placementId) ?? [],
@@ -257,7 +254,7 @@ export class TraditionalRenderer {
         viewportWidth: dimensions.width,
         viewportHeight: dimensions.height,
       });
-      if (addedTiles.length === 1) {
+      if (addedTiles.length > 0) {
         camera = createTraditionalProgressiveCamera(camera, {
           fitScale: fittedScale(dimensions),
           contentBounds: scene.contentBounds,
@@ -274,7 +271,7 @@ export class TraditionalRenderer {
         "(prefers-reduced-motion: reduce)",
       ).matches ?? false;
       applyCamera(camera, {
-        animate: changed && addedTiles.length === 1 && !reduceMotion,
+        animate: changed && addedTiles.length > 0 && !reduceMotion,
       });
     }
     this.container.querySelector("[data-fit-table]")?.addEventListener(
@@ -328,6 +325,23 @@ export class TraditionalRenderer {
       .querySelector("[data-start-action]")
       ?.addEventListener("click", () => onStart?.({ kind: "START" }));
     return scene;
+  }
+
+  #captureCamera() {
+    const viewport = this.container.querySelector("[data-table-viewport]");
+    const canvas = this.container.querySelector("[data-table-canvas]");
+    if (!viewport || !this.cameraState) return;
+    const renderedScale = Number.parseFloat(
+      canvas?.style.getPropertyValue("--table-scale") ?? "",
+    );
+    this.cameraState = {
+      ...this.cameraState,
+      scale: Number.isFinite(renderedScale)
+        ? renderedScale
+        : this.cameraState.scale,
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop,
+    };
   }
 
   #cancelAutoPan() {

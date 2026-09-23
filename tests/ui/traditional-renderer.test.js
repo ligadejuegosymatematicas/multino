@@ -55,6 +55,8 @@ import {
 } from "../fixtures/board-scenarios.js";
 import { createValidParticipantInput } from "../fixtures/participants.js";
 import { createExitTurnState } from "../fixtures/turn-scenarios.js";
+import { createRealOnlineRamifiedStates } from
+  "../fixtures/real-online-ramified-match.js";
 
 function targetAt(placementId, portId) {
   return (target) =>
@@ -549,6 +551,35 @@ test("Ramificado congela 2, 3 y 4 brazos mientras crecen por separado", () => {
       .map((arm) => arm.tiles[0].direction),
   ].filter(Boolean));
   assert.deepEqual(outward, new Set(["left", "right", "up", "down"]));
+});
+
+test("el snapshot real oculto conserva mundo, cámara lógica y modo Ramificado", () => {
+  const states = createRealOnlineRamifiedStates();
+  const before = createTraditionalScene(projectTraditionalView(states[9]));
+  const afterView = projectTraditionalView(states.at(-1));
+  const after = createTraditionalScene(afterView, {
+    previousLayout: before.layoutState,
+  });
+  const coldReconstruction = createTraditionalScene(afterView);
+
+  assert.equal(afterView.table.structuralMode, "RAMIFICADO");
+  assert.equal(after.layoutStats.structuralMode, "RAMIFICADO");
+  assert.equal(after.layoutStats.fallbackTriggered, false);
+  assert.equal(after.layoutStats.extendedWhileHidden, 13);
+  assertPreviousGeometryFrozen(before, after);
+  assert.equal(after.tiles.length, 23);
+  assert.equal(inspectTraditionalLayoutGeometry(after).isValid, true);
+  assert.equal(coldReconstruction.layoutStats.fallbackTriggered, false);
+  assert.equal(inspectTraditionalLayoutGeometry(coldReconstruction).isValid, true);
+  assert.ok(coldReconstruction.contentBounds.width < 800);
+  assert.ok(coldReconstruction.contentBounds.height < 800);
+  assert.equal(
+    isTraditionalWorldContinuation(
+      new Set(before.tiles.map((tile) => tile.placementId)),
+      new Set(after.tiles.map((tile) => tile.placementId)),
+    ),
+    true,
+  );
 });
 
 test("el crecimiento incremental conserva margen al borde y ante colisiones", () => {
@@ -1113,6 +1144,8 @@ test("renderer, responsive y accesibilidad no dependen del board ni de overflow 
   assert.match(sceneSource, /function previewGhostPlacement/);
   assert.match(sceneSource, /catch \{[\s\S]+?socket legal sigue disponible/);
   assert.match(css, /\.traditional-table__viewport \{[\s\S]+?overflow:\s*hidden/);
+  assert.match(rendererSource, /deactivate\(\)/);
+  assert.match(rendererSource, /resizeObserver\?\.disconnect\(\)/);
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /\.traditional-ghost__tile \{[\s\S]+?border:\s*4px dashed/);
   assert.match(css, /\.traditional-ghost__tile \{[\s\S]+?opacity:\s*0\.76/);

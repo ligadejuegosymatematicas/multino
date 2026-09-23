@@ -617,9 +617,10 @@ function measureEscapeCapacity(
   connectionClearance,
   depth = ESCAPE_LOOKAHEAD_STEPS,
 ) {
-  if (depth <= 0) return { depth: 0, branches: 1 };
+  if (depth <= 0) return { depth: 0, branches: 1, turnOptions: 0 };
   let bestDepth = 0;
   let branches = 0;
+  let turnOptions = 0;
   for (const direction of candidateDirections(currentDirection, true)) {
     const leadAdjustments = direction === currentDirection
       ? [0]
@@ -664,10 +665,12 @@ function measureEscapeCapacity(
       );
       bestDepth = Math.max(bestDepth, 1 + next.depth);
       branches += 1 + next.branches;
+      if (direction !== currentDirection) turnOptions += 1;
+      turnOptions = Math.max(turnOptions, next.turnOptions);
       break;
     }
   }
-  return { depth: bestDepth, branches };
+  return { depth: bestDepth, branches, turnOptions };
 }
 
 function protectedExitHasJointContinuation(
@@ -844,6 +847,7 @@ function scoreCandidate(
     futureRoomScore(candidate, direction, occupied, center) +
     escapeCapacity.depth * 2400 +
     Math.min(escapeCapacity.branches, 12) * 180 +
+    Math.min(escapeCapacity.turnOptions, 3) * 950 +
     sectorCorridorScore(candidate, initialDirection, sectorOrigin) +
     Math.max(-500, sectorProgress) -
     envelopeGrowth(candidate, envelopeTiles) * 6 -
@@ -1475,8 +1479,7 @@ function sameTileIdentity(first, second) {
 function canExtendLayout(table, previousLayout) {
   if (!previousLayout?.tiles || !previousLayout.softCenter) return false;
   const current = rawTilesByPlacementId(table);
-  if (current.size < previousLayout.tiles.length ||
-      current.size > previousLayout.tiles.length + 1) {
+  if (current.size < previousLayout.tiles.length) {
     return false;
   }
   return previousLayout.tiles.every((tile) =>
@@ -1543,6 +1546,7 @@ function assembleLayout(
   size,
   turnCount,
   connectionClearance,
+  layoutDiagnostics = {},
 ) {
   const rawMain = table.mainLine.tiles;
   const rootFacesByArmId = createRootFaces(table, tileByPlacementId);
@@ -1630,12 +1634,16 @@ function assembleLayout(
     openFacesByTargetId,
     layoutStats: {
       strategy: specialIndex >= 0 ? "four-arm-snake" : "linear-snake",
+      structuralMode: table.structuralMode,
       incremental: true,
+      fallbackTriggered: false,
+      fallbackReason: null,
       turnCount,
       softTurnCount,
       hardTurnCount,
       collisionMargin: COLLISION_MARGIN,
       expandedCanvas: contentExceedsSoftBoard(tiles, size.softCenter),
+      ...layoutDiagnostics,
     },
   };
 }
@@ -1740,7 +1748,10 @@ function createInitialLayout(table, connectionClearance) {
   const tileByPlacementId = new Map();
   let turnCount = 0;
   let exploredCandidates = 0;
-  const reconstructionBudget = Math.max(1200, ordered.length * 180);
+  // Un snapshot denso puede llegar de golpe al volver desde otra vista. El
+  // presupuesto anterior (180 candidatos por ficha) agotaba la búsqueda y
+  // activaba el fallback rectilíneo aun para mesas válidas y compactables.
+  const reconstructionBudget = Math.max(6000, ordered.length * 1200);
 
   if (ordered.length > 0) {
     const openingRaw = ordered[0];
@@ -1829,7 +1840,16 @@ function createInitialLayout(table, connectionClearance) {
 
     const replayedTurns = replay(1, 0);
     if (replayedTurns === null) {
-      return createGuaranteedRadialLayout(table, connectionClearance);
+      try {
+        return createGuaranteedRadialLayout(table, connectionClearance);
+      } catch {
+        // Degradación final: conserva explícitamente las cuatro rutas en sus
+        // sectores aunque no haya sido posible compactarlas. Nunca altera el
+        // modo reglamentario ni deja el tablero sin representación.
+        return createGuaranteedRadialLayout(table, connectionClearance, {
+          compact: false,
+        });
+      }
     }
     turnCount = replayedTurns;
   }
@@ -1861,30 +1881,62 @@ function placeGuaranteedArm({
   tileByPlacementId,
   connectionClearance,
   rootFace = null,
+  occupiedConnections = [],
+  compact = false,
 }) {
   let source = root;
   let face = rootFace;
+  let straightRunLength = source.direction === direction
+    ? source.straightRunLength ?? 1
+    : 0;
   for (const rawTile of rawTiles) {
     const oriented = orientFromSource(rawTile, source.placementId);
     const sourceFace = face ?? faceForConnection(
       source,
       oriented.start.connectionId,
     );
-    const placed = {
-      ...placeAfterFace(
-        source,
-        sourceFace,
-        oriented,
-        direction,
-        direction,
-        connectionClearance,
-      ),
-      straightRunLength: (source.straightRunLength ?? 0) + 1,
-      turnReason: "straight",
-      escapeDepth: ESCAPE_LOOKAHEAD_STEPS,
-      protectedExitsPreserved: true,
-    };
+    const chosen = compact
+      ? choosePlacement(
+          oriented,
+          source,
+          sourceFace,
+          directionForSide(sourceFace.side),
+          direction,
+          [...tileByPlacementId.values()],
+          occupiedConnections,
+          true,
+          connectionClearance,
+          { x: 0, y: 0 },
+          straightRunLength,
+          { sectorOrigin: { x: root.x, y: root.y } },
+        )
+      : null;
+    const placed = chosen?.tile ?? {
+        ...placeAfterFace(
+          source,
+          sourceFace,
+          oriented,
+          direction,
+          direction,
+          connectionClearance,
+        ),
+        straightRunLength: (source.straightRunLength ?? 0) + 1,
+        turnReason: "straight",
+        escapeDepth: ESCAPE_LOOKAHEAD_STEPS,
+        protectedExitsPreserved: true,
+      };
     tileByPlacementId.set(placed.placementId, placed);
+    if (chosen) {
+      occupiedConnections.push({
+        id: oriented.start.connectionId,
+        firstPlacementId: source.placementId,
+        secondPlacementId: placed.placementId,
+        segments: chosen.connectorSegments,
+      });
+      straightRunLength = placed.straightRunLength;
+    } else {
+      straightRunLength = placed.straightRunLength;
+    }
     source = placed;
     face = null;
   }
@@ -1927,7 +1979,11 @@ function centerCanvasOnPlacement(tiles, placementId) {
  * unión de hasta cuatro caminos simples; asignar un rayo diferente a cada
  * camino garantiza conectores físicos cortos y ausencia de cruces.
  */
-function createGuaranteedRadialLayout(table, connectionClearance) {
+function createGuaranteedRadialLayout(
+  table,
+  connectionClearance,
+  { compact = true } = {},
+) {
   const rawByPlacementId = rawTilesByPlacementId(table);
   const ordered = orderedRawTiles(table);
   const special = ordered.find((tile) => tile.isSpecialDouble) ?? null;
@@ -1950,6 +2006,7 @@ function createGuaranteedRadialLayout(table, connectionClearance) {
     protectedExitsPreserved: true,
   };
   tileByPlacementId.set(anchor.placementId, anchor);
+  const occupiedConnections = [];
 
   const mainIds = table.mainLine.placementIds;
   const anchorIndex = mainIds.indexOf(anchor.placementId);
@@ -1965,6 +2022,8 @@ function createGuaranteedRadialLayout(table, connectionClearance) {
     direction: "left",
     tileByPlacementId,
     connectionClearance,
+    occupiedConnections,
+    compact,
   });
   placeGuaranteedArm({
     rawTiles: rightTiles,
@@ -1972,6 +2031,8 @@ function createGuaranteedRadialLayout(table, connectionClearance) {
     direction: "right",
     tileByPlacementId,
     connectionClearance,
+    occupiedConnections,
+    compact,
   });
 
   const family = table.branchFamilies.find(
@@ -1988,6 +2049,8 @@ function createGuaranteedRadialLayout(table, connectionClearance) {
       tileByPlacementId,
       connectionClearance,
       rootFace: { ...arm.origin, side: sidesFor(direction).end },
+      occupiedConnections,
+      compact,
     });
   }
 
@@ -1999,61 +2062,42 @@ function createGuaranteedRadialLayout(table, connectionClearance) {
     0,
     connectionClearance,
   );
-  layout.layoutStats.reconstructedRadially = true;
+  layout.layoutStats.fallbackTriggered = true;
+  layout.layoutStats.fallbackReason = compact
+    ? "HISTORICAL_REPLAY_BUDGET_EXHAUSTED"
+    : "COMPACT_FALLBACK_EXHAUSTED";
+  layout.layoutStats.reconstructedRadially = !compact;
+  layout.layoutStats.topologyPreserved = true;
   return layout;
 }
 
-function locateNewTile(table, newPlacementId, tileByPlacementId) {
-  const rawMain = table.mainLine.tiles;
-  const mainIndex = rawMain.findIndex(
-    (tile) => tile.placementId === newPlacementId,
+function locateHistoricalTile(
+  table,
+  rawTile,
+  openingPlacementId,
+  tileByPlacementId,
+) {
+  const startIsConnected = rawTile.start.neighborPlacementId !== null &&
+    tileByPlacementId.has(rawTile.start.neighborPlacementId);
+  const endIsConnected = rawTile.end.neighborPlacementId !== null &&
+    tileByPlacementId.has(rawTile.end.neighborPlacementId);
+  if (startIsConnected === endIsConnected) return null;
+  const oriented = startIsConnected ? rawTile : reverseTile(rawTile);
+  const source = tileByPlacementId.get(oriented.start.neighborPlacementId);
+  const route = routeForHistoricalTile(
+    table,
+    rawTile,
+    openingPlacementId,
+    tileByPlacementId,
   );
-  if (mainIndex >= 0) {
-    if (mainIndex === 0 && rawMain.length > 1) {
-      const sourceRaw = rawMain[1];
-      return {
-        rawTile: reverseTile(rawMain[0]),
-        source: tileByPlacementId.get(sourceRaw.placementId),
-        connectionId: table.mainLine.connectionIds[0],
-        initialDirection: "left",
-      };
-    }
-    if (mainIndex === rawMain.length - 1 && mainIndex > 0) {
-      const sourceRaw = rawMain[mainIndex - 1];
-      return {
-        rawTile: rawMain[mainIndex],
-        source: tileByPlacementId.get(sourceRaw.placementId),
-        connectionId: table.mainLine.connectionIds[mainIndex - 1],
-        initialDirection: "right",
-      };
-    }
-    return null;
-  }
-
-  for (const family of table.branchFamilies) {
-    const root = tileByPlacementId.get(family.rootPlacementId);
-    for (const arm of family.arms) {
-      const index = arm.tiles.findIndex(
-        (tile) => tile.placementId === newPlacementId,
-      );
-      if (index < 0 || index !== arm.tiles.length - 1) continue;
-      return {
-        rawTile: arm.tiles[index],
-        source: index === 0
-          ? root
-          : tileByPlacementId.get(arm.tiles[index - 1].placementId),
-        connectionId: arm.connectionIds[index],
-        initialDirection: branchDirection(root, arm.armIndex),
-        rootFace: index === 0
-          ? {
-              ...arm.origin,
-              side: sidesFor(branchDirection(root, arm.armIndex)).end,
-            }
-          : null,
-      };
-    }
-  }
-  return null;
+  return {
+    rawTile: oriented,
+    source,
+    connectionId: oriented.start.connectionId,
+    initialDirection: route.initialDirection,
+    sectorOrigin: route.sectorOrigin,
+    rootFace: route.rootFace,
+  };
 }
 
 function extendLayout(table, previousLayout, connectionClearance) {
@@ -2066,23 +2110,27 @@ function extendLayout(table, previousLayout, connectionClearance) {
     return [refreshed.placementId, refreshed];
   }));
   let turnCount = previousLayout.layoutStats.turnCount;
+  const occupiedConnections = flattenLayoutConnections(
+    previousLayout.connections,
+  );
+  const openingPlacementId = orderedRawTiles(table)[0]?.placementId;
+  const missingTiles = orderedRawTiles(table).filter(
+    (tile) => !tileByPlacementId.has(tile.placementId),
+  );
 
-  if (currentRawTiles.size > tileByPlacementId.size) {
-    const newPlacementId = [...currentRawTiles.keys()].find(
-      (placementId) => !tileByPlacementId.has(placementId),
+  // Si Tradicional estuvo oculto, aplica todas las jugadas perdidas una por
+  // una sobre el mismo mundo. Ninguna ficha anterior cambia de coordenadas.
+  for (const rawTile of missingTiles) {
+    const extension = locateHistoricalTile(
+      table,
+      rawTile,
+      openingPlacementId,
+      tileByPlacementId,
     );
-    const extension = locateNewTile(table, newPlacementId, tileByPlacementId);
     if (!extension?.source) return null;
     const sourceFace = extension.rootFace ??
       faceForConnection(extension.source, extension.connectionId);
     const currentDirection = directionForSide(sourceFace.side);
-    const openingPlacementId = orderedRawTiles(table)[0]?.placementId;
-    const route = routeForHistoricalTile(
-      table,
-      extension.rawTile,
-      openingPlacementId,
-      tileByPlacementId,
-    );
     const protectedExits = collectProtectedReplayExits(
       table,
       currentRawTiles,
@@ -2093,9 +2141,9 @@ function extendLayout(table, previousLayout, connectionClearance) {
       extension.source,
       sourceFace,
       currentDirection,
-      route.initialDirection,
+      extension.initialDirection,
       [...tileByPlacementId.values()],
-      flattenLayoutConnections(previousLayout.connections),
+      occupiedConnections,
       true,
       connectionClearance,
       previousLayout.softCenter,
@@ -2103,12 +2151,18 @@ function extendLayout(table, previousLayout, connectionClearance) {
         ? extension.source.straightRunLength ?? 1
         : 0,
       {
-        sectorOrigin: route.sectorOrigin,
+        sectorOrigin: extension.sectorOrigin,
         protectedExits,
       },
     );
     if (chosen.direction !== currentDirection) turnCount += 1;
-    tileByPlacementId.set(newPlacementId, chosen.tile);
+    tileByPlacementId.set(rawTile.placementId, chosen.tile);
+    occupiedConnections.push({
+      id: extension.connectionId,
+      firstPlacementId: extension.source.placementId,
+      secondPlacementId: chosen.tile.placementId,
+      segments: chosen.connectorSegments,
+    });
   }
 
   const size = expandStableCanvas(
@@ -2121,12 +2175,13 @@ function extendLayout(table, previousLayout, connectionClearance) {
     size,
     turnCount,
     connectionClearance,
+    { extendedWhileHidden: missingTiles.length },
   );
 }
 
 /**
- * Geometría visual descartable. `previousLayout` permite crecer una sola ficha
- * sin recolocar ni reorientar las ya vistas durante la sesión.
+ * Geometría visual descartable. `previousLayout` permite incorporar una o
+ * varias fichas no observadas sin recolocar ni reorientar las ya vistas.
  */
 export function createTraditionalSnakeLayout(
   table,
