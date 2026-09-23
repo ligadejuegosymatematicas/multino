@@ -9,17 +9,25 @@ import {
 
 const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
 const main = await readFile(new URL("../../src/js/main.js", import.meta.url), "utf8");
+const theme = await readFile(new URL("../../src/css/theme.css", import.meta.url), "utf8");
 
 test("la marca pública usa los assets oficiales y una configuración única", () => {
   assert.equal(APP_NAME, "MULTINÓ");
   assert.equal(createWebManifest().name, APP_NAME);
-  assert.match(html, /MULTINO_logo_oficial_original_transparente\.svg/);
+  assert.match(html, /multino_logo_vector_v8\.svg/);
   assert.match(html, /MULTINO_isotipo_oficial_original_transparente\.svg/);
   assert.match(html, /data-app-name/);
   assert.match(main, /element\.textContent = APP_NAME/);
   assert.doesNotMatch(html, /brand-mark/);
   assert.doesNotMatch(html, /Jugar MULTINÓ/);
   assert.match(html, /Elige cómo jugar/);
+  assert.match(html, /Dominó, estrategia y múltiplos\./);
+  assert.doesNotMatch(html, /Órbita|Vector/);
+  assert.match(theme, /\.team-badge\[data-team-id="B"\]/);
+  assert.match(theme, /--team-a:\s*#a98cff/);
+  assert.match(theme, /--team-b:\s*#ff9278/);
+  assert.doesNotMatch(theme, /--team-a:\s*var\(--playable\)/);
+  assert.doesNotMatch(theme, /--team-b:\s*var\(--scoring\)/);
 });
 
 test("crear sala no solicita un nombre o código y el lobby ofrece ambas copias", () => {

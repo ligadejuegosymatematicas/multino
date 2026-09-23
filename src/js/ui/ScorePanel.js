@@ -22,8 +22,17 @@ export function renderScorePanel(container, view, { feedback = null } = {}) {
     const hasAward = feedback?.teamId === team.teamId &&
       feedback.scoreAwarded > 0;
     item.classList.toggle("is-score-feedback", hasAward);
+    item.dataset.teamId = team.teamId;
     const name = document.createElement("span");
-    name.textContent = team.displayName;
+    name.className = "score-team__identity";
+    const badge = document.createElement("span");
+    badge.className = "team-badge";
+    badge.dataset.teamId = team.teamId;
+    badge.textContent = team.teamId;
+    badge.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.textContent = team.displayName;
+    name.append(badge, label);
     const score = document.createElement("strong");
     const displayedScore = getDisplayedTeamScore(team, feedback);
     score.textContent = String(displayedScore);

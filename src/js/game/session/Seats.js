@@ -115,12 +115,12 @@ export function participantsFromSeats(seats) {
       {
         id: "A",
         playerIds: normalized.filter((seat) => seat.teamId === "A").map((seat) => seat.seatId),
-        displayName: "Órbita",
+        displayName: "Equipo A",
       },
       {
         id: "B",
         playerIds: normalized.filter((seat) => seat.teamId === "B").map((seat) => seat.seatId),
-        displayName: "Vector",
+        displayName: "Equipo B",
       },
     ],
     seating: {

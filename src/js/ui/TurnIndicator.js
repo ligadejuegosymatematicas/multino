@@ -18,11 +18,17 @@ export function renderTurnPanel(container, view, { emphasize = false } = {}) {
     avatar.textContent = player.displayName.slice(0, 1).toLocaleUpperCase("es");
     const identity = document.createElement("span");
     identity.className = "player-status__identity";
+    const nameRow = document.createElement("span");
+    nameRow.className = "player-status__name-row";
+    const badge = document.createElement("span");
+    badge.className = "team-badge";
+    badge.dataset.teamId = player.teamId;
+    badge.textContent = player.teamId;
+    badge.setAttribute("aria-label", `Equipo ${player.teamId}`);
     const name = document.createElement("strong");
     name.textContent = player.displayName;
-    const team = document.createElement("small");
-    team.textContent = view.participants.teams[teamIndex]?.displayName ?? player.teamId;
-    identity.append(name, team);
+    nameRow.append(badge, name);
+    identity.append(nameRow);
     const remaining = document.createElement("span");
     remaining.className = "player-status__remaining";
     remaining.setAttribute(

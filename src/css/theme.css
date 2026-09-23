@@ -15,8 +15,10 @@
   --playable: #27dec5;
   --playable-deep: #087e73;
   --scoring: #f3c44f;
-  --team-a: #45d6c2;
-  --team-b: #c59a57;
+  --team-a: #a98cff;
+  --team-a-deep: #5d43b6;
+  --team-b: #ff9278;
+  --team-b-deep: #9f422f;
   --radius-sm: 0.55rem;
   --radius-md: 0.9rem;
   --radius-lg: 1.25rem;
@@ -221,18 +223,38 @@ body {
   min-width: 0;
 }
 
+.player-status__name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.team-badge {
+  display: inline-grid;
+  width: 1.18rem;
+  min-width: 1.18rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--team-a) 72%, white);
+  border-radius: 50%;
+  color: #fff;
+  background: var(--team-a-deep);
+  font-size: 0.62rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.team-badge[data-team-id="B"] {
+  border-color: color-mix(in srgb, var(--team-b) 72%, white);
+  border-radius: 0.22rem;
+  background: var(--team-b-deep);
+}
+
 .player-status__identity strong {
   overflow: hidden;
   color: var(--club-text);
   font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.player-status__identity small {
-  overflow: hidden;
-  color: var(--club-muted);
-  font-size: 0.56rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -264,6 +286,17 @@ body {
   background: rgb(0 0 0 / 0.18);
 }
 .score-team strong { color: var(--club-ivory); }
+.score-team__identity {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.28rem;
+}
+.score-team__identity > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .scoring-panel { color: var(--club-ivory); }
 .scoring-detail,
 .score-no-award { color: var(--club-muted); }
@@ -428,8 +461,9 @@ body {
     text-align: center;
   }
   .player-status__avatar { width: 1.15rem; }
-  .player-status__identity small { display: none; }
   .player-status__identity strong { max-width: 4.2rem; font-size: 0.65rem; }
+  .player-status__name-row { justify-content: center; gap: 0.15rem; }
+  .player-status .team-badge { width: 1rem; min-width: 1rem; font-size: 0.55rem; }
   .player-status__remaining { font-size: 0.58rem; }
   .player-status::after { inset-inline: 0.25rem; }
   .score-panel { min-width: 9.5rem; }
@@ -452,7 +486,6 @@ body {
   .player-status__avatar { width: 1.15rem; }
   .player-status__identity strong { font-size: 0.7rem; }
   .player-status__remaining { font-size: 0.64rem; }
-  .player-status__identity small { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

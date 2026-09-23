@@ -500,7 +500,7 @@ function renderOnlineLobby(session) {
     const isSelf = seat.userId === session.userId;
     title.textContent = `${seat.nick}${isSelf ? " · tú" : ""}`;
     const detail = document.createElement("small");
-    detail.textContent = `Asiento ${seat.seatIndex + 1} · ${seat.teamId === "A" ? "Órbita" : "Vector"} · ${seat.controlType === "CPU" ? "CPU" : seat.connectionState === "CONNECTED" ? "conectado" : "libre"}`;
+    detail.textContent = `Asiento ${seat.seatIndex + 1} · Equipo ${seat.teamId} · ${seat.controlType === "CPU" ? "CPU" : seat.connectionState === "CONNECTED" ? "conectado" : "libre"}`;
     identity.append(title, detail);
     item.append(identity);
     const mayToggle = isHost && (!seat.userId || isSelf) && seat.seatIndex !== 0;

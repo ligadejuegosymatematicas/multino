@@ -21,6 +21,10 @@ test("la mesa fija cuatro asientos y equipos alternados", () => {
     participantsFromSeats(seats).teams.map((team) => team.playerIds),
     [["seat-1", "seat-3"], ["seat-2", "seat-4"]],
   );
+  assert.deepEqual(
+    participantsFromSeats(seats).teams.map((team) => team.displayName),
+    ["Equipo A", "Equipo B"],
+  );
 });
 
 for (const humanCount of [1, 2, 3, 4]) {
