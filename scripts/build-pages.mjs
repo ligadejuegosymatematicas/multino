@@ -2,6 +2,8 @@ import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createWebManifest } from "../src/js/config/AppConfig.js";
+
 await import("../runtime-config.js");
 
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -37,6 +39,13 @@ export async function buildPages() {
   await cp(resolve(projectRoot, "src"), resolve(outputRoot, "src"), {
     recursive: true,
   });
+  await cp(resolve(projectRoot, "assets"), resolve(outputRoot, "assets"), {
+    recursive: true,
+  });
+  await writeFile(
+    resolve(outputRoot, "manifest.webmanifest"),
+    `${JSON.stringify(createWebManifest(), null, 2)}\n`,
+  );
   await writeFile(resolve(outputRoot, "runtime-config.js"), publicRuntimeConfig());
   await writeFile(resolve(outputRoot, ".nojekyll"), "");
   await cp(resolve(outputRoot, "index.html"), resolve(outputRoot, "404.html"));

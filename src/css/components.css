@@ -43,6 +43,33 @@
   width: min(100%, 28rem);
 }
 
+.brand-showcase {
+  display: grid;
+  min-height: 8.2rem;
+  padding: 0.75rem 1.1rem;
+  place-items: center;
+  border: 1px solid rgb(197 154 87 / 0.42);
+  border-radius: 1rem;
+  background: var(--club-ivory);
+}
+
+.brand-showcase--compact {
+  min-height: 6.4rem;
+  padding-block: 0.55rem;
+}
+
+.brand-logo {
+  display: block;
+  width: min(100%, 12.5rem);
+  max-height: 7rem;
+  object-fit: contain;
+}
+
+.brand-showcase--compact .brand-logo {
+  width: min(100%, 9.5rem);
+  max-height: 5.4rem;
+}
+
 .entry-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -52,6 +79,32 @@
 .online-form {
   display: grid;
   gap: 0.8rem;
+}
+
+.online-create-block,
+.online-join-block {
+  display: grid;
+  align-items: end;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(197 154 87 / 0.34);
+  border-radius: 0.8rem;
+  background: rgb(0 0 0 / 0.14);
+}
+
+.online-create-block {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.online-create-block > span {
+  align-self: center;
+  color: var(--club-ivory);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.online-join-block {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .setup-field input {
@@ -75,10 +128,23 @@
   background: var(--surface-soft);
 }
 
+.online-room-code > span {
+  color: var(--club-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .online-room-code strong {
   color: var(--teal-dark);
   font-size: 1.2rem;
   letter-spacing: 0.12em;
+}
+
+.online-room-code__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
 }
 
 .online-seat-list {
@@ -1295,6 +1361,25 @@
     padding: 1rem;
   }
 
+  .brand-showcase {
+    min-height: 6.6rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .brand-showcase--compact {
+    min-height: 5.25rem;
+  }
+
+  .brand-logo {
+    width: min(100%, 9.5rem);
+    max-height: 5.6rem;
+  }
+
+  .brand-showcase--compact .brand-logo {
+    width: min(100%, 7.6rem);
+    max-height: 4.3rem;
+  }
+
   .entry-actions {
     grid-template-columns: 1fr;
   }
@@ -1303,8 +1388,18 @@
     grid-template-columns: auto 1fr;
   }
 
-  .online-room-code .secondary-action {
+  .online-room-code__actions {
     grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .online-room-code__actions .secondary-action {
+    flex: 1 1 8rem;
+  }
+
+  .online-create-block,
+  .online-join-block {
+    grid-template-columns: 1fr;
   }
 
   .seat-grid {

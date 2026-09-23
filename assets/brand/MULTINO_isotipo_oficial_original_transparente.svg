@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="760" height="730" viewBox="120 20 760 730"
+     role="img" aria-labelledby="title desc">
+  <title id="title">MULTINÓ</title>
+  <desc id="desc">Logo vectorial MULTINÓ basado directamente en v5: K7 con siete vértices y siete lazos; el lazo del vértice 5 está en dorado y la ficha 2|3 está integrada en su arista exterior.</desc>
+
+  <style>
+    /* Palette: navy, gold, ivory only. No background element: true transparency. */
+    #edges line {
+      stroke: #123451;
+      stroke-width: 5;
+      stroke-linecap: round;
+      opacity: .78;
+      vector-effect: non-scaling-stroke;
+    }
+    #loops .loop {
+      fill: none;
+      stroke: #123451;
+      stroke-width: 11;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+    #loops .selected {
+      stroke: #D8A51D;
+      stroke-width: 12;
+    }
+    #vertices circle {
+      fill: #123451;
+      stroke: #123451;
+      stroke-width: 3;
+      vector-effect: non-scaling-stroke;
+    }
+
+    #domino-2-3 .tile {
+      fill: none;
+      stroke: #123451;
+      stroke-width: 5.2;
+      vector-effect: non-scaling-stroke;
+    }
+    #domino-2-3 .divider {
+      stroke: #123451;
+      stroke-width: 4.2;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+    #domino-2-3 .pip { fill: #123451; }
+    #wordmark {
+      font-family: "Montserrat", "Avenir Next", "Futura", "Trebuchet MS", sans-serif;
+      font-size: 132px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-anchor: middle;
+    }
+    #wordmark .navy { fill: #123451; }
+    #wordmark .gold { fill: #D8A51D; }
+  </style>
+
+  <!-- 21 edges of K7, exactly one for every unordered pair i<j -->
+  <g id="edges">
+    <line id="edge-0-1" x1="500.00" y1="110.00" x2="722.82" y2="217.31" />
+    <line id="edge-0-2" x1="500.00" y1="110.00" x2="777.85" y2="458.42" />
+    <line id="edge-0-3" x1="500.00" y1="110.00" x2="623.66" y2="651.78" />
+    <line id="edge-0-4" x1="500.00" y1="110.00" x2="376.34" y2="651.78" />
+    <line id="edge-0-5" x1="500.00" y1="110.00" x2="222.15" y2="458.42" />
+    <line id="edge-0-6" x1="500.00" y1="110.00" x2="277.18" y2="217.31" />
+    <line id="edge-1-2" x1="722.82" y1="217.31" x2="777.85" y2="458.42" />
+    <line id="edge-1-3" x1="722.82" y1="217.31" x2="623.66" y2="651.78" />
+    <line id="edge-1-4" x1="722.82" y1="217.31" x2="376.34" y2="651.78" />
+    <line id="edge-1-5" x1="722.82" y1="217.31" x2="222.15" y2="458.42" />
+    <line id="edge-1-6" x1="722.82" y1="217.31" x2="277.18" y2="217.31" />
+    <!-- connection 2-3: two visible edge segments plus integrated domino -->
+    <line id="edge-2-3-a" data-connection="2-3" x1="777.85" y1="458.42" x2="742.22175250" y2="503.09914869" />
+    <line id="edge-2-3-b" data-connection="2-3" x1="659.28824750" y1="607.10085131" x2="623.66" y2="651.78" />
+    <line id="edge-2-4" x1="777.85" y1="458.42" x2="376.34" y2="651.78" />
+    <line id="edge-2-5" x1="777.85" y1="458.42" x2="222.15" y2="458.42" />
+    <line id="edge-2-6" x1="777.85" y1="458.42" x2="277.18" y2="217.31" />
+    <line id="edge-3-4" x1="623.66" y1="651.78" x2="376.34" y2="651.78" />
+    <line id="edge-3-5" x1="623.66" y1="651.78" x2="222.15" y2="458.42" />
+    <line id="edge-3-6" x1="623.66" y1="651.78" x2="277.18" y2="217.31" />
+    <line id="edge-4-5" x1="376.34" y1="651.78" x2="222.15" y2="458.42" />
+    <line id="edge-4-6" x1="376.34" y1="651.78" x2="277.18" y2="217.31" />
+    <line id="edge-5-6" x1="222.15" y1="458.42" x2="277.18" y2="217.31" />
+  </g>
+
+  <!-- Exactly seven self-loops; only loop 5 is gold -->
+  <g id="loops">
+    <path id="loop-0" class="loop" d="M 510.50 87.00 C 547.00 33.00, 453.00 33.00, 489.50 87.00" />
+    <path id="loop-1" class="loop" d="M 747.35 211.17 C 812.33 206.04, 753.72 132.55, 734.26 194.76" />
+    <path id="loop-2" class="loop" d="M 797.94 473.77 C 842.47 521.37, 863.38 429.73, 802.61 453.30" />
+    <path id="loop-3" class="loop" d="M 624.18 677.05 C 614.72 741.54, 699.41 700.76, 643.10 667.94" />
+    <path id="loop-4" class="loop" d="M 356.90 667.94 C 300.59 700.76, 385.28 741.54, 375.82 677.05" />
+    <path id="loop-5" class="loop selected" d="M 197.39 453.30 C 136.62 429.73, 157.53 521.37, 202.06 473.77" />
+    <path id="loop-6" class="loop" d="M 265.74 194.76 C 246.28 132.55, 187.67 206.04, 252.65 211.17" />
+  </g>
+
+
+  <!-- Integrated 2|3 domino: 55% of the original exterior edge 2-3 -->
+  <g id="domino-2-3" transform="translate(700.75 555.10) rotate(128.56972)">
+    <rect class="tile" x="-68.01" y="-21.50" width="136.02" height="43.00" rx="11"/>
+    <line class="divider" x1="0" y1="-16.50" x2="0" y2="16.50"/>
+    <g id="pips-2" aria-label="2">
+      <circle class="pip" cx="-44.01" cy="-8" r="5.2"/>
+      <circle class="pip" cx="-24.01" cy="8" r="5.2"/>
+    </g>
+    <g id="pips-3" aria-label="3">
+      <circle class="pip" cx="22.01" cy="-9" r="5.2"/>
+      <circle class="pip" cx="34.01" cy="0" r="5.2"/>
+      <circle class="pip" cx="46.01" cy="9" r="5.2"/>
+    </g>
+  </g>
+
+  <!-- Exactly seven vertices -->
+  <g id="vertices">
+    <circle id="vertex-0" cx="500.00" cy="110.00" r="24" />
+    <circle id="vertex-1" cx="722.82" cy="217.31" r="24" />
+    <circle id="vertex-2" cx="777.85" cy="458.42" r="24" />
+    <circle id="vertex-3" cx="623.66" cy="651.78" r="24" />
+    <circle id="vertex-4" cx="376.34" cy="651.78" r="24" />
+    <circle id="vertex-5" cx="222.15" cy="458.42" r="24" />
+    <circle id="vertex-6" cx="277.18" cy="217.31" r="24" />
+  </g>
+
+  <!-- Separated wordmark: only Ó is gold -->
+</svg>

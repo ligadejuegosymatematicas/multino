@@ -106,6 +106,12 @@ const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
 document.title = APP_NAME;
 document.querySelector("#app-title").textContent = APP_NAME;
+for (const element of document.querySelectorAll("[data-app-name]")) {
+  element.textContent = APP_NAME;
+}
+for (const element of document.querySelectorAll("[data-app-name-alt]")) {
+  element.alt = APP_NAME;
+}
 const runtimeConfig = getRuntimeConfig();
 document.querySelector("#online-availability").textContent = runtimeConfig.onlineEnabled
   ? "Salas privadas online disponibles."
@@ -794,6 +800,15 @@ document.querySelector("#copy-room-link-action").addEventListener(
     url.searchParams.set("room", roomCode);
     await navigator.clipboard.writeText(url.href);
     onlineStatus.textContent = "Enlace copiado.";
+  }),
+);
+
+document.querySelector("#copy-room-code-action").addEventListener(
+  "click",
+  () => void withOnlineBusy(async () => {
+    const roomCode = onlineSessionController.getPresentation().room.roomCode;
+    await navigator.clipboard.writeText(roomCode);
+    onlineStatus.textContent = "Código copiado.";
   }),
 );
 

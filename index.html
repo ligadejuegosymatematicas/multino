@@ -3,8 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Dominó múltiplo de 5 jugable en modos Tradicional, Puertos y Grafo.">
-    <title>Juego de dominó</title>
+    <meta name="description" content="MULTINÓ: dominó por equipos donde las puntas múltiplos de 5 puntúan.">
+    <meta name="theme-color" content="#071b1b">
+    <meta name="apple-mobile-web-app-title" content="MULTINÓ">
+    <title>MULTINÓ</title>
+    <link rel="icon" href="./assets/brand/multino_favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="./assets/brand/multino_isotipo_original_180x180.png">
+    <link rel="manifest" href="./manifest.webmanifest">
     <link rel="stylesheet" href="./src/css/base.css">
     <link rel="stylesheet" href="./src/css/layout.css">
     <link rel="stylesheet" href="./src/css/board.css">
@@ -18,16 +23,21 @@
     <main id="main-content" class="app-shell">
       <header class="app-header">
         <div class="brand-lockup">
-          <span class="brand-mark" aria-hidden="true"><i></i></span>
-          <h1 id="app-title">Juego de dominó</h1>
+          <span class="brand-isotype-frame" aria-hidden="true">
+            <img class="brand-isotype" src="./assets/brand/MULTINO_isotipo_oficial_original_transparente.svg" alt="">
+          </span>
+          <h1 id="app-title">MULTINÓ</h1>
         </div>
         <p id="session-badge" class="session-badge">Múltiplos de 5</p>
       </header>
 
       <section id="entry-screen" class="setup-screen" aria-labelledby="entry-heading">
         <div class="setup-card entry-card">
+          <div class="brand-showcase">
+            <img class="brand-logo" src="./assets/brand/MULTINO_logo_oficial_original_transparente.svg" alt="MULTINÓ" data-app-name-alt>
+          </div>
           <div>
-            <h2 id="entry-heading">Jugar MULTINÓ</h2>
+            <h2 id="entry-heading">Jugar <span data-app-name>MULTINÓ</span></h2>
             <p class="setup-intro">Siempre cuatro jugadores, dos equipos y asientos alternados.</p>
           </div>
           <div class="entry-actions">
@@ -40,6 +50,9 @@
 
       <section id="online-screen" class="setup-screen" aria-labelledby="online-heading" hidden>
         <div class="setup-card online-card">
+          <div class="brand-showcase brand-showcase--compact">
+            <img class="brand-logo" src="./assets/brand/MULTINO_logo_oficial_original_transparente.svg" alt="MULTINÓ" data-app-name-alt>
+          </div>
           <div>
             <h2 id="online-heading">Sala online</h2>
             <p id="online-status" class="setup-intro" aria-live="polite">Crea una sala privada o abre una invitación.</p>
@@ -50,21 +63,27 @@
               <span>Tu nick</span>
               <input id="online-nick" name="nick" maxlength="24" autocomplete="nickname" required>
             </label>
-            <label class="setup-field" for="online-room-code">
-              <span>Código de sala</span>
-              <input id="online-room-code" name="room-code" maxlength="8" autocomplete="off" placeholder="ABCDE">
-            </label>
-            <div class="entry-actions">
+            <div class="online-create-block">
+              <span>Crear una sala privada</span>
               <button id="create-room-action" type="button" class="primary-action">Crear sala</button>
+            </div>
+            <div class="online-join-block">
+              <label class="setup-field" for="online-room-code">
+                <span>Unirse con código</span>
+                <input id="online-room-code" name="room-code" maxlength="8" autocomplete="off" placeholder="ABCDE">
+              </label>
               <button id="join-room-action" type="submit" class="secondary-action">Unirse</button>
             </div>
           </form>
 
           <section id="online-lobby" class="online-lobby" hidden aria-label="Lobby online">
             <div class="online-room-code">
-              <span>Sala</span>
+              <span>Código de sala</span>
               <strong id="online-room-code-value"></strong>
-              <button id="copy-room-link-action" type="button" class="secondary-action">Copiar enlace</button>
+              <div class="online-room-code__actions">
+                <button id="copy-room-code-action" type="button" class="secondary-action">Copiar código</button>
+                <button id="copy-room-link-action" type="button" class="secondary-action">Copiar enlace</button>
+              </div>
             </div>
             <ol id="online-seat-list" class="online-seat-list"></ol>
             <label class="setup-field" for="online-round-mode">
@@ -83,6 +102,9 @@
 
       <section id="setup-screen" class="setup-screen" aria-labelledby="setup-heading" hidden>
         <form id="setup-form" class="setup-card">
+          <div class="brand-showcase brand-showcase--compact">
+            <img class="brand-logo" src="./assets/brand/MULTINO_logo_oficial_original_transparente.svg" alt="MULTINÓ" data-app-name-alt>
+          </div>
           <div>
             <h2 id="setup-heading">Nueva partida</h2>
             <p class="setup-intro">Elige la estructura de la ronda y cómo quieres ver el tablero.</p>
