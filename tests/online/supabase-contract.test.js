@@ -123,3 +123,16 @@ test("la autoridad entrega fotogramas confirmados sin temporizar la CPU", async 
   assert.match(shared, /reconstructAuthoritativeFrames/);
   assert.doesNotMatch(action + shared, /setTimeout|sleep\s*\(|delay\s*\(/);
 });
+
+test("el deploy manual publica solo game-action sin secretos en el repo", async () => {
+  const workflow = await readFile(
+    new URL("../../.github/workflows/deploy-game-action.yml", import.meta.url),
+    "utf8",
+  );
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /supabase\/setup-cli@v1/);
+  assert.match(workflow, /secrets\.SUPABASE_ACCESS_TOKEN/);
+  assert.match(workflow, /functions deploy game-action --project-ref/);
+  assert.match(workflow, /kefdfpalennsnnfnjwpc/);
+  assert.doesNotMatch(workflow, /service.role|SERVICE_ROLE|db push|migration|room-lobby/i);
+});
