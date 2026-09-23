@@ -877,3 +877,36 @@ test("GraphRenderer y GraphScene consumen proyecciones sin leer board", async ()
     assert.doesNotMatch(source, /\bstate\.board\b|\bview\.board\b/);
   }
 });
+
+test("Grafo comparte la gramática ↗, ×m y x/7 de Puertos", () => {
+  const state = createOrdinaryAndCrossDecisionState();
+  const view = projectGraphView(state);
+  const decisions = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const scene = createGraphScene(view, {
+    selectedDominoId: "1-6",
+    legalTargets: getLegalTargetsForDomino(
+      state,
+      state.currentPlayerId,
+      "1-6",
+    ),
+    strategicDecisions: decisions,
+  });
+  const markup = renderGraphSvgMarkup(scene);
+  const six = scene.vertices.find((vertex) => vertex.value === 6);
+  const expectedMultiplicity = view.scoringPresentation.terms
+    .filter((term) => term.value === 6)
+    .reduce((sum, term) => sum + term.factor, 0);
+
+  assert.equal(six.openTargetCount, 2);
+  assert.equal(six.scoringMultiplicity, expectedMultiplicity);
+  assert.equal(six.playedTileCount, six.incidentPlacementIds.length);
+  assert.equal(six.totalTileCount, 7);
+  assert.match(markup, new RegExp(`data-vertex-value="6" data-open-target-count="2" data-scoring-multiplicity="${expectedMultiplicity}" data-played-tile-count="${six.playedTileCount}"`));
+  assert.match(markup, />↗ 2<\/text>/);
+  assert.match(markup, new RegExp(`>×${expectedMultiplicity}<\\/text>`));
+  assert.match(markup, new RegExp(`>▣ ${six.playedTileCount}\\/7<\\/text>`));
+});

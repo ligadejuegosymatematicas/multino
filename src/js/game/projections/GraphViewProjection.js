@@ -34,6 +34,8 @@ export function projectGraphView(state, playerId = state.currentPlayerId) {
     vertices: graph.vertices.map((vertex) => ({
       ...vertex,
       openTargetCount: openTargetCountByValue.get(vertex.value) ?? 0,
+      playedTileCount: vertex.incidentPlacementIds.length,
+      totalTileCount: 7,
     })),
     edges: graph.edges,
     topology,

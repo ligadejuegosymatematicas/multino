@@ -1076,3 +1076,13 @@ test("la vista terminal conserva Puertos y elimina jugadas", () => {
   );
   assert.equal(scene.canStart, false);
 });
+
+test("los indicadores estratégicos de Puertos conservan jerarquía móvil legible", async () => {
+  const css = await readFile(
+    new URL("../../src/css/ports.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(css, /\.port-macro-node__target-badge text \{[^}]*font-size:\s*34px/s);
+  assert.match(css, /\.port-macro-node__scoring-badge text \{[^}]*font-size:\s*34px/s);
+  assert.match(css, /\.port-macro-node__played \{[^}]*font-size:\s*12px/s);
+});

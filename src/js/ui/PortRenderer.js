@@ -169,8 +169,8 @@ function renderScoringMultiplicity(node) {
     : `×${displayedMultiplicity}`;
   return `
     <g class="port-macro-node__scoring-badge${previewActive ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-scoring-multiplicity="${displayedMultiplicity}" data-current-scoring-multiplicity="${node.scoringMultiplicity}"${node.isScoringFeedbackSource ? ` data-scoring-anchor-value="${node.value}"` : ""} aria-hidden="true">
-      <rect x="${node.x - 76}" y="${node.y - 61}" width="58" height="32" rx="16"></rect>
-      <text x="${node.x - 47}" y="${node.y - 45}">${transition}</text>
+      <rect x="${node.x - 88}" y="${node.y - 68}" width="76" height="48" rx="24"></rect>
+      <text x="${node.x - 50}" y="${node.y - 44}">${transition}</text>
     </g>`;
 }
 
@@ -194,8 +194,8 @@ function renderNode(node, isExpanded, hasDoubleHub, { showIncidences = false } =
       <circle class="port-macro-node__hit" cx="${node.x}" cy="${node.y}" r="70"></circle>
       <text class="port-macro-node__value" x="${node.x}" y="${node.y - 5}">${node.value}</text>
       <g class="port-macro-node__target-badge${node.displayTargetCount > 0 ? " has-targets" : " is-zero"}${node.isCompatible ? " is-compatible" : ""}" data-semantic="playability">
-        <rect x="${node.x + 27}" y="${node.y - 57}" width="44" height="28" rx="14"></rect>
-        <text x="${node.x + 49}" y="${node.y - 43}">↗ ${node.displayTargetCount}</text>
+        <rect x="${node.x + 12}" y="${node.y - 68}" width="76" height="48" rx="24"></rect>
+        <text x="${node.x + 50}" y="${node.y - 44}">↗ ${node.displayTargetCount}</text>
       </g>
       ${node.isCompatible && node.physicalCompatibleTargetCount > node.strategicDecisionCount
         ? `<text class="port-macro-node__equivalent-places" x="${node.x + 49}" y="${node.y - 22}">×${node.physicalCompatibleTargetCount} lugares</text>`

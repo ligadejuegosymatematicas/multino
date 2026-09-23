@@ -120,9 +120,9 @@ function renderVertex(vertex, hasSelection) {
       : "is-neutral";
   const count = vertex.legalTargetIds.length;
   const actionHint = count === 1
-    ? ", un destino compatible"
+    ? ", un lugar compatible"
     : count > 1
-      ? `, ${count} destinos compatibles; elija una curva`
+      ? `, ${count} lugares compatibles; elija una curva`
       : "";
   const displayedMultiplicity = vertex.previewScoringMultiplicity ??
     vertex.scoringMultiplicity;
@@ -132,14 +132,18 @@ function renderVertex(vertex, hasSelection) {
     : `×${displayedMultiplicity}`;
   const scoringMultiplicity = displayedMultiplicity > 0 ||
       vertex.scoringMultiplicity > 0
-    ? `<g class="graph-vertex__scoring-multiplicity${vertex.previewScoringMultiplicity !== null ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" aria-hidden="true"><circle cx="${vertex.x - 31}" cy="${vertex.y - 31}" r="16"></circle><text x="${vertex.x - 31}" y="${vertex.y - 31}">${multiplicityLabel}</text></g>`
+    ? `<g class="graph-vertex__scoring-multiplicity${vertex.previewScoringMultiplicity !== null ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-semantic="scoring" aria-hidden="true"><rect x="${vertex.x - 91}" y="${vertex.y - 68}" width="78" height="48" rx="24"></rect><text x="${vertex.x - 52}" y="${vertex.y - 44}">${multiplicityLabel}</text></g>`
     : "";
+  const targetClass = vertex.openTargetCount > 0 ? " has-targets" : " is-zero";
   return `
-    <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
-      <circle class="graph-vertex__touch" cx="${vertex.x}" cy="${vertex.y}" r="43"></circle>
+    <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}" data-open-target-count="${vertex.openTargetCount}" data-scoring-multiplicity="${displayedMultiplicity}" data-played-tile-count="${vertex.playedTileCount}"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}; ${vertex.openTargetCount} ${vertex.openTargetCount === 1 ? "lugar abierto" : "lugares abiertos"}; aporta ${displayedMultiplicity} ${displayedMultiplicity === 1 ? "vez" : "veces"} a Σ; ${vertex.playedTileCount} de ${vertex.totalTileCount} fichas salieron${actionHint}">
+      <circle class="graph-vertex__touch" cx="${vertex.x}" cy="${vertex.y}" r="50"></circle>
+      <circle class="graph-vertex__playability-ring${targetClass}" cx="${vertex.x}" cy="${vertex.y}" r="42"></circle>
       <circle class="graph-vertex__circle" cx="${vertex.x}" cy="${vertex.y}" r="35"></circle>
       <text class="graph-vertex__value" x="${vertex.x}" y="${vertex.y}">${vertex.value}</text>
+      <g class="graph-vertex__target-count${targetClass}" data-semantic="playability" aria-hidden="true"><rect x="${vertex.x + 13}" y="${vertex.y - 68}" width="78" height="48" rx="24"></rect><text x="${vertex.x + 52}" y="${vertex.y - 44}">↗ ${vertex.openTargetCount}</text></g>
       ${scoringMultiplicity}
+      <text class="graph-vertex__history" data-semantic="history" x="${vertex.x}" y="${vertex.y + 55}">▣ ${vertex.playedTileCount}/${vertex.totalTileCount}</text>
     </g>`;
 }
 
