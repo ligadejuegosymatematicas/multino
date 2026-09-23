@@ -108,3 +108,18 @@ test("la función servidor reutiliza el motor y no acepta snapshots del cliente"
   assert.doesNotMatch(action, /request\.json\(\).*gameState/s);
   assert.match(shared, /applyTurnAction/);
 });
+
+test("la autoridad entrega fotogramas confirmados sin temporizar la CPU", async () => {
+  const action = await readFile(
+    new URL("../../supabase/functions/game-action/index.ts", import.meta.url),
+    "utf8",
+  );
+  const shared = await readFile(
+    new URL("../../supabase/functions/_shared/authoritative-action.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(action, /presentationFrames/);
+  assert.match(action, /intent\.afterSequence/);
+  assert.match(shared, /reconstructAuthoritativeFrames/);
+  assert.doesNotMatch(action + shared, /setTimeout|sleep\s*\(|delay\s*\(/);
+});

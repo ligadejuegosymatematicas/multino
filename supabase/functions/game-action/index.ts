@@ -12,6 +12,7 @@ import {
 import {
   applyAuthenticatedIntent,
   drainServerCpuTurns,
+  reconstructAuthoritativeFrames,
 } from "../_shared/authoritative-action.js";
 import { getSupabaseServerEnvironment } from "../_shared/supabase-env.ts";
 
@@ -42,6 +43,36 @@ function serializeMoves(moves, seats) {
       : {},
     scoreDelta: move.result?.scoreAwarded ?? 0,
   }));
+}
+
+function projectMatch(state, seatId, version) {
+  return {
+    version,
+    publicMatch: createPublicOnlineState(state),
+    privateMatch: createPrivateOnlineState(state, seatId),
+  };
+}
+
+function presentationEnvelope(state, seatId, version, afterSequence) {
+  if (!Number.isSafeInteger(afterSequence)) return {};
+  const replay = reconstructAuthoritativeFrames(state, afterSequence);
+  return presentationEnvelopeFromStates(
+    replay.baseState,
+    replay.states,
+    seatId,
+    version,
+  );
+}
+
+function presentationEnvelopeFromStates(baseState, states, seatId, version) {
+  return {
+    presentationBase: projectMatch(baseState, seatId, version),
+    presentationFrames: states.map((frameState) => ({
+      sequence: frameState.history.at(-1)?.sequence ?? 0,
+      actorSeatId: frameState.history.at(-1)?.playerId ?? null,
+      match: projectMatch(frameState, seatId, version),
+    })),
+  };
 }
 
 Deno.serve(async (request) => {
@@ -98,6 +129,7 @@ Deno.serve(async (request) => {
         matchId: crypto.randomUUID(),
         mode: intent.mode,
       });
+      const presentationBaseState = state;
       const cpuSeatIds = new Set(
         seats.filter((seat) => seat.control_type === "CPU")
           .map((seat) => `seat-${seat.seat_index + 1}`),
@@ -130,9 +162,13 @@ Deno.serve(async (request) => {
       const seatId = `seat-${callerSeat.seat_index + 1}`;
       return response(200, {
         matchId: started?.[0]?.match_id,
-        version: started?.[0]?.version,
-        publicMatch: createPublicOnlineState(state),
-        privateMatch: createPrivateOnlineState(state, seatId),
+        ...projectMatch(state, seatId, started?.[0]?.version),
+        ...presentationEnvelopeFromStates(
+          presentationBaseState,
+          cpuResult.states,
+          seatId,
+          started?.[0]?.version,
+        ),
       });
     }
 
@@ -150,9 +186,13 @@ Deno.serve(async (request) => {
     if (intent?.type === "SYNC_MATCH") {
       return response(200, {
         matchId: match.id,
-        version: privateState.version,
-        publicMatch: createPublicOnlineState(privateState.state),
-        privateMatch: createPrivateOnlineState(privateState.state, seatId),
+        ...projectMatch(privateState.state, seatId, privateState.version),
+        ...presentationEnvelope(
+          privateState.state,
+          seatId,
+          privateState.version,
+          intent.afterSequence,
+        ),
       });
     }
     if (match.version !== expectedVersion || privateState.version !== expectedVersion) {
@@ -162,6 +202,7 @@ Deno.serve(async (request) => {
       });
     }
     let nextState = applyAuthenticatedIntent(privateState.state, seatId, intent);
+    const humanTransitionState = nextState;
     const { data: claimed, error: claimError } = await admin.rpc(
       "claim_match_transition",
       {
@@ -202,9 +243,13 @@ Deno.serve(async (request) => {
       return response(stale ? 409 : 500, { code: stale ? "STALE_VERSION" : "COMMIT_FAILED" });
     }
     return response(200, {
-      version: nextVersion,
-      publicMatch: createPublicOnlineState(nextState),
-      privateMatch: createPrivateOnlineState(nextState, seatId),
+      ...projectMatch(nextState, seatId, nextVersion),
+      ...presentationEnvelopeFromStates(
+        privateState.state,
+        [humanTransitionState, ...cpuResult.states],
+        seatId,
+        nextVersion,
+      ),
     });
   } catch (error) {
     return response(400, { code: error?.code ?? "INVALID_REQUEST", message: error?.message });

@@ -36,11 +36,14 @@ export class SupabaseGateway {
     return this.#invoke(this.lobbyEndpoint, intent);
   }
 
-  async syncMatch(roomCode) {
+  async syncMatch(roomCode, { afterSequence = null } = {}) {
     return this.sendIntent({
       roomCode,
       expectedVersion: null,
-      intent: { type: "SYNC_MATCH" },
+      intent: {
+        type: "SYNC_MATCH",
+        ...(Number.isSafeInteger(afterSequence) ? { afterSequence } : {}),
+      },
     });
   }
 

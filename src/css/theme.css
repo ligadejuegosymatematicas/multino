@@ -205,6 +205,15 @@ body {
   transform: translateY(-1px);
 }
 
+.turn-panel.is-presenting-turn .player-status.is-current {
+  animation: online-turn-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes online-turn-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgb(39 222 197 / 0.12), 0 0 0.75rem rgb(39 222 197 / 0.16); }
+  50% { box-shadow: 0 0 0 3px rgb(39 222 197 / 0.24), 0 0 1.15rem rgb(39 222 197 / 0.34); }
+}
+
 .player-status__avatar {
   display: grid;
   width: 1.8rem;
@@ -461,6 +470,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .turn-panel.is-presenting-turn .player-status.is-current { animation: none; }
   .player-status,
   .view-switch__button,
   .primary-action,

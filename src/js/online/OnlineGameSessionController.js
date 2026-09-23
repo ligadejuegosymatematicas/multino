@@ -35,11 +35,13 @@ export function createOnlineRoundPresentation({
   selectedDominoId = null,
   inspectedStructureId = null,
   inspectedPlacementId = null,
+  canInteract = true,
+  presentationQueue = null,
 } = {}) {
   const privateMatch = match?.privateMatch;
   const publicMatch = match?.publicMatch;
   if (!privateMatch?.render || !publicMatch) return null;
-  const ownTurn = publicMatch.phase === "playing" &&
+  const ownTurn = canInteract && publicMatch.phase === "playing" &&
     publicMatch.currentPlayerId === privateMatch.seatId;
   const selectedLegalTargets = ownTurn
     ? getSelectedTargets(privateMatch, selectedDominoId)
@@ -58,6 +60,7 @@ export function createOnlineRoundPresentation({
     ),
     isFinished: publicMatch.phase === "finished",
     sessionKind: "ONLINE",
+    presentationQueue,
     handPrivacy: {
       isRevealed: true,
       alwaysVisible: true,
@@ -68,6 +71,14 @@ export function createOnlineRoundPresentation({
       displayName: getCurrentDisplayName(privateMatch.render.graph),
     },
   };
+}
+
+function latestHistorySequence(match) {
+  return match?.publicMatch?.history?.at(-1)?.sequence ?? 0;
+}
+
+function engineSeatId(seat) {
+  return `seat-${seat.seat_index + 1}`;
 }
 
 export class OnlineGameSessionController {
@@ -81,6 +92,7 @@ export class OnlineGameSessionController {
     this.user = null;
     this.room = null;
     this.match = null;
+    this.authoritativeMatch = null;
     this.pendingRoomCode = "";
     this.viewMode = BOARD_VIEW_MODES.TRADITIONAL;
     this.selectedDominoId = null;
@@ -88,6 +100,12 @@ export class OnlineGameSessionController {
     this.inspectedPlacementId = null;
     this.unsubscribe = null;
     this.refreshPromise = null;
+    this.refreshRequested = false;
+    this.presentationQueue = [];
+    this.presentationPhase = "idle";
+    this.presentationActorSeatId = null;
+    this.lastQueuedSequence = 0;
+    this.lastPresentedSequence = 0;
   }
 
   async start({ roomCode = "" } = {}) {
@@ -115,6 +133,21 @@ export class OnlineGameSessionController {
       nick: seat.nick,
       connectionState: seat.connection_state,
     })).sort((first, second) => first.seatIndex - second.seatIndex);
+    const actorSeat = this.room?.room_seats?.find(
+      (seat) => engineSeatId(seat) === this.presentationActorSeatId,
+    ) ?? null;
+    const presentationBusy = this.presentationPhase !== "idle" ||
+      this.presentationQueue.length > 0;
+    const presentationQueue = {
+      phase: this.presentationPhase,
+      isBusy: presentationBusy,
+      pendingCount: this.presentationQueue.length,
+      actorSeatId: this.presentationActorSeatId,
+      actorName: actorSeat?.nick ?? null,
+      actorControlType: actorSeat?.control_type ?? null,
+      presentedSequence: this.lastPresentedSequence,
+      authoritativeSequence: latestHistorySequence(this.authoritativeMatch),
+    };
     return {
       screen: this.screen,
       room: this.room
@@ -131,11 +164,14 @@ export class OnlineGameSessionController {
       pendingRoomCode: this.pendingRoomCode,
       viewMode: this.viewMode,
       config: { roundMode: ROUND_STRUCTURE_MODES.BRANCHED },
+      presentationQueue,
       round: createOnlineRoundPresentation({
         match: this.match,
         selectedDominoId: this.selectedDominoId,
         inspectedStructureId: this.inspectedStructureId,
         inspectedPlacementId: this.inspectedPlacementId,
+        canInteract: !presentationBusy,
+        presentationQueue,
       }),
     };
   }
@@ -181,14 +217,14 @@ export class OnlineGameSessionController {
   }
 
   async startMatch(mode = ROUND_STRUCTURE_MODES.BRANCHED) {
-    this.match = await this.gateway.sendIntent({
+    const match = await this.gateway.sendIntent({
       roomCode: this.room.code,
       expectedVersion: this.room.version,
       intent: { type: "START_MATCH", mode },
     });
     this.room = { ...this.room, status: "PLAYING" };
     this.screen = ONLINE_SCREENS.ROUND;
-    this.#emitChange();
+    this.#acceptAuthoritativeMatch(match);
   }
 
   setViewMode(mode) {
@@ -258,11 +294,39 @@ export class OnlineGameSessionController {
   }
 
   async refresh() {
+    this.refreshRequested = true;
     if (this.refreshPromise) return this.refreshPromise;
-    this.refreshPromise = this.#refreshNow().finally(() => {
+    this.refreshPromise = this.#drainRefreshRequests().finally(() => {
       this.refreshPromise = null;
     });
     return this.refreshPromise;
+  }
+
+  advancePresentation() {
+    if (this.presentationPhase !== "announce") return false;
+    const frame = this.presentationQueue.shift();
+    if (!frame) {
+      this.#finishPresentationQueue();
+      return false;
+    }
+    this.match = frame.match;
+    this.lastPresentedSequence = frame.sequence;
+    this.presentationPhase = "move";
+    this.selectedDominoId = null;
+    this.#emitChange();
+    return true;
+  }
+
+  completePresentation() {
+    if (this.presentationPhase !== "move") return false;
+    this.presentationPhase = "idle";
+    this.presentationActorSeatId = null;
+    if (this.presentationQueue.length > 0) {
+      this.#prepareNextPresentation();
+    } else {
+      this.#finishPresentationQueue();
+    }
+    return true;
   }
 
   dispose() {
@@ -277,7 +341,8 @@ export class OnlineGameSessionController {
       () => void this.refresh(),
     );
     if (this.room.status === "PLAYING" || this.room.status === "FINISHED") {
-      this.match = await this.gateway.syncMatch(this.room.code);
+      const match = await this.gateway.syncMatch(this.room.code);
+      this.#acceptAuthoritativeMatch(match, { direct: true, emit: false });
       this.screen = ONLINE_SCREENS.ROUND;
     } else {
       this.screen = ONLINE_SCREENS.LOBBY;
@@ -293,20 +358,101 @@ export class OnlineGameSessionController {
     });
     this.room = room;
     if (room.status === "PLAYING" || room.status === "FINISHED") {
-      this.match = await this.gateway.syncMatch(room.code);
-      this.selectedDominoId = null;
+      const afterSequence = Math.max(
+        this.lastQueuedSequence,
+        this.lastPresentedSequence,
+      );
+      const match = await this.gateway.syncMatch(room.code, { afterSequence });
       this.screen = ONLINE_SCREENS.ROUND;
+      this.#acceptAuthoritativeMatch(match, { emit: false });
     }
     this.#emitChange();
   }
 
+  async #drainRefreshRequests() {
+    while (this.refreshRequested) {
+      this.refreshRequested = false;
+      await this.#refreshNow();
+    }
+  }
+
   async #sendGameIntent(intent) {
-    this.match = await this.gateway.sendIntent({
+    if (this.presentationPhase !== "idle" || this.presentationQueue.length > 0) {
+      throw new Error("Espera a que termine la jugada actual.");
+    }
+    const match = await this.gateway.sendIntent({
       roomCode: this.room.code,
-      expectedVersion: this.match.version,
+      expectedVersion: this.authoritativeMatch?.version ?? this.match.version,
       intent,
     });
     this.selectedDominoId = null;
+    this.#acceptAuthoritativeMatch(match);
+  }
+
+  #acceptAuthoritativeMatch(match, { direct = false, emit = true } = {}) {
+    this.authoritativeMatch = match;
+    const frames = Array.isArray(match?.presentationFrames)
+      ? match.presentationFrames
+      : [];
+    if (direct) {
+      this.presentationQueue = [];
+      this.presentationPhase = "idle";
+      this.presentationActorSeatId = null;
+      this.match = match;
+      this.lastPresentedSequence = latestHistorySequence(match);
+      this.lastQueuedSequence = this.lastPresentedSequence;
+      this.selectedDominoId = null;
+      if (emit) this.#emitChange();
+      return;
+    }
+
+    if (!this.match && match.presentationBase) {
+      this.match = match.presentationBase;
+      this.lastPresentedSequence = latestHistorySequence(this.match);
+      this.lastQueuedSequence = this.lastPresentedSequence;
+    }
+    const unseenFrames = frames
+      .filter((frame) => Number.isSafeInteger(frame.sequence) && frame.match)
+      .filter((frame) => frame.sequence > this.lastQueuedSequence)
+      .sort((first, second) => first.sequence - second.sequence);
+    for (const frame of unseenFrames) {
+      this.presentationQueue.push(frame);
+      this.lastQueuedSequence = frame.sequence;
+    }
+    if (this.presentationQueue.length > 0 && this.presentationPhase === "idle") {
+      this.#prepareNextPresentation();
+      return;
+    }
+    if (!this.match || (frames.length === 0 && this.presentationPhase === "idle")) {
+      this.match = match;
+      this.lastPresentedSequence = latestHistorySequence(match);
+      this.lastQueuedSequence = Math.max(
+        this.lastQueuedSequence,
+        this.lastPresentedSequence,
+      );
+    }
+    if (emit) this.#emitChange();
+  }
+
+  #prepareNextPresentation() {
+    const next = this.presentationQueue[0];
+    if (!next) {
+      this.#finishPresentationQueue();
+      return;
+    }
+    this.presentationPhase = "announce";
+    this.presentationActorSeatId = next.actorSeatId ??
+      next.match?.publicMatch?.history?.at(-1)?.playerId ?? null;
+    this.#emitChange();
+  }
+
+  #finishPresentationQueue() {
+    this.presentationPhase = "idle";
+    this.presentationActorSeatId = null;
+    if (this.authoritativeMatch &&
+      latestHistorySequence(this.authoritativeMatch) === this.lastPresentedSequence) {
+      this.match = this.authoritativeMatch;
+    }
     this.#emitChange();
   }
 

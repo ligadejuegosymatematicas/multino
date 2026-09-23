@@ -93,8 +93,15 @@ let localSessionController = null;
 let onlineSessionController = null;
 let lastFeedbackSequence = null;
 let feedbackHideTimer = null;
+let feedbackHideSequence = null;
+let onlinePresentationTimer = null;
+let onlinePresentationTimerKey = null;
 let hasShownScoringLesson = false;
 const ROUND_RESULT_REVEAL_DELAY_MS = 520;
+const ONLINE_CPU_ANNOUNCE_MS = 500;
+const ONLINE_HUMAN_ANNOUNCE_MS = 80;
+const ONLINE_MOVE_HOLD_MS = 800;
+const ONLINE_POST_SCORE_PAUSE_MS = 260;
 const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
 document.title = APP_NAME;
@@ -133,11 +140,44 @@ function setMessage(text) {
   message.textContent = text;
 }
 
+function clearOnlinePresentationTimer() {
+  if (onlinePresentationTimer !== null) {
+    window.clearTimeout(onlinePresentationTimer);
+  }
+  onlinePresentationTimer = null;
+  onlinePresentationTimerKey = null;
+}
+
+function scheduleOnlinePresentationTimer(key, delay, callback) {
+  if (onlinePresentationTimer !== null && onlinePresentationTimerKey === key) {
+    return;
+  }
+  clearOnlinePresentationTimer();
+  onlinePresentationTimerKey = key;
+  onlinePresentationTimer = window.setTimeout(() => {
+    onlinePresentationTimer = null;
+    onlinePresentationTimerKey = null;
+    callback();
+  }, delay);
+}
+
+function completeQueuedOnlineMove(delay = ONLINE_POST_SCORE_PAUSE_MS) {
+  if (onlineSessionController?.getPresentation().presentationQueue.phase !== "move") {
+    return;
+  }
+  const sequence = onlineSessionController.getPresentation()
+    .presentationQueue.presentedSequence;
+  scheduleOnlinePresentationTimer(`complete:${sequence}`, delay, () => {
+    onlineSessionController?.completePresentation();
+  });
+}
+
 function finishFeedbackPresentation(feedback) {
   const session = sessionController?.getPresentation();
   if (!session?.round) {
     renderGameFeedback(playFeedback, null);
     feedbackHideTimer = null;
+    feedbackHideSequence = null;
     return;
   }
   if (feedback?.scoring && feedback.endedRound) {
@@ -152,17 +192,28 @@ function finishFeedbackPresentation(feedback) {
         renderRound(latest.round, latest.viewMode, null);
       }
       feedbackHideTimer = null;
+      feedbackHideSequence = null;
+      completeQueuedOnlineMove();
     }, ROUND_RESULT_REVEAL_DELAY_MS);
     return;
   }
   renderRound(session.round, session.viewMode, null);
   feedbackHideTimer = null;
+  feedbackHideSequence = null;
+  completeQueuedOnlineMove();
 }
 
 function scheduleFeedbackHide(feedback) {
+  if (
+    feedbackHideTimer !== null &&
+    feedback?.sequence === feedbackHideSequence
+  ) {
+    return;
+  }
   if (feedbackHideTimer !== null) {
     window.clearTimeout(feedbackHideTimer);
     feedbackHideTimer = null;
+    feedbackHideSequence = null;
   }
   if (!feedback?.message) {
     return;
@@ -174,7 +225,8 @@ function scheduleFeedbackHide(feedback) {
     ? reducedMotion
       ? SCORING_FEEDBACK_TIMING.reducedMotionMs
       : SCORING_FEEDBACK_TIMING.totalMs
-    : 2100;
+      : 2100;
+  feedbackHideSequence = feedback.sequence;
   feedbackHideTimer = window.setTimeout(() => {
     finishFeedbackPresentation(feedback);
   }, duration);
@@ -330,6 +382,10 @@ function renderRound(
     presentation.view,
     { emphasize: feedback !== null && !feedback.endedRound },
   );
+  document.querySelector("#turn-panel").classList.toggle(
+    "is-presenting-turn",
+    presentation.presentationQueue?.phase === "announce",
+  );
   renderScorePanel(
     document.querySelector("#score-panel"),
     presentation.view,
@@ -472,6 +528,26 @@ function renderOnlineSession(session) {
   appShell.classList.toggle("is-playing", Boolean(isRound));
   if (isRound) {
     sessionBadge.textContent = `Online · ${session.room.roomCode}`;
+    const queue = session.presentationQueue;
+    if (queue.phase === "announce") {
+      renderRound(session.round, session.viewMode, null);
+      scheduleFeedbackHide(null);
+      const actorName = queue.actorName ?? "Jugador";
+      setMessage(
+        queue.actorControlType === "CPU"
+          ? `${actorName} está jugando…`
+          : `Turno de ${actorName}`,
+      );
+      const delay = queue.actorControlType === "CPU"
+        ? ONLINE_CPU_ANNOUNCE_MS
+        : ONLINE_HUMAN_ANNOUNCE_MS;
+      scheduleOnlinePresentationTimer(
+        `announce:${queue.presentedSequence}:${queue.actorSeatId}`,
+        delay,
+        () => onlineSessionController?.advancePresentation(),
+      );
+      return;
+    }
     const nextFeedback = getGameFeedback(session.round.view);
     let feedback = nextFeedback?.sequence !== lastFeedbackSequence
       ? nextFeedback
@@ -481,7 +557,17 @@ function renderOnlineSession(session) {
       hasShownScoringLesson = true;
     }
     renderRound(session.round, session.viewMode, feedback);
-    scheduleFeedbackHide(feedback);
+    if (queue.phase === "move" && !feedback?.scoring) {
+      scheduleFeedbackHide(null);
+      scheduleOnlinePresentationTimer(
+        `move:${queue.presentedSequence}`,
+        ONLINE_MOVE_HOLD_MS,
+        () => onlineSessionController?.completePresentation(),
+      );
+    } else {
+      clearOnlinePresentationTimer();
+      scheduleFeedbackHide(feedback);
+    }
     lastFeedbackSequence = nextFeedback?.sequence ?? null;
     return;
   }
@@ -502,6 +588,7 @@ function renderOnlineSession(session) {
 }
 
 function startLocalMode() {
+  clearOnlinePresentationTimer();
   onlineSessionController?.dispose();
   onlineSessionController = null;
   if (!localSessionController) {
@@ -523,6 +610,7 @@ function startLocalMode() {
 }
 
 async function startOnlineMode(roomCode = "") {
+  clearOnlinePresentationTimer();
   if (!runtimeConfig.onlineEnabled) {
     onlineStatus.textContent = "El modo online aún no está configurado.";
     return;

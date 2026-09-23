@@ -29,15 +29,23 @@ function matchResponse({
   currentPlayerId = "seat-1",
   version = 1,
   target = { kind: "START" },
+  sequence = 0,
+  phase = "playing",
 } = {}) {
   const graph = projectedView({ current: currentPlayerId === "seat-1" });
-  graph.legalPlays[0].legalTargets = [target];
+  if (graph.legalPlays[0]) graph.legalPlays[0].legalTargets = [target];
   return {
     version,
     publicMatch: {
-      phase: "playing",
+      phase,
       currentPlayerId,
       remainingDominoCountByPlayer: { "seat-1": 1, "seat-2": 7 },
+      history: Array.from({ length: sequence }, (_, index) => ({
+        sequence: index + 1,
+        playerId: index + 1 === sequence ? currentPlayerId : `seat-${index % 4 + 1}`,
+        type: "PLAY_DOMINO",
+        result: { scoreAwarded: 0 },
+      })),
     },
     privateMatch: {
       seatId: "seat-1",
@@ -58,6 +66,32 @@ function matchResponse({
         : [],
       render: { graph, ports: graph, traditional: graph },
     },
+  };
+}
+
+function queuedMatch({
+  sequences,
+  version = 2,
+  finalPhase = "playing",
+} = {}) {
+  const base = matchResponse({ sequence: sequences[0] - 1, version });
+  const frames = sequences.map((sequence, index) => {
+    const actorSeatId = `seat-${index + 2}`;
+    return {
+      sequence,
+      actorSeatId,
+      match: matchResponse({
+        sequence,
+        currentPlayerId: actorSeatId,
+        version,
+        phase: index === sequences.length - 1 ? finalPhase : "playing",
+      }),
+    };
+  });
+  return {
+    ...frames.at(-1).match,
+    presentationBase: base,
+    presentationFrames: frames,
   };
 }
 
@@ -157,6 +191,143 @@ test("normaliza una punta visual al target OPEN_END canónico", async () => {
     placementId: "placement-2",
     portId: "side:b",
   });
+});
+
+test("presenta tres CPU consecutivas en orden sin saltar versiones", async () => {
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => room(),
+    subscribeRoom: () => () => {},
+    syncMatch: async () => matchResponse(),
+    sendIntent: async () => queuedMatch({ sequences: [1, 2, 3] }),
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.createRoom("Ada");
+  await controller.startMatch();
+
+  const observed = [];
+  for (const expectedSequence of [1, 2, 3]) {
+    let presentation = controller.getPresentation();
+    assert.equal(presentation.presentationQueue.phase, "announce");
+    assert.equal(presentation.round.handPrivacy.canAct, false);
+    assert.equal(controller.advancePresentation(), true);
+    presentation = controller.getPresentation();
+    observed.push(presentation.presentationQueue.presentedSequence);
+    assert.equal(presentation.presentationQueue.phase, "move");
+    assert.equal(presentation.presentationQueue.presentedSequence, expectedSequence);
+    assert.equal(controller.completePresentation(), true);
+  }
+  assert.deepEqual(observed, [1, 2, 3]);
+  assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
+  assert.equal(controller.getPresentation().presentationQueue.pendingCount, 0);
+});
+
+test("una nueva versión queda en cola hasta completar el scoring activo", async () => {
+  let subscription = null;
+  let syncResponse = matchResponse({ sequence: 2, version: 2 });
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async (intent) => intent.type === "GET_ROOM"
+      ? { ...room(), status: "PLAYING", version: 3 }
+      : room(),
+    subscribeRoom: (_roomId, callback) => {
+      subscription = callback;
+      return () => {};
+    },
+    syncMatch: async () => syncResponse,
+    sendIntent: async () => queuedMatch({ sequences: [1, 2], version: 2 }),
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.createRoom("Ada");
+  await controller.startMatch();
+  controller.advancePresentation();
+  controller.completePresentation();
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().presentationQueue.presentedSequence, 2);
+
+  syncResponse = queuedMatch({ sequences: [3], version: 3 });
+  subscription();
+  await controller.refresh();
+  let presentation = controller.getPresentation();
+  assert.equal(presentation.presentationQueue.phase, "move");
+  assert.equal(presentation.presentationQueue.presentedSequence, 2);
+  assert.equal(presentation.presentationQueue.pendingCount, 1);
+
+  controller.completePresentation();
+  presentation = controller.getPresentation();
+  assert.equal(presentation.presentationQueue.phase, "announce");
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().presentationQueue.presentedSequence, 3);
+});
+
+test("reconnect sincroniza directo al snapshot actual y reinicia la cola", async () => {
+  const current = queuedMatch({ sequences: [7, 8, 9], version: 9 });
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => ({ ...room(), status: "PLAYING", version: 9 }),
+    subscribeRoom: () => () => {},
+    syncMatch: async () => current,
+    sendIntent: async () => current,
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.resumeRoom("ABCDE");
+  const presentation = controller.getPresentation();
+  assert.equal(presentation.presentationQueue.phase, "idle");
+  assert.equal(presentation.presentationQueue.pendingCount, 0);
+  assert.equal(presentation.presentationQueue.presentedSequence, 9);
+  assert.equal(presentation.presentationQueue.authoritativeSequence, 9);
+});
+
+test("una respuesta stale no altera la presentación ni pierde la selección", async () => {
+  const initial = matchResponse({ sequence: 0, version: 1 });
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => room(),
+    subscribeRoom: () => () => {},
+    syncMatch: async () => initial,
+    sendIntent: async (payload) => {
+      if (payload.intent.type === "START_MATCH") return initial;
+      throw Object.assign(new Error("STALE_VERSION"), { code: "STALE_VERSION" });
+    },
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.createRoom("Ada");
+  await controller.startMatch();
+  controller.selectDomino("d:4:5");
+  await assert.rejects(
+    controller.submitTarget({ kind: "START" }),
+    (error) => error.code === "STALE_VERSION",
+  );
+  assert.equal(controller.getPresentation().round.selectedDominoId, "d:4:5");
+  assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
+});
+
+test("la transición terminal permanece en cola hasta que su presentación termina", async () => {
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => room(),
+    subscribeRoom: () => () => {},
+    syncMatch: async () => matchResponse(),
+    sendIntent: async () => queuedMatch({
+      sequences: [1],
+      version: 2,
+      finalPhase: "finished",
+    }),
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.createRoom("Ada");
+  await controller.startMatch();
+  assert.equal(controller.getPresentation().round.isFinished, false);
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().round.isFinished, true);
+  assert.equal(controller.getPresentation().presentationQueue.phase, "move");
+  controller.completePresentation();
+  assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
 });
 
 test("el cliente Supabase del navegador usa solamente configuración pública", async () => {
