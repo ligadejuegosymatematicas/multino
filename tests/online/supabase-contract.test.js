@@ -124,6 +124,17 @@ test("la autoridad entrega fotogramas confirmados sin temporizar la CPU", async 
   assert.doesNotMatch(action + shared, /setTimeout|sleep\s*\(|delay\s*\(/);
 });
 
+test("SYNC_MATCH recupera el último snapshot incluso después de terminalidad", async () => {
+  const action = await readFile(
+    new URL("../../supabase/functions/game-action/index.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(action, /intent\?\.type === "SYNC_MATCH"/);
+  assert.match(action, /\.in\("status", \["PLAYING", "FINISHED"\]\)/);
+  assert.match(action, /\.order\("started_at", \{ ascending: false \}\)/);
+  assert.match(action, /: matchQuery\.eq\("status", "PLAYING"\)/);
+});
+
 test("el deploy manual publica solo game-action sin secretos en el repo", async () => {
   const workflow = await readFile(
     new URL("../../.github/workflows/deploy-game-action.yml", import.meta.url),

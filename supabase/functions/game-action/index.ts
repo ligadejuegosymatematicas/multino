@@ -172,11 +172,16 @@ Deno.serve(async (request) => {
       });
     }
 
-    const { data: match } = await admin.from("matches")
+    let matchQuery = admin.from("matches")
       .select("id,version")
-      .eq("room_id", room.id)
-      .eq("status", "PLAYING")
-      .single();
+      .eq("room_id", room.id);
+    matchQuery = intent?.type === "SYNC_MATCH"
+      ? matchQuery
+        .in("status", ["PLAYING", "FINISHED"])
+        .order("started_at", { ascending: false })
+        .limit(1)
+      : matchQuery.eq("status", "PLAYING");
+    const { data: match } = await matchQuery.maybeSingle();
     if (!match) return response(409, { code: "MATCH_NOT_PLAYING" });
     const { data: privateState } = await admin.from("match_state_private")
       .select("state,version")
