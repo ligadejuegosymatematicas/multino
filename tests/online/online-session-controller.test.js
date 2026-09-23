@@ -27,12 +27,13 @@ function projectedView({ current = true } = {}) {
 
 function matchResponse({
   currentPlayerId = "seat-1",
+  privateSeatId = "seat-1",
   version = 1,
   target = { kind: "START" },
   sequence = 0,
   phase = "playing",
 } = {}) {
-  const graph = projectedView({ current: currentPlayerId === "seat-1" });
+  const graph = projectedView({ current: currentPlayerId === privateSeatId });
   if (graph.legalPlays[0]) graph.legalPlays[0].legalTargets = [target];
   return {
     version,
@@ -48,10 +49,10 @@ function matchResponse({
       })),
     },
     privateMatch: {
-      seatId: "seat-1",
+      seatId: privateSeatId,
       hand: ["d:4:5"],
       dominoes: { "d:4:5": { id: "d:4:5" } },
-      legalActions: currentPlayerId === "seat-1"
+      legalActions: currentPlayerId === privateSeatId
         ? [{
             type: "PLAY_DOMINO",
             dominoId: "d:4:5",
@@ -73,16 +74,24 @@ function queuedMatch({
   sequences,
   version = 2,
   finalPhase = "playing",
+  privateSeatId = "seat-1",
+  actorSeatIds = null,
+  currentPlayerIds = null,
 } = {}) {
-  const base = matchResponse({ sequence: sequences[0] - 1, version });
+  const base = matchResponse({
+    sequence: sequences[0] - 1,
+    version,
+    privateSeatId,
+  });
   const frames = sequences.map((sequence, index) => {
-    const actorSeatId = `seat-${index + 2}`;
+    const actorSeatId = actorSeatIds?.[index] ?? `seat-${index + 2}`;
     return {
       sequence,
       actorSeatId,
       match: matchResponse({
         sequence,
-        currentPlayerId: actorSeatId,
+        currentPlayerId: currentPlayerIds?.[index] ?? actorSeatId,
+        privateSeatId,
         version,
         phase: index === sequences.length - 1 ? finalPhase : "playing",
       }),
@@ -95,7 +104,7 @@ function queuedMatch({
   };
 }
 
-function room() {
+function room({ humanSeatIndex = 0 } = {}) {
   return {
     id: "room-1",
     code: "ABCDE",
@@ -106,10 +115,10 @@ function room() {
       id: `db-seat-${seat_index}`,
       seat_index,
       team_id: seat_index % 2 === 0 ? "A" : "B",
-      control_type: seat_index === 0 ? "HUMAN" : "CPU",
-      user_id: seat_index === 0 ? "user-1" : null,
-      nick: seat_index === 0 ? "Ada" : `CPU ${seat_index + 1}`,
-      connection_state: seat_index === 0 ? "CONNECTED" : "SERVER",
+      control_type: seat_index === humanSeatIndex ? "HUMAN" : "CPU",
+      user_id: seat_index === humanSeatIndex ? "user-1" : null,
+      nick: seat_index === humanSeatIndex ? "Ada" : `CPU ${seat_index + 1}`,
+      connection_state: seat_index === humanSeatIndex ? "CONNECTED" : "SERVER",
     })),
   };
 }
@@ -221,6 +230,40 @@ test("presenta tres CPU consecutivas en orden sin saltar versiones", async () =>
   assert.deepEqual(observed, [1, 2, 3]);
   assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
   assert.equal(controller.getPresentation().presentationQueue.pendingCount, 0);
+});
+
+test("el humano del asiento 3 espera dos presentaciones CPU completas", async () => {
+  const burst = queuedMatch({
+    sequences: [1, 2],
+    privateSeatId: "seat-3",
+    actorSeatIds: ["seat-1", "seat-2"],
+    currentPlayerIds: ["seat-2", "seat-3"],
+  });
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => room({ humanSeatIndex: 2 }),
+    subscribeRoom: () => () => {},
+    syncMatch: async () => matchResponse({ privateSeatId: "seat-3" }),
+    sendIntent: async () => burst,
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.createRoom("Ada");
+  await controller.startMatch();
+
+  assert.equal(controller.getPresentation().presentationQueue.actorSeatId, "seat-1");
+  assert.equal(controller.getPresentation().round.handPrivacy.canAct, false);
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().round.handPrivacy.canAct, false);
+  controller.completePresentation();
+  assert.equal(controller.getPresentation().presentationQueue.actorSeatId, "seat-2");
+  assert.equal(controller.getPresentation().round.handPrivacy.canAct, false);
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().round.handPrivacy.canAct, false);
+  controller.completePresentation();
+
+  assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
+  assert.equal(controller.getPresentation().round.handPrivacy.canAct, true);
 });
 
 test("una nueva versión queda en cola hasta completar el scoring activo", async () => {

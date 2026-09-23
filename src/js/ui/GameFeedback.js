@@ -347,7 +347,7 @@ function connectAwardToScore(outcome) {
   );
 }
 
-export function renderGameFeedback(container, feedback, { onComplete } = {}) {
+export function renderGameFeedback(container, feedback) {
   if (!container) {
     return;
   }
@@ -440,23 +440,10 @@ export function renderGameFeedback(container, feedback, { onComplete } = {}) {
     container.append(sequence);
     connectScoringTokensToSources(model, tokenElements);
     if (model.outcomeKind === "award") connectAwardToScore(outcome);
-    container.setAttribute("role", "button");
-    container.setAttribute("tabindex", "0");
     container.setAttribute(
       "aria-label",
-      `${feedback.message}. Toca para completar la explicación.`,
+      feedback.message,
     );
-    const complete = () => {
-      container.classList.add("is-complete");
-      onComplete?.();
-    };
-    container.onclick = complete;
-    container.onkeydown = (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        complete();
-      }
-    };
   }
   if (feedback.openedBranchFamily) {
     const branch = document.createElement("span");

@@ -42,6 +42,11 @@ import {
   LocalMatchHistoryStore,
   LocalProfileStore,
 } from "./storage/LocalStores.js";
+import {
+  getLocalCpuPresentationDelay,
+  isPresentationBarrierActive,
+  resolvePresentedFeedback,
+} from "./ui/PresentationBarrier.js";
 
 const boardRoot = document.querySelector("#board-root");
 const graphRenderer = new GraphRenderer(boardRoot);
@@ -96,6 +101,8 @@ let feedbackHideTimer = null;
 let feedbackHideSequence = null;
 let onlinePresentationTimer = null;
 let onlinePresentationTimerKey = null;
+let activeFeedbackPresentation = null;
+let roundResultPending = false;
 let hasShownScoringLesson = false;
 const ROUND_RESULT_REVEAL_DELAY_MS = 520;
 const ONLINE_CPU_ANNOUNCE_MS = 500;
@@ -154,6 +161,18 @@ function clearOnlinePresentationTimer() {
   onlinePresentationTimerKey = null;
 }
 
+function resetPresentationBarrier() {
+  if (feedbackHideTimer !== null) {
+    window.clearTimeout(feedbackHideTimer);
+  }
+  feedbackHideTimer = null;
+  feedbackHideSequence = null;
+  activeFeedbackPresentation = null;
+  roundResultPending = false;
+  lastFeedbackSequence = null;
+  renderGameFeedback(playFeedback, null);
+}
+
 function scheduleOnlinePresentationTimer(key, delay, callback) {
   if (onlinePresentationTimer !== null && onlinePresentationTimerKey === key) {
     return;
@@ -184,17 +203,22 @@ function finishFeedbackPresentation(feedback) {
     renderGameFeedback(playFeedback, null);
     feedbackHideTimer = null;
     feedbackHideSequence = null;
+    activeFeedbackPresentation = null;
     return;
   }
   if (feedback?.scoring && feedback.endedRound) {
     // Primero desaparece el cálculo y se aplica visualmente el marcador.
     // El resultado final entra después de una pausa breve e independiente.
+    activeFeedbackPresentation = null;
+    roundResultPending = true;
     renderRound(session.round, session.viewMode, null, {
       revealRoundResult: false,
+      interactionLocked: true,
     });
     feedbackHideTimer = window.setTimeout(() => {
       const latest = sessionController?.getPresentation();
       if (latest?.round) {
+        roundResultPending = false;
         renderRound(latest.round, latest.viewMode, null);
       }
       feedbackHideTimer = null;
@@ -203,6 +227,7 @@ function finishFeedbackPresentation(feedback) {
     }, ROUND_RESULT_REVEAL_DELAY_MS);
     return;
   }
+  activeFeedbackPresentation = null;
   renderRound(session.round, session.viewMode, null);
   feedbackHideTimer = null;
   feedbackHideSequence = null;
@@ -216,7 +241,7 @@ function scheduleFeedbackHide(feedback) {
   ) {
     return;
   }
-  if (feedbackHideTimer !== null) {
+  if (feedbackHideTimer !== null && !roundResultPending) {
     window.clearTimeout(feedbackHideTimer);
     feedbackHideTimer = null;
     feedbackHideSequence = null;
@@ -224,6 +249,7 @@ function scheduleFeedbackHide(feedback) {
   if (!feedback?.message) {
     return;
   }
+  if (feedback.scoring) activeFeedbackPresentation = feedback;
   const reducedMotion = window.matchMedia?.(
     "(prefers-reduced-motion: reduce)",
   ).matches ?? false;
@@ -236,19 +262,6 @@ function scheduleFeedbackHide(feedback) {
   feedbackHideTimer = window.setTimeout(() => {
     finishFeedbackPresentation(feedback);
   }, duration);
-}
-
-function completeScoringFeedback() {
-  if (feedbackHideTimer === null) return;
-  window.clearTimeout(feedbackHideTimer);
-  playFeedback.classList.add("is-complete");
-  feedbackHideTimer = window.setTimeout(() => {
-    const session = sessionController?.getPresentation();
-    const feedback = session?.round
-      ? getGameFeedback(session.round.view)
-      : null;
-    finishFeedbackPresentation(feedback);
-  }, 280);
 }
 
 async function runIntent(intent, successMessage) {
@@ -284,7 +297,14 @@ function renderRound(
   presentation,
   mode,
   feedback,
-  { revealRoundResult = true } = {},
+  {
+    revealRoundResult = true,
+    interactionLocked = isPresentationBarrierActive({
+      feedback,
+      presentationQueue: presentation.presentationQueue,
+      roundResultPending,
+    }),
+  } = {},
 ) {
   if (mode !== BOARD_VIEW_MODES.TRADITIONAL) {
     // El viewport tradicional será reemplazado por otro renderer. Capturamos
@@ -328,6 +348,8 @@ function renderRound(
     const isActive = button.dataset.viewMode === mode;
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
+    button.disabled = interactionLocked;
+    button.setAttribute("aria-disabled", String(interactionLocked));
   }
 
   const visualPresentation = {
@@ -367,12 +389,17 @@ function renderRound(
   handPanel.hidden = presentation.isFinished;
   handContent.hidden = !handIsVisible;
   handPrivacy.hidden = handIsVisible || presentation.isFinished;
-  handPrivacyTitle.textContent = presentation.handPrivacy.isCpu
+  handPrivacyTitle.textContent = interactionLocked
+    ? "Puntuación en curso"
+    : presentation.handPrivacy.isCpu
     ? `${presentation.handPrivacy.displayName} está pensando…`
     : `Turno de ${presentation.handPrivacy.displayName} · entrega el dispositivo`;
-  revealHandButton.hidden = !presentation.handPrivacy.canReveal;
+  const canReveal = presentation.handPrivacy.canReveal && !interactionLocked;
+  revealHandButton.hidden = !canReveal;
+  revealHandButton.disabled = !canReveal;
   if (handIsVisible) {
     renderHand(document.querySelector("#hand-root"), presentation, {
+      disabled: interactionLocked,
       onSelect: (dominoId) =>
         runIntent(
           () => sessionController.selectDomino(dominoId),
@@ -382,7 +409,8 @@ function renderRound(
   } else {
     document.querySelector("#hand-root").replaceChildren();
   }
-  const canAct = presentation.handPrivacy.canAct ?? handIsVisible;
+  const canAct = !interactionLocked &&
+    (presentation.handPrivacy.canAct ?? handIsVisible);
   turnActionPanel.hidden = !canAct || presentation.isFinished;
   if (canAct) {
     renderTurnAction(turnActionSummary, presentation);
@@ -392,7 +420,12 @@ function renderRound(
   renderTurnPanel(
     document.querySelector("#turn-panel"),
     presentation.view,
-    { emphasize: feedback !== null && !feedback.endedRound },
+    {
+      emphasize: feedback !== null && !feedback.endedRound,
+      activePlayerId: feedback?.playerId ??
+        presentation.presentationQueue?.actorSeatId ??
+        presentation.view.turn.currentPlayerId,
+    },
   );
   document.querySelector("#turn-panel").classList.toggle(
     "is-presenting-turn",
@@ -417,18 +450,17 @@ function renderRound(
       deferred: roundResultDeferred,
     },
   );
-  renderGameFeedback(playFeedback, feedback, {
-    onComplete: completeScoringFeedback,
-  });
+  renderGameFeedback(playFeedback, feedback);
 
-  passButton.disabled = !presentation.canPass || presentation.isFinished;
+  passButton.disabled = interactionLocked || !presentation.canPass ||
+    presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;
   roundActions.hidden = presentation.sessionKind === "ONLINE" ||
     !presentation.isFinished || roundResultDeferred;
   const selectedCount = presentation.selectedLegalTargets.length;
   const strategicDecisionCount = presentation.strategicDecisionGroups?.length ?? 0;
   const selectionHint = document.querySelector("#selection-hint");
-  selectionHint.textContent = presentation.isFinished ||
+  selectionHint.textContent = interactionLocked || presentation.isFinished ||
       !presentation.handPrivacy.isRevealed ||
       presentation.selectedDominoId === null
       ? ""
@@ -466,9 +498,11 @@ function renderSession(session) {
       : "Lineal";
   if (!isConfiguring) {
     const nextFeedback = getGameFeedback(session.round.view);
-    let feedback = nextFeedback?.sequence !== lastFeedbackSequence
-      ? nextFeedback
-      : null;
+    let feedback = resolvePresentedFeedback({
+      nextFeedback,
+      lastFeedbackSequence,
+      activeFeedback: activeFeedbackPresentation,
+    });
     if (feedback?.scoring && !hasShownScoringLesson) {
       feedback = { ...feedback, showScoringLesson: true };
       hasShownScoringLesson = true;
@@ -479,6 +513,8 @@ function renderSession(session) {
   } else {
     renderSeatSetup(session.seats);
     lastFeedbackSequence = null;
+    activeFeedbackPresentation = null;
+    roundResultPending = false;
     renderGameFeedback(playFeedback, null);
     scheduleFeedbackHide(null);
   }
@@ -561,14 +597,22 @@ function renderOnlineSession(session) {
       return;
     }
     const nextFeedback = getGameFeedback(session.round.view);
-    let feedback = nextFeedback?.sequence !== lastFeedbackSequence
-      ? nextFeedback
-      : null;
+    let feedback = resolvePresentedFeedback({
+      nextFeedback,
+      lastFeedbackSequence,
+      activeFeedback: activeFeedbackPresentation,
+    });
     if (feedback?.scoring && !hasShownScoringLesson) {
       feedback = { ...feedback, showScoringLesson: true };
       hasShownScoringLesson = true;
     }
-    renderRound(session.round, session.viewMode, feedback);
+    renderRound(session.round, session.viewMode, feedback, {
+      revealRoundResult: !roundResultPending,
+    });
+    if (roundResultPending) {
+      lastFeedbackSequence = nextFeedback?.sequence ?? null;
+      return;
+    }
     if (queue.phase === "move" && !feedback?.scoring) {
       scheduleFeedbackHide(null);
       scheduleOnlinePresentationTimer(
@@ -601,6 +645,7 @@ function renderOnlineSession(session) {
 
 function startLocalMode() {
   clearOnlinePresentationTimer();
+  resetPresentationBarrier();
   onlineSessionController?.dispose();
   onlineSessionController = null;
   if (!localSessionController) {
@@ -611,9 +656,10 @@ function startLocalMode() {
         nick: savedProfile.nick || "Jugador 1",
       }),
       historyStore,
-      cpuTurnDelayMs: ({ state }) => state.history.length === 0
-        ? 650
-        : SCORING_FEEDBACK_TIMING.totalMs + 550,
+      cpuTurnDelayMs: ({ state }) => getLocalCpuPresentationDelay({
+        state,
+        scoringDurationMs: SCORING_FEEDBACK_TIMING.totalMs,
+      }),
       onChange: renderSession,
     });
   }
@@ -623,6 +669,7 @@ function startLocalMode() {
 
 async function startOnlineMode(roomCode = "") {
   clearOnlinePresentationTimer();
+  resetPresentationBarrier();
   if (!runtimeConfig.onlineEnabled) {
     onlineStatus.textContent = "El modo online aún no está configurado.";
     return;
@@ -661,6 +708,8 @@ async function withOnlineBusy(operation) {
 }
 
 function showEntry() {
+  clearOnlinePresentationTimer();
+  resetPresentationBarrier();
   onlineSessionController?.dispose();
   onlineSessionController = null;
   sessionController = null;
@@ -685,6 +734,12 @@ passButton.addEventListener("click", () =>
 
 for (const button of modeButtons) {
   button.addEventListener("click", () => {
+    if (isPresentationBarrierActive({
+      feedback: activeFeedbackPresentation,
+      presentationQueue: onlineSessionController?.getPresentation()
+        .presentationQueue,
+      roundResultPending,
+    })) return;
     sessionController.setViewMode(button.dataset.viewMode);
     setMessage("");
   });

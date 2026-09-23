@@ -622,8 +622,7 @@
 }
 
 .play-feedback.is-score-feedback {
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
   animation-name: scoring-stage-visibility;
   animation-duration: 9s;
   animation-timing-function: linear;

@@ -1,4 +1,8 @@
-export function renderTurnPanel(container, view, { emphasize = false } = {}) {
+export function renderTurnPanel(
+  container,
+  view,
+  { emphasize = false, activePlayerId = view.turn.currentPlayerId } = {},
+) {
   if (!container) {
     return;
   }
@@ -10,7 +14,7 @@ export function renderTurnPanel(container, view, { emphasize = false } = {}) {
     );
     const item = document.createElement("div");
     item.className = "player-status";
-    item.classList.toggle("is-current", player.playerId === view.turn.currentPlayerId);
+    item.classList.toggle("is-current", player.playerId === activePlayerId);
     item.dataset.teamIndex = String(teamIndex);
     const avatar = document.createElement("span");
     avatar.className = "player-status__avatar";

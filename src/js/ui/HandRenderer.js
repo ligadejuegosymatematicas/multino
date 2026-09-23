@@ -62,7 +62,11 @@ export function renderTurnAction(container, presentation) {
   container.append(copy);
 }
 
-export function renderHand(container, presentation, { onSelect } = {}) {
+export function renderHand(
+  container,
+  presentation,
+  { onSelect, disabled = false } = {},
+) {
   if (!container) {
     return;
   }
@@ -72,7 +76,7 @@ export function renderHand(container, presentation, { onSelect } = {}) {
       createDominoButton(
         domino,
         presentation.selectedDominoId === domino.dominoId,
-        presentation.isFinished,
+        presentation.isFinished || disabled,
         onSelect,
       ),
     );
