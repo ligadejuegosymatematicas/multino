@@ -515,6 +515,54 @@ test("la transición terminal permanece en cola hasta que su presentación termi
   assert.equal(controller.getPresentation().presentationQueue.phase, "idle");
 });
 
+test("un segundo evento terminal no se pierde si el primer refresh transitorio falla", async () => {
+  let subscription = null;
+  let rejectFirstRefresh = null;
+  let syncCalls = 0;
+  const initial = matchResponse({ sequence: 1, version: 1 });
+  const terminal = queuedMatch({
+    sequences: [2],
+    version: 2,
+    finalPhase: "finished",
+  });
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async (intent) => intent.type === "GET_ROOM"
+      ? { ...room(), status: "FINISHED", version: 2 }
+      : { ...room(), status: "PLAYING", version: 1 },
+    subscribeRoom: (_roomId, onVersion) => {
+      subscription = onVersion;
+      return () => {};
+    },
+    syncMatch: async () => {
+      syncCalls += 1;
+      if (syncCalls === 1) return initial;
+      if (syncCalls === 2) {
+        return new Promise((_resolve, reject) => { rejectFirstRefresh = reject; });
+      }
+      return terminal;
+    },
+    sendIntent: async () => initial,
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.resumeRoom("ABCDE");
+
+  subscription();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(typeof rejectFirstRefresh, "function");
+  subscription();
+  rejectFirstRefresh(Object.assign(new Error("transitorio"), { code: "NETWORK" }));
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  assert.equal(syncCalls, 3);
+  assert.equal(controller.getPresentation().presentationQueue.phase, "announce");
+  controller.advancePresentation();
+  assert.equal(controller.getPresentation().round.isFinished, true);
+});
+
 test("el cliente Supabase del navegador usa solamente configuración pública", async () => {
   let captured = null;
   const auth = {};

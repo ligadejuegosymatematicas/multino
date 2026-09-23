@@ -408,7 +408,13 @@ export class OnlineGameSessionController {
       this.refreshRequested = false;
       const direct = this.directRefreshRequested;
       this.directRefreshRequested = false;
-      await this.#refreshNow({ direct });
+      try {
+        await this.#refreshNow({ direct });
+      } catch (error) {
+        // Un segundo evento Realtime ya recibido es una señal concreta para
+        // reintentar una vez con el estado más nuevo; nunca inicia polling.
+        if (!this.refreshRequested) throw error;
+      }
     }
   }
 
