@@ -7,6 +7,7 @@ import {
   createMatch,
   getLegalPlays,
   getLegalTargetsForDomino,
+  getStrategicDecisionGroups,
   projectGraphView,
 } from "../../src/js/game/index.js";
 import {
@@ -19,6 +20,7 @@ import {
 } from "../../src/js/ui/GraphRenderer.js";
 import {
   createBoardScenario,
+  ensureDominoInHand,
   findDominoOwner,
   playDomino,
 } from "../fixtures/board-scenarios.js";
@@ -66,6 +68,37 @@ function createTopologyScenario() {
     "2-3",
     targetAt("placement-4", "side:a"),
   );
+}
+
+function playCurrent(state, dominoId, targetMatcher = () => true) {
+  const action = getLegalPlays(state, state.currentPlayerId).find(
+    (candidate) =>
+      candidate.dominoId === dominoId && targetMatcher(candidate.target),
+  );
+  assert.ok(action, `Debe existir una jugada legal para ${dominoId}.`);
+  return applyTurnAction(state, action);
+}
+
+function createOrdinaryAndCrossDecisionState() {
+  let state = createBoardScenario({ K: 1, firstDominoId: "6-6" });
+  for (const [dominoId, target] of [
+    ["6-6", null],
+    ["4-6", ["placement-1", "main:1"]],
+    ["2-4", ["placement-2", null]],
+    ["2-6", ["placement-3", null]],
+  ]) {
+    state = ensureDominoInHand(state, state.currentPlayerId, dominoId);
+    state = playCurrent(
+      state,
+      dominoId,
+      target === null
+        ? () => true
+        : (candidate) =>
+            candidate.placementId === target[0] &&
+            (target[1] === null || candidate.portId === target[1]),
+    );
+  }
+  return ensureDominoInHand(state, state.currentPlayerId, "1-6");
 }
 
 function createTwoArmFamilyScenario() {
@@ -528,6 +561,59 @@ test("los números de opción solo aparecen al distinguir destinos compatibles d
   assert.equal(
     severalTargetsMarkup.match(/class="open-target__option-index"/g)?.length,
     2,
+  );
+});
+
+test("Grafo distingue otra punta del doble central por su consecuencia local", () => {
+  const state = createOrdinaryAndCrossDecisionState();
+  const decisions = getStrategicDecisionGroups(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const legalTargets = getLegalTargetsForDomino(
+    state,
+    state.currentPlayerId,
+    "1-6",
+  );
+  const cross = decisions.find(
+    (decision) => decision.decisionKind === "complete-cross",
+  );
+  const restScene = createGraphScene(projectGraphView(state), {
+    selectedDominoId: "1-6",
+    legalTargets,
+    strategicDecisions: decisions,
+  });
+  const previewScene = createGraphScene(projectGraphView(state), {
+    selectedDominoId: "1-6",
+    legalTargets,
+    strategicDecisions: decisions,
+    previewDecision: cross,
+  });
+  const markup = renderGraphSvgMarkup(restScene);
+  const previewMarkup = renderGraphSvgMarkup(previewScene);
+  const sixTargets = restScene.openTargets.filter(
+    (target) => target.value === 6 && target.isLegal,
+  );
+
+  assert.equal(decisions.length, 2);
+  assert.equal(new Set(sixTargets.map((target) => target.id)).size, 2);
+  assert.deepEqual(
+    new Set(sixTargets.map((target) => target.decisionVisual.title)),
+    new Set(["Otra punta", "Doble central"]),
+  );
+  assert.match(markup, />Otra punta</);
+  assert.match(markup, />Doble central</);
+  assert.match(markup, /×2 permanece/);
+  assert.match(markup, /×2 se apaga · \+2 ramas/);
+  assert.match(previewMarkup, /is-preview-removing-scoring/);
+  assert.match(previewMarkup, /×3→×1/);
+  assert.doesNotMatch(previewMarkup, /puntos futuros|Σ\s*=\s*\d/);
+  assert.equal(
+    cross.targets.some((target) =>
+      target.placementId === "placement-1" && target.portId === "main:2"
+    ),
+    true,
   );
 });
 

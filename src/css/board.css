@@ -284,6 +284,41 @@
   pointer-events: none;
 }
 
+.open-target__decision rect {
+  fill: rgb(3 31 28 / 0.94);
+  stroke: var(--game-teal-bright);
+  stroke-width: 1.5;
+}
+
+.open-target__decision text {
+  fill: var(--game-ivory);
+  font-family: var(--game-font-sans);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.open-target__decision-effect {
+  fill: var(--game-gold-bright) !important;
+  font-size: 7px !important;
+  font-weight: 700 !important;
+}
+
+.open-target.is-decision-preview .open-target__curve,
+.open-target.is-decision-preview .open-target__end {
+  stroke-width: 9;
+  filter: drop-shadow(0 0 10px rgb(39 222 197 / 0.9));
+}
+
+.graph-loop.is-preview-removing-scoring .graph-loop__shape {
+  stroke: rgb(255 201 78 / 0.36) !important;
+  stroke-dasharray: 5 6;
+  filter: none !important;
+}
+
+.graph-vertex__scoring-multiplicity.is-preview.is-removing {
+  opacity: 0.5;
+}
+
 .open-target__option-index {
   font-size: 10px;
   paint-order: stroke;

@@ -166,6 +166,8 @@ function createOpenTarget(
     path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
     endX: end.x,
     endY: end.y,
+    decisionLabelX: end.x > vertex.x ? end.x - 120 : end.x + 16,
+    decisionLabelY: end.y + (index % 2 === 0 ? 16 : -42),
     isLegal,
     optionIndex,
     familyTone: target.topology.familyIndex === null
@@ -178,6 +180,58 @@ function createOpenTarget(
 
 function targetIdentity(target) {
   return target.kind === "START" ? "START" : target.id;
+}
+
+function actionTargetIdentity(target) {
+  return target.kind === "START"
+    ? "START"
+    : `${target.placementId}:${target.portId}`;
+}
+
+export function createGraphDecisionVisual(decision, siblingDecisions = []) {
+  if (!decision) return null;
+  const cross = siblingDecisions.find(
+    (candidate) => candidate.decisionKind === "complete-cross",
+  );
+  const isCriticalDoubleChoice = cross !== undefined &&
+    siblingDecisions.some((candidate) => candidate.decisionKind === "continue");
+  if (isCriticalDoubleChoice && decision.decisionKind === "continue") {
+    const multiplicity = cross.effects?.ramifierScoringChange?.before ?? 2;
+    return {
+      kind: "keep-double",
+      title: "Otra punta",
+      effect: `×${multiplicity} permanece`,
+      multiplicityBefore: multiplicity,
+      multiplicityAfter: multiplicity,
+      unlockedLateralCount: 0,
+    };
+  }
+  if (isCriticalDoubleChoice && decision.decisionKind === "complete-cross") {
+    const multiplicity = decision.effects?.ramifierScoringChange?.before ?? 2;
+    const unlocked = decision.effects?.unlockedLateralCount ?? 2;
+    return {
+      kind: "open-double",
+      title: "Doble central",
+      effect: `×${multiplicity} se apaga · +${unlocked} ramas`,
+      multiplicityBefore: multiplicity,
+      multiplicityAfter: 0,
+      unlockedLateralCount: unlocked,
+    };
+  }
+  const meta = {
+    continue: ["Seguir punta", "La estructura continúa"],
+    "complete-cross": ["Completar cruce", "Habilita las ramas laterales"],
+    "open-arm": ["Abrir rama", "Inicia una rama lateral"],
+    start: ["Jugar", "Inicia la mesa"],
+  }[decision.decisionKind] ?? ["Elegir opción", "Consecuencia distinta"];
+  return {
+    kind: decision.decisionKind,
+    title: meta[0],
+    effect: meta[1],
+    multiplicityBefore: null,
+    multiplicityAfter: null,
+    unlockedLateralCount: decision.effects?.unlockedLateralCount ?? 0,
+  };
 }
 
 function createTopologyInspection(
@@ -262,6 +316,8 @@ export function createGraphScene(
     inspectedPlacementId = null,
     layout = GRAPH_SCENE_LAYOUTS.COMPACT,
     scoringResolution = null,
+    strategicDecisions = [],
+    previewDecision = null,
   } = {},
 ) {
   const geometry = LAYOUT_GEOMETRY[layout];
@@ -276,23 +332,27 @@ export function createGraphScene(
   );
   const potentialStructure = createPotentialStructure(positions);
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
+  const activeScoringTerms = scoringResolution?.terms ??
+    (strategicDecisions.length > 0
+      ? view.scoringPresentation?.terms ?? []
+      : []);
   const scoringPortIds = new Set(
-    (scoringResolution?.terms ?? [])
+    activeScoringTerms
       .filter((term) => term.portId !== null)
       .map((term) => `${term.placementId}:${term.portId}`),
   );
   const scoringDoublePlacementIds = new Set(
-    (scoringResolution?.terms ?? [])
+    activeScoringTerms
       .filter((term) => term.isDouble && term.factor > 0)
       .map((term) => term.placementId),
   );
   const scoringValues = new Set(
-    (scoringResolution?.terms ?? [])
+    activeScoringTerms
       .filter((term) => term.isDouble !== true || term.factor > 0)
       .map((term) => term.value),
   );
   const scoringMultiplicityByValue = new Map();
-  for (const term of scoringResolution?.terms ?? []) {
+  for (const term of activeScoringTerms) {
     if (term.factor <= 0) continue;
     scoringMultiplicityByValue.set(
       term.value,
@@ -324,6 +384,23 @@ export function createGraphScene(
   );
   const openTargets = [];
   const legalTargetIdsByValue = new Map();
+  const decisionByTargetId = new Map();
+  const decisionsByValue = new Map();
+  for (const decision of strategicDecisions) {
+    const siblings = decisionsByValue.get(decision.value) ?? [];
+    siblings.push(decision);
+    decisionsByValue.set(decision.value, siblings);
+    for (const target of decision.targets ?? [decision.canonicalTarget]) {
+      decisionByTargetId.set(actionTargetIdentity(target), decision);
+    }
+  }
+  const previewMultiplicities = new Map();
+  for (const term of previewDecision?.outcome?.scoring?.terms ?? []) {
+    previewMultiplicities.set(
+      term.value,
+      (previewMultiplicities.get(term.value) ?? 0) + term.factor,
+    );
+  }
 
   for (const group of view.openEndsByValue) {
     const vertex = positions.get(group.value);
@@ -342,6 +419,8 @@ export function createGraphScene(
         compatibleIndex += 1;
       }
       const targetStructureId = target.topology.familyId ?? "main";
+      const decision = decisionByTargetId.get(target.id) ?? null;
+      const siblingDecisions = decisionsByValue.get(group.value) ?? [];
       const isTopologyHighlighted =
         inspection !== null &&
         targetStructureId === inspection.structureId;
@@ -363,6 +442,16 @@ export function createGraphScene(
           isFamilyClosed:
             view.roundStatus.phase === "finished" &&
             target.topology.region === "branch",
+          decisionId: decision?.id ?? null,
+          decisionVisual: createGraphDecisionVisual(
+            decision,
+            siblingDecisions,
+          ),
+          requiresDecisionPreview: isLegal && siblingDecisions.length > 1,
+          isDecisionPreview:
+            previewDecision !== null &&
+            decision !== null &&
+            previewDecision.id === decision.id,
         },
       );
       openTargets.push(projectedTarget);
@@ -393,6 +482,9 @@ export function createGraphScene(
         edgeStructureId !== inspection.structureId &&
         edge.placementId !== inspection.rootPlacementId,
       isScoringTerm: scoringDoublePlacementIds.has(edge.placementId),
+      isPreviewRemovingScoring:
+        previewDecision?.effects?.ramifierScoringChange?.after === 0 &&
+        edge.placementId === view.structure.branchingDouble?.placementId,
       isFamilyClosed:
         topology.branchFamily !== null &&
         (view.roundStatus.phase === "finished" ||
@@ -440,11 +532,19 @@ export function createGraphScene(
       isCompatible: legalTargetIdsByValue.has(vertex.value),
       isScoringTerm: scoringValues.has(vertex.value),
       scoringMultiplicity: scoringMultiplicityByValue.get(vertex.value) ?? 0,
+      previewScoringMultiplicity: previewDecision === null
+        ? null
+        : previewMultiplicities.get(vertex.value) ?? 0,
+      isDecisionPreview: previewDecision !== null && (
+        previewDecision.value === vertex.value ||
+        previewDecision.effects?.ramifierScoringChange?.value === vertex.value
+      ),
     })),
     potentialEdges: potentialStructure.edges,
     potentialLoops: potentialStructure.loops,
     edges,
     loops,
     openTargets,
+    previewDecisionId: previewDecision?.id ?? null,
   };
 }

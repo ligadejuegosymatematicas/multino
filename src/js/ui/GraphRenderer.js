@@ -67,7 +67,7 @@ function renderEdge(edge) {
 function renderLoop(loop) {
   const label = `Chancho ${loop.a}-${loop.b}, ${describeTopology(loop.topology)}, ${loop.topology.isSpecialDouble ? "especial" : "ordinario"}${describeRootedBranches(loop.topology)}, jugado por ${loop.playerId} en la acción ${loop.turnNumber}`;
   return `
-    <g class="graph-loop ${getTopologyClasses(loop)}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-family-id="${escapeAttribute(loop.topology.familyId ?? "")}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
+    <g class="graph-loop ${getTopologyClasses(loop)}${loop.isPreviewRemovingScoring ? " is-preview-removing-scoring" : ""}" data-placement-id="${escapeAttribute(loop.placementId)}" data-region="${loop.topology.region}" data-family-id="${escapeAttribute(loop.topology.familyId ?? "")}" data-special-double="${loop.topology.isSpecialDouble}" role="button" tabindex="0" aria-pressed="${loop.isInspected}" aria-label="${escapeAttribute(label)}">
       <path class="graph-loop__hit" d="${loop.path}"></path>
       <path class="graph-loop__shape" d="${loop.path}"></path>
     </g>`;
@@ -90,16 +90,25 @@ function renderOpenTarget(target, hasSelection) {
     target.isTopologyHighlighted ? "is-topology-highlighted" : "",
     target.isTopologyDimmed ? "is-topology-dimmed" : "",
     target.isScoringTerm ? "is-scoring-term" : "",
+    target.isDecisionPreview ? "is-decision-preview" : "",
   ].filter(Boolean).join(" ");
   const optionMarkup = target.optionIndex === null
     ? ""
     : `<text class="open-target__option-index" x="${target.endX + 13}" y="${target.endY - 12}" aria-hidden="true">${target.optionIndex}</text>`;
+  const decisionMarkup = !target.isLegal || !target.decisionVisual ||
+      !target.requiresDecisionPreview
+    ? ""
+    : `<g class="open-target__decision is-${escapeAttribute(target.decisionVisual.kind)}" transform="translate(${target.decisionLabelX} ${target.decisionLabelY})" aria-hidden="true"><rect x="-4" y="-12" width="108" height="34" rx="10"></rect><text class="open-target__decision-title" x="4" y="0">${escapeAttribute(target.decisionVisual.title)}</text><text class="open-target__decision-effect" x="4" y="13">${escapeAttribute(target.decisionVisual.effect)}</text></g>`;
+  const decisionLabel = target.decisionVisual
+    ? `; ${target.decisionVisual.title}; ${target.decisionVisual.effect}`
+    : "";
   return `
-    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-region="${target.topology.region}" data-family-id="${escapeAttribute(target.topology.familyId ?? "")}" data-arm-index="${escapeAttribute(target.topology.armIndex ?? "")}" data-branch-state="${escapeAttribute(target.topology.branchState ?? "")}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="0" aria-disabled="false" aria-label="${escapeAttribute(target.accessibleLabel)}">
+    <g class="open-target ${classes}" data-target-id="${escapeAttribute(target.id)}" data-decision-id="${escapeAttribute(target.decisionId ?? "")}" data-region="${target.topology.region}" data-family-id="${escapeAttribute(target.topology.familyId ?? "")}" data-arm-index="${escapeAttribute(target.topology.armIndex ?? "")}" data-branch-state="${escapeAttribute(target.topology.branchState ?? "")}" data-structure-code="${escapeAttribute(target.topology.structureCode)}" role="button" tabindex="0" aria-disabled="false" aria-label="${escapeAttribute(target.accessibleLabel + decisionLabel)}" aria-pressed="${target.isDecisionPreview}">
       <path class="open-target__hit" d="${target.path}"></path>
       <path class="open-target__curve" d="${target.path}"></path>
       <circle class="open-target__end" cx="${target.endX}" cy="${target.endY}" r="10"></circle>
       ${optionMarkup}
+      ${decisionMarkup}
     </g>`;
 }
 
@@ -115,8 +124,15 @@ function renderVertex(vertex, hasSelection) {
     : count > 1
       ? `, ${count} destinos compatibles; elija una curva`
       : "";
-  const scoringMultiplicity = vertex.scoringMultiplicity > 0
-    ? `<g class="graph-vertex__scoring-multiplicity" aria-hidden="true"><circle cx="${vertex.x - 31}" cy="${vertex.y - 31}" r="13"></circle><text x="${vertex.x - 31}" y="${vertex.y - 31}">×${vertex.scoringMultiplicity}</text></g>`
+  const displayedMultiplicity = vertex.previewScoringMultiplicity ??
+    vertex.scoringMultiplicity;
+  const multiplicityLabel = vertex.previewScoringMultiplicity !== null &&
+      vertex.previewScoringMultiplicity !== vertex.scoringMultiplicity
+    ? `×${vertex.scoringMultiplicity}→×${vertex.previewScoringMultiplicity}`
+    : `×${displayedMultiplicity}`;
+  const scoringMultiplicity = displayedMultiplicity > 0 ||
+      vertex.scoringMultiplicity > 0
+    ? `<g class="graph-vertex__scoring-multiplicity${vertex.previewScoringMultiplicity !== null ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" aria-hidden="true"><circle cx="${vertex.x - 31}" cy="${vertex.y - 31}" r="16"></circle><text x="${vertex.x - 31}" y="${vertex.y - 31}">${multiplicityLabel}</text></g>`
     : "";
   return `
     <g class="graph-vertex ${stateClass}${vertex.isScoringTerm ? " is-scoring-term" : ""}" data-vertex-value="${vertex.value}"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} role="button" tabindex="${count > 0 ? "0" : "-1"}" aria-disabled="${count > 0 ? "false" : "true"}" aria-label="Valor ${vertex.value}${actionHint}">
@@ -218,6 +234,8 @@ export class GraphRenderer {
       throw new TypeError("GraphRenderer requiere un contenedor.");
     }
     this.container = container;
+    this.previewTargetId = null;
+    this.selectionKey = null;
   }
 
   render(
@@ -231,6 +249,17 @@ export class GraphRenderer {
       onMessage,
     } = {},
   ) {
+    const selectionKey = `${presentation.selectedDominoId ?? ""}|${presentation.selectedLegalTargets.map((target) => target.id ?? target.kind).sort().join(",")}`;
+    if (selectionKey !== this.selectionKey) {
+      this.previewTargetId = null;
+      this.selectionKey = selectionKey;
+    }
+    const strategicDecisions = presentation.strategicDecisionGroups ?? [];
+    const previewDecision = strategicDecisions.find((decision) =>
+      (decision.targets ?? []).some((target) =>
+        `${target.placementId}:${target.portId}` === this.previewTargetId
+      )
+    ) ?? null;
     const scene = createGraphScene(presentation.view, {
       selectedDominoId: presentation.selectedDominoId,
       legalTargets: presentation.selectedLegalTargets,
@@ -240,6 +269,8 @@ export class GraphRenderer {
         ? GRAPH_SCENE_LAYOUTS.WIDE
         : GRAPH_SCENE_LAYOUTS.COMPACT,
       scoringResolution: presentation.scoringResolution ?? null,
+      strategicDecisions,
+      previewDecision,
     });
     const startMarkup = scene.canStart
       ? `<div class="start-action"><p>El tablero aún está vacío.</p><button type="button" class="primary-action" data-start-action>Jugar ficha seleccionada</button></div>`
@@ -262,9 +293,28 @@ export class GraphRenderer {
     }
     for (const element of this.container.querySelectorAll(".open-target")) {
       const target = targetById.get(element.dataset.targetId);
-      const activate = () => target.isLegal
-        ? onTarget?.(target)
-        : onInspectStructure?.(target.topology.familyId ?? "main");
+      const activate = () => {
+        if (!target.isLegal) {
+          onInspectStructure?.(target.topology.familyId ?? "main");
+          return;
+        }
+        if (
+          target.requiresDecisionPreview &&
+          this.previewTargetId !== target.id
+        ) {
+          this.previewTargetId = target.id;
+          this.render(presentation, {
+            onTarget,
+            onStart,
+            onInspectEdge,
+            onInspectStructure,
+            onClearInspection,
+            onMessage,
+          });
+          return;
+        }
+        onTarget?.(target);
+      };
       element.addEventListener("click", activate);
       activateOnKeyboard(element, activate);
     }
@@ -289,7 +339,7 @@ export class GraphRenderer {
           return;
         }
         onMessage?.(
-          `Hay ${vertex.legalTargetIds.length} destinos de valor ${vertex.value}; elige una curva numerada.`,
+          `Hay ${vertex.legalTargetIds.length} opciones de valor ${vertex.value}; elige la curva por su consecuencia.`,
         );
         this.container
           .querySelector(`[data-target-id="${vertex.legalTargetIds[0]}"]`)
