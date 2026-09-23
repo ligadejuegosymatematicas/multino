@@ -40,6 +40,7 @@ import {
 import { createBrowserSupabaseGateway } from "./online/SupabaseBrowserClient.js";
 import {
   LocalMatchHistoryStore,
+  LocalOnlineRoomStore,
   LocalProfileStore,
 } from "./storage/LocalStores.js";
 import {
@@ -112,6 +113,7 @@ const ONLINE_MOVE_HOLD_MS = 800;
 const ONLINE_POST_SCORE_PAUSE_MS = 260;
 const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
+const onlineRoomStore = new LocalOnlineRoomStore();
 document.title = APP_NAME;
 document.querySelector("#app-title").textContent = APP_NAME;
 for (const element of document.querySelectorAll("[data-app-name]")) {
@@ -689,14 +691,24 @@ async function startOnlineMode(roomCode = "") {
   onlineCard.classList.add("is-busy");
   onlineStatus.textContent = "Conectando con la sala…";
   try {
+    const activeRoomCode = roomCode || onlineRoomStore.load().roomCode;
     const gateway = await createBrowserSupabaseGateway();
     onlineSessionController?.dispose();
     onlineSessionController = new OnlineGameSessionController({
       gateway,
       onChange: renderOnlineSession,
+      onError: (error) => {
+        onlineStatus.textContent = error.message;
+      },
+      onResync: () => {
+        clearOnlinePresentationTimer();
+        resetPresentationBarrier();
+      },
     });
     sessionController = onlineSessionController;
-    await onlineSessionController.start({ roomCode });
+    await onlineSessionController.start({ roomCode: activeRoomCode });
+    const resumedRoomCode = onlineSessionController.getPresentation().room?.roomCode;
+    if (resumedRoomCode) onlineRoomStore.save({ roomCode: resumedRoomCode });
   } catch (error) {
     onlineStatus.textContent = error.message;
   } finally {
@@ -721,6 +733,7 @@ function showEntry() {
   onlineSessionController?.dispose();
   onlineSessionController = null;
   sessionController = null;
+  onlineRoomStore.clear();
   entryScreen.hidden = false;
   setupScreen.hidden = true;
   onlineScreen.hidden = true;
@@ -834,6 +847,9 @@ document.querySelector("#create-room-action").addEventListener("click", () => {
     if (!nick) throw new Error("Escribe tu nick.");
     profileStore.save({ nick });
     await onlineSessionController.createRoom(nick);
+    onlineRoomStore.save({
+      roomCode: onlineSessionController.getPresentation().room.roomCode,
+    });
     const url = new URL(window.location.href);
     url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
     window.history.replaceState(null, "", url);
@@ -849,6 +865,9 @@ onlineJoinForm.addEventListener("submit", (event) => {
     if (!roomCode) throw new Error("Escribe el código de sala.");
     profileStore.save({ nick });
     await onlineSessionController.joinRoom({ roomCode, nick });
+    onlineRoomStore.save({
+      roomCode: onlineSessionController.getPresentation().room.roomCode,
+    });
     const url = new URL(window.location.href);
     url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
     window.history.replaceState(null, "", url);
@@ -883,9 +902,24 @@ startOnlineButton.addEventListener("click", () => {
 
 const savedProfile = profileStore.load();
 onlineNick.value = savedProfile.nick || "";
-const initialRoomCode = new URL(window.location.href).searchParams.get("room") ?? "";
+const initialRoomCode = new URL(window.location.href).searchParams.get("room") ??
+  onlineRoomStore.load().roomCode;
 if (initialRoomCode) {
   void startOnlineMode(initialRoomCode);
 } else {
   showEntry();
 }
+
+async function resyncOnlineSession() {
+  if (!onlineSessionController) return;
+  try {
+    await onlineSessionController.resync();
+  } catch (error) {
+    onlineStatus.textContent = error.message;
+  }
+}
+
+window.addEventListener("online", () => void resyncOnlineSession());
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) void resyncOnlineSession();
+});

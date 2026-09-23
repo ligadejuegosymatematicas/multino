@@ -82,12 +82,19 @@ function engineSeatId(seat) {
 }
 
 export class OnlineGameSessionController {
-  constructor({ gateway, onChange = () => {} } = {}) {
+  constructor({
+    gateway,
+    onChange = () => {},
+    onError = () => {},
+    onResync = () => {},
+  } = {}) {
     if (!gateway || typeof gateway.sendLobbyIntent !== "function") {
       throw new TypeError("Se requiere un gateway online.");
     }
     this.gateway = gateway;
     this.onChange = onChange;
+    this.onError = onError;
+    this.onResync = onResync;
     this.screen = ONLINE_SCREENS.JOIN;
     this.user = null;
     this.room = null;
@@ -101,6 +108,7 @@ export class OnlineGameSessionController {
     this.unsubscribe = null;
     this.refreshPromise = null;
     this.refreshRequested = false;
+    this.directRefreshRequested = false;
     this.presentationQueue = [];
     this.presentationPhase = "idle";
     this.presentationActorSeatId = null;
@@ -293,13 +301,30 @@ export class OnlineGameSessionController {
     this.#emitChange();
   }
 
-  async refresh() {
+  async refresh({ direct = false } = {}) {
     this.refreshRequested = true;
+    this.directRefreshRequested ||= direct;
     if (this.refreshPromise) return this.refreshPromise;
     this.refreshPromise = this.#drainRefreshRequests().finally(() => {
       this.refreshPromise = null;
     });
     return this.refreshPromise;
+  }
+
+  async resync() {
+    const identity = await this.gateway.ensureAnonymousIdentity();
+    if (this.user?.id && identity?.id !== this.user.id) {
+      throw Object.assign(
+        new Error("La identidad de esta sesión ya no coincide con el asiento."),
+        { code: "SESSION_IDENTITY_CHANGED" },
+      );
+    }
+    this.user = identity;
+    if (!this.room) {
+      if (this.pendingRoomCode) await this.resumeRoom(this.pendingRoomCode);
+      return;
+    }
+    return this.refresh({ direct: true });
   }
 
   advancePresentation() {
@@ -338,7 +363,12 @@ export class OnlineGameSessionController {
     this.unsubscribe?.();
     this.unsubscribe = this.gateway.subscribeRoom(
       this.room.id,
-      () => void this.refresh(),
+      () => this.#runBackground(() => this.refresh()),
+      (status) => {
+        if (status === "RECONNECTED") {
+          this.#runBackground(() => this.resync());
+        }
+      },
     );
     if (this.room.status === "PLAYING" || this.room.status === "FINISHED") {
       const match = await this.gateway.syncMatch(this.room.code);
@@ -350,7 +380,7 @@ export class OnlineGameSessionController {
     this.#emitChange();
   }
 
-  async #refreshNow() {
+  async #refreshNow({ direct = false } = {}) {
     if (!this.room) return;
     const room = await this.gateway.sendLobbyIntent({
       type: "GET_ROOM",
@@ -358,13 +388,17 @@ export class OnlineGameSessionController {
     });
     this.room = room;
     if (room.status === "PLAYING" || room.status === "FINISHED") {
-      const afterSequence = Math.max(
-        this.lastQueuedSequence,
-        this.lastPresentedSequence,
+      const afterSequence = direct
+        ? null
+        : Math.max(this.lastQueuedSequence, this.lastPresentedSequence);
+      const match = await this.gateway.syncMatch(
+        room.code,
+        Number.isSafeInteger(afterSequence) ? { afterSequence } : {},
       );
-      const match = await this.gateway.syncMatch(room.code, { afterSequence });
       this.screen = ONLINE_SCREENS.ROUND;
-      this.#acceptAuthoritativeMatch(match, { emit: false });
+      this.#acceptAuthoritativeMatch(match, { direct, emit: false });
+    } else {
+      this.screen = ONLINE_SCREENS.LOBBY;
     }
     this.#emitChange();
   }
@@ -372,8 +406,16 @@ export class OnlineGameSessionController {
   async #drainRefreshRequests() {
     while (this.refreshRequested) {
       this.refreshRequested = false;
-      await this.#refreshNow();
+      const direct = this.directRefreshRequested;
+      this.directRefreshRequested = false;
+      await this.#refreshNow({ direct });
     }
+  }
+
+  #runBackground(operation) {
+    Promise.resolve()
+      .then(operation)
+      .catch((error) => this.onError(error));
   }
 
   async #sendGameIntent(intent) {
@@ -395,6 +437,7 @@ export class OnlineGameSessionController {
       ? match.presentationFrames
       : [];
     if (direct) {
+      this.onResync();
       this.presentationQueue = [];
       this.presentationPhase = "idle";
       this.presentationActorSeatId = null;

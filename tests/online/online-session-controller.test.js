@@ -7,6 +7,7 @@ import {
   createOnlineRoundPresentation,
 } from "../../src/js/online/OnlineGameSessionController.js";
 import { createBrowserSupabaseGateway } from "../../src/js/online/SupabaseBrowserClient.js";
+import { SupabaseGateway } from "../../src/js/online/SupabaseGateway.js";
 
 function projectedView({ current = true } = {}) {
   return {
@@ -322,6 +323,147 @@ test("reconnect sincroniza directo al snapshot actual y reinicia la cola", async
   assert.equal(presentation.presentationQueue.pendingCount, 0);
   assert.equal(presentation.presentationQueue.presentedSequence, 9);
   assert.equal(presentation.presentationQueue.authoritativeSequence, 9);
+});
+
+test("Realtime reanudado fuerza resync directo y conserva asiento, equipo y mano", async () => {
+  let onSubscriptionStatus = null;
+  let syncResponse = matchResponse({
+    sequence: 2,
+    version: 2,
+    privateSeatId: "seat-3",
+    currentPlayerId: "seat-1",
+  });
+  let syncCalls = 0;
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => ({
+      ...room({ humanSeatIndex: 2 }),
+      status: "PLAYING",
+      version: syncResponse.version,
+    }),
+    subscribeRoom: (_roomId, _onVersion, onStatus) => {
+      onSubscriptionStatus = onStatus;
+      return () => {};
+    },
+    syncMatch: async () => {
+      syncCalls += 1;
+      return syncResponse;
+    },
+    sendIntent: async () => syncResponse,
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.resumeRoom("ABCDE");
+  const before = controller.getPresentation();
+  assert.equal(before.room.seats.find(({ userId }) => userId === "user-1").seatIndex, 2);
+  assert.equal(before.room.seats.find(({ userId }) => userId === "user-1").teamId, "A");
+
+  syncResponse = matchResponse({
+    sequence: 5,
+    version: 5,
+    privateSeatId: "seat-3",
+    currentPlayerId: "seat-3",
+  });
+  assert.equal(typeof onSubscriptionStatus, "function");
+  onSubscriptionStatus("RECONNECTED");
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const after = controller.getPresentation();
+  assert.equal(syncCalls, 2);
+  assert.equal(after.presentationQueue.phase, "idle");
+  assert.equal(after.presentationQueue.presentedSequence, 5);
+  assert.equal(after.presentationQueue.authoritativeSequence, 5);
+  assert.equal(after.round.handPrivacy.playerId, "seat-3");
+  assert.deepEqual(after.round.view.hand.map(({ dominoId }) => dominoId), ["d:4:5"]);
+  assert.equal(after.room.seats.filter(({ userId }) => userId === "user-1").length, 1);
+});
+
+test("un resync no sustituye la identidad anónima ni intenta ocupar otro asiento", async () => {
+  let identity = { id: "user-1" };
+  let lobbyCalls = 0;
+  const gateway = {
+    ensureAnonymousIdentity: async () => identity,
+    sendLobbyIntent: async () => {
+      lobbyCalls += 1;
+      return { ...room(), status: "PLAYING", version: 1 };
+    },
+    subscribeRoom: () => () => {},
+    syncMatch: async () => matchResponse(),
+    sendIntent: async () => matchResponse(),
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start();
+  await controller.resumeRoom("ABCDE");
+  identity = { id: "otro-usuario" };
+  await assert.rejects(
+    controller.resync(),
+    (error) => error.code === "SESSION_IDENTITY_CHANGED",
+  );
+  assert.equal(lobbyCalls, 1, "no debe intentar JOIN_ROOM ni GET_ROOM con otra identidad");
+});
+
+test("una sala pendiente puede reanudarse al volver la red sin crear otro asiento", async () => {
+  let available = false;
+  let roomReads = 0;
+  const gateway = {
+    ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+    sendLobbyIntent: async () => {
+      roomReads += 1;
+      if (!available) throw Object.assign(new Error("Sin red"), { code: "NETWORK" });
+      return { ...room({ humanSeatIndex: 2 }), status: "PLAYING", version: 4 };
+    },
+    subscribeRoom: () => () => {},
+    syncMatch: async () => matchResponse({
+      sequence: 4,
+      version: 4,
+      privateSeatId: "seat-3",
+    }),
+    sendIntent: async () => matchResponse(),
+  };
+  const controller = new OnlineGameSessionController({ gateway });
+  await controller.start({ roomCode: "ABCDE" });
+  assert.equal(controller.getPresentation().room, null);
+
+  available = true;
+  await controller.resync();
+  const presentation = controller.getPresentation();
+  assert.equal(roomReads, 2);
+  assert.equal(presentation.room.roomCode, "ABCDE");
+  assert.equal(presentation.room.seats.find(({ userId }) => userId === "user-1").seatIndex, 2);
+  assert.equal(presentation.round.handPrivacy.playerId, "seat-3");
+});
+
+test("el canal distingue suscripción inicial de reconexión", () => {
+  let subscriptionCallback = null;
+  let removedChannel = null;
+  const channel = {
+    on() { return this; },
+    subscribe(callback) {
+      subscriptionCallback = callback;
+      return this;
+    },
+  };
+  const gateway = new SupabaseGateway({
+    supabaseClient: {
+      auth: {},
+      functions: {},
+      channel: () => channel,
+      removeChannel: (removed) => { removedChannel = removed; },
+    },
+  });
+  const statuses = [];
+  const unsubscribe = gateway.subscribeRoom(
+    "room-1",
+    () => {},
+    (status) => statuses.push(status),
+  );
+  subscriptionCallback("SUBSCRIBED");
+  subscriptionCallback("TIMED_OUT", new Error("timeout"));
+  subscriptionCallback("SUBSCRIBED");
+  assert.deepEqual(statuses, ["SUBSCRIBED", "TIMED_OUT", "RECONNECTED"]);
+  unsubscribe();
+  assert.equal(removedChannel, channel);
 });
 
 test("una respuesta stale no altera la presentación ni pierde la selección", async () => {

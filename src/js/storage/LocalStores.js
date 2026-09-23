@@ -1,5 +1,6 @@
 const PROFILE_KEY = "multino.profile.v1";
 const HISTORY_KEY = "multino.history.v1";
+const ONLINE_ROOM_KEY = "multino.online-room.v1";
 
 function safeParse(value, fallback) {
   try {
@@ -41,3 +42,29 @@ export class LocalMatchHistoryStore {
   }
 }
 
+export class LocalOnlineRoomStore {
+  constructor(storage = globalThis.localStorage) {
+    this.storage = storage;
+  }
+
+  load() {
+    const saved = safeParse(this.storage?.getItem(ONLINE_ROOM_KEY), {
+      roomCode: "",
+    });
+    return {
+      roomCode: String(saved?.roomCode ?? "").trim().toUpperCase(),
+    };
+  }
+
+  save({ roomCode }) {
+    const activeRoom = {
+      roomCode: String(roomCode ?? "").trim().toUpperCase(),
+    };
+    this.storage?.setItem(ONLINE_ROOM_KEY, JSON.stringify(activeRoom));
+    return activeRoom;
+  }
+
+  clear() {
+    this.storage?.removeItem?.(ONLINE_ROOM_KEY);
+  }
+}

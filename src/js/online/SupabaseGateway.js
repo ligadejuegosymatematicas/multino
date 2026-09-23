@@ -60,7 +60,8 @@ export class SupabaseGateway {
     return data;
   }
 
-  subscribeRoom(roomId, onVersion) {
+  subscribeRoom(roomId, onVersion, onStatus = () => {}) {
+    let hasSubscribed = false;
     const channel = this.client.channel(`room:${roomId}`)
       .on(
         "postgres_changes",
@@ -72,7 +73,17 @@ export class SupabaseGateway {
         { event: "*", schema: "public", table: "matches", filter: `room_id=eq.${roomId}` },
         ({ new: next }) => onVersion(next.version, { scope: "match" }),
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === "SUBSCRIBED") {
+          onStatus(hasSubscribed ? "RECONNECTED" : "SUBSCRIBED", {
+            status,
+            error: null,
+          });
+          hasSubscribed = true;
+          return;
+        }
+        onStatus(status, { status, error: error ?? null });
+      });
     return () => this.client.removeChannel(channel);
   }
 
