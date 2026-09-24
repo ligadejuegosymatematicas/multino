@@ -60,6 +60,7 @@ const traditionalRenderer = new TraditionalRenderer(boardRoot);
 const passButton = document.querySelector("#pass-action");
 const message = document.querySelector("#game-message");
 const boardHeading = document.querySelector("#board-heading");
+const semanticLegend = document.querySelector("#board-semantic-legend");
 const modeButtons = [...document.querySelectorAll("[data-view-mode]")];
 const setupScreen = document.querySelector("#setup-screen");
 const entryScreen = document.querySelector("#entry-screen");
@@ -349,8 +350,9 @@ function renderRound(
   boardHeading.textContent = mode === BOARD_VIEW_MODES.GRAPH
     ? "Grafo de valores"
     : mode === BOARD_VIEW_MODES.PORTS
-      ? "Vista estratégica"
+      ? "Estrategia"
       : "Mesa tradicional";
+  semanticLegend.hidden = mode === BOARD_VIEW_MODES.TRADITIONAL;
   for (const button of modeButtons) {
     const isActive = button.dataset.viewMode === mode;
     button.classList.toggle("is-active", isActive);

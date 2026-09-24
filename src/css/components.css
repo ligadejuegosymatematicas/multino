@@ -494,6 +494,37 @@
   border-style: dashed;
 }
 
+.board-semantic-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem 0.85rem;
+  margin: 0;
+  padding: 0.35rem 0.25rem;
+  border-top: 1px solid var(--game-line);
+  color: var(--club-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.board-semantic-legend > span { white-space: nowrap; }
+.board-semantic-legend[hidden] { display: none; }
+.board-semantic-legend b {
+  display: inline-grid;
+  width: 1.2rem;
+  height: 1.2rem;
+  place-items: center;
+  margin-inline-end: 0.12rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.board-semantic-legend .is-playable b { color: var(--playable); }
+.board-semantic-legend .is-scoring b { color: var(--scoring); }
+.board-semantic-legend .is-history b { color: var(--club-muted); border-radius: 0.2rem; }
+
 .panel-heading {
   display: flex;
   align-items: center;

@@ -446,7 +446,7 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.match(traditionalCss, /\.traditional-camera-controls \{[\s\S]+?inset:\s*0\.65rem auto auto 0\.65rem/);
   assert.match(portsCss, /\.port-open-target__hit \{[\s\S]+?fill:\s*none[\s\S]+?stroke-width:\s*32[\s\S]+?pointer-events:\s*stroke/);
   assert.match(portsCss, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(html, /Tradicional[\s\S]+Puertos[\s\S]+Grafo/);
+  assert.match(html, /Tradicional[\s\S]+Estrategia[\s\S]+Grafo/);
   assert.match(html, /src\/css\/theme\.css/);
   assert.match(html, /brand-lockup/);
   assert.doesNotMatch(html, /id="player-counts"/);

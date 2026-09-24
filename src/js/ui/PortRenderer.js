@@ -162,7 +162,8 @@ function renderScoringMultiplicity(node) {
   const displayedMultiplicity = previewActive
     ? node.previewScoringMultiplicity
     : node.scoringMultiplicity;
-  if (displayedMultiplicity === 0 && node.scoringMultiplicity === 0) return "";
+  if (displayedMultiplicity === 0 && node.scoringMultiplicity === 0 &&
+      node.openTargetCount === 0) return "";
   const transition = previewActive &&
       displayedMultiplicity !== node.scoringMultiplicity
     ? `×${node.scoringMultiplicity}→×${displayedMultiplicity}`
@@ -686,17 +687,6 @@ export function renderPortTargetChooserMarkup(
     </section>`;
 }
 
-export function renderPortSemanticLegendMarkup(scene) {
-  if (scene.showStructure || scene.nodeFocus) return "";
-  const introClass = scene.playedPlacementCount <= 4 ? " is-intro" : " is-subtle";
-  return `
-    <aside class="port-semantic-legend${introClass}" aria-label="Leyenda de Puertos">
-      <span class="is-playable"><b aria-hidden="true">↗</b> jugar</span>
-      <span class="is-scoring"><b aria-hidden="true">×</b> suma</span>
-      <span class="is-history"><b aria-hidden="true">▣</b> salieron</span>
-    </aside>`;
-}
-
 export function getPortValueAction(scene, value) {
   const decisions = scene.strategicDecisions.filter(
     (decision) => decision.value === value,
@@ -742,7 +732,7 @@ export function renderPortSvgMarkup(scene) {
   const showOpenTargetDetails = fullStructure || routeOnly || focusActive;
   return `
     <svg class="port-graph is-${scene.visualState}${scene.scoringResolution ? " is-scoring-feedback" : ""}" viewBox="${scene.viewBox}" role="group" aria-labelledby="port-title port-description" preserveAspectRatio="xMidYMid meet">
-      <title id="port-title">Vista Puertos</title>
+      <title id="port-title">Vista Estrategia</title>
       <desc id="port-description">Siete valores fijos. Cada medallón separa lugares para jugar, aportes a la suma y fichas que ya salieron. La estructura completa está disponible bajo demanda.</desc>
       <g class="port-scene-base">
         <ellipse class="port-orbit" cx="${scene.orbit.cx}" cy="${scene.orbit.cy}" rx="${scene.orbit.rx}" ry="${scene.orbit.ry}"></ellipse>
@@ -856,7 +846,7 @@ export class PortRenderer {
       "has-port-target-choice",
       (scene.targetChoice?.decisions.length ?? 0) > 1,
     );
-    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${renderPortSemanticLegendMarkup(scene)}${startMarkup}${ramifierHint}${renderPortTargetChooserMarkup(scene.targetChoice, { previewIndex: this.previewDecisionIndex })}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
+    this.container.innerHTML = `${renderPortSvgMarkup(scene)}${renderPortStructureToggleMarkup(scene)}${startMarkup}${ramifierHint}${renderPortTargetChooserMarkup(scene.targetChoice, { previewIndex: this.previewDecisionIndex })}${renderPortStrategicInspectorMarkup(scene.strategicInspector)}${renderPortNodeInspectorMarkup(scene.nodeInspector)}`;
 
     const targetById = new Map(scene.openTargets.map((target) => [target.id, target]));
     const activateNode = (value) => {

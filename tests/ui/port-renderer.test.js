@@ -21,7 +21,6 @@ import {
   createPortDecisionPresentations,
   getPortValueAction,
   renderPortNodeInspectorMarkup,
-  renderPortSemanticLegendMarkup,
   renderPortStrategicInspectorMarkup,
   renderPortStructureToggleMarkup,
   renderPortSvgMarkup,
@@ -508,23 +507,6 @@ test("cada medallón separa destinos, multiplicidad de S y fichas jugadas", () =
   assert.match(markup, /port-macro-node__scoring-ring/);
   assert.match(markup, />↗ 2<\/text>/);
   assert.match(markup, />▣ 3\/7<\/text>/);
-});
-
-test("la microleyenda fija icono, color y significado sin párrafos", () => {
-  const early = createPortScene(projectPortView(playDomino(
-    createBoardScenario({ K: 0, firstDominoId: "1-6" }),
-    "1-6",
-  )));
-  const dense = createPortScene(projectPortView(createTwoArmScenario()));
-  const earlyMarkup = renderPortSemanticLegendMarkup(early);
-  const denseMarkup = renderPortSemanticLegendMarkup(dense);
-
-  assert.match(earlyMarkup, /port-semantic-legend is-intro/);
-  assert.match(earlyMarkup, />↗<\/b> jugar/);
-  assert.match(earlyMarkup, />×<\/b> suma/);
-  assert.match(earlyMarkup, />▣<\/b> salieron/);
-  assert.match(denseMarkup, /port-semantic-legend is-subtle/);
-  assert.doesNotMatch(earlyMarkup, /Destino|placement-|portId/);
 });
 
 test("un doble Lineal muestra dos destinos y multiplicidad ×2 sin mezclarlos", () => {
@@ -1014,11 +996,9 @@ test("la hoja visual reserva potenciales para detalle y respeta movimiento reduc
   assert.match(css, /\.port-open-target\.is-legal \{ color: #27dec5/);
   assert.match(css, /\.graph-root\.is-ports-view \{[\s\S]*?#075040/);
   assert.match(css, /\.port-macro-node__body \{ fill: #f3ead6/);
-  assert.match(css, /\.port-semantic-legend \{/);
   assert.match(css, /\.port-target-choice \{[\s\S]*?inset:\s*auto auto 0\.5rem 50%/);
   assert.match(css, /\.port-graph \{[\s\S]*?inset:\s*4\.75rem 0 auto/);
   assert.match(css, /\.has-port-target-choice \.port-graph \{[\s\S]*?height:\s*calc\(100% - 11\.25rem\)/);
-  assert.match(css, /\.port-semantic-legend \{[\s\S]*?inset:\s*2\.95rem auto auto 50%/);
   assert.match(css, /\.port-macro-node-shell\.has-open-targets \.port-macro-node__playability-ring/);
   assert.match(css, /\.port-target-choice__effect\.is-scoring-keep/);
   assert.match(css, /\.port-target-choice__transformation/);

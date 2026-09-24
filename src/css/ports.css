@@ -563,49 +563,16 @@
 }
 .port-target-choice__cancel { width: 2.55rem; border-color: #c7cecb; color: #536976; background: #fff; font-size: 1.15rem; }
 
-.port-semantic-legend {
-  position: absolute;
-  z-index: 34;
-  inset: 2.95rem auto auto 50%;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin: 0;
-  padding: 0.34rem 0.5rem;
-  border: 1px solid rgb(197 154 87 / 0.5);
-  border-radius: 999px;
-  color: #d8dfd8;
-  background: rgb(5 31 29 / 0.82);
-  box-shadow: 0 0.3rem 0.8rem rgb(0 0 0 / 0.2);
-  font-size: 0.62rem;
-  font-weight: 800;
-  pointer-events: none;
-  transform: translateX(-50%);
-  transition: opacity 180ms ease;
-}
-
-.port-semantic-legend b {
-  display: inline-grid;
-  width: 1.15rem;
-  height: 1.15rem;
-  place-items: center;
-  margin-inline-end: 0.12rem;
-  border: 2px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.74rem;
-}
-
-.port-semantic-legend .is-playable b { color: var(--playable); }
-.port-semantic-legend .is-scoring b { color: var(--scoring); }
-.port-semantic-legend .is-history b { color: #c4cbc4; }
-.port-semantic-legend.is-intro { opacity: 1; }
-.port-semantic-legend.is-subtle { opacity: 0.62; }
-
 .port-macro-node.is-decision-preview .port-ramifier__socket.is-available {
   filter: drop-shadow(0 0 5px rgb(39 222 197 / 0.85));
 }
 
 .port-macro-node__scoring-badge.is-preview text { font-size: 12px; }
+.port-macro-node__scoring-badge.is-removing:not(.is-preview) rect {
+  fill: #183b34;
+  stroke: #ac9662;
+}
+.port-macro-node__scoring-badge.is-removing:not(.is-preview) text { fill: #dfcfaa; }
 .port-macro-node__scoring-badge.is-preview.is-removing {
   opacity: 0.64;
   filter: saturate(0.35);
@@ -907,8 +874,7 @@
   .port-open-target,
   .port-incidence-wrap,
   .port-macro-node-shell,
-  .port-graph,
-  .port-semantic-legend { transition: none; }
+  .port-graph { transition: none; }
   .port-open-target.is-legal,
   .port-cover__scoring,
   .port-macro-node-shell.is-scoring-feedback-source .port-macro-node__scoring-ring,
@@ -929,13 +895,6 @@
   .port-target-choice__option { min-width: min(9.2rem, 46%); }
   .graph-root.is-ports-view.has-port-target-choice .port-graph {
     height: calc(100% - 12.25rem);
-  }
-  .port-semantic-legend {
-    inset: 2.9rem auto auto 50%;
-    gap: 0.34rem;
-    padding: 0.28rem 0.4rem;
-    font-size: 0.56rem;
-    transform: translateX(-50%);
   }
   .port-node-inspector { inset: auto 0.4rem 0.4rem; width: auto; max-height: 36%; }
   .port-strategic-inspector { inset: auto 0.4rem 0.4rem; width: calc(100% - 0.8rem); }
