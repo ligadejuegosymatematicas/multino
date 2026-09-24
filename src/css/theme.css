@@ -81,8 +81,8 @@ body {
 
 .brand-isotype-frame {
   display: grid;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2.5rem;
+  height: 2.5rem;
   flex: 0 0 auto;
   place-items: center;
   overflow: hidden;
@@ -93,8 +93,8 @@ body {
 
 .brand-isotype {
   display: block;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2.3rem;
+  height: 2.3rem;
   object-fit: contain;
 }
 
@@ -444,8 +444,8 @@ body {
 @media (max-width: 36rem) {
   .app-header { min-height: 2.35rem; padding: 0.24rem 0.42rem; }
   .brand-lockup { gap: 0.42rem; }
-  .brand-isotype-frame { width: 1.75rem; height: 1.75rem; }
-  .brand-isotype { width: 1.5rem; height: 1.5rem; }
+  .brand-isotype-frame { width: 2.25rem; height: 2.25rem; }
+  .brand-isotype { width: 2.05rem; height: 2.05rem; }
   .brand-lockup h1 { font-size: 1.1rem; }
   .session-badge { font-size: 0.62rem; }
   .round-overview { border-radius: 0.7rem; }
@@ -473,8 +473,8 @@ body {
 
 @media (orientation: landscape) and (max-height: 34rem) {
   .app-header { min-height: 2.05rem; padding-block: 0.12rem; }
-  .brand-isotype-frame { width: 1.55rem; height: 1.55rem; }
-  .brand-isotype { width: 1.32rem; height: 1.32rem; }
+  .brand-isotype-frame { width: 1.9rem; height: 1.9rem; }
+  .brand-isotype { width: 1.7rem; height: 1.7rem; }
   .round-overview { grid-template-columns: minmax(0, 1fr) auto auto; }
   .overview-players { grid-column: auto; }
   .turn-panel { grid-template-columns: repeat(4, minmax(5.5rem, 1fr)); gap: 0.2rem; }

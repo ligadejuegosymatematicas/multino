@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import test from "node:test";
+import { getBrandScale } from "../../src/js/ui/BrandPresentation.js";
 
 import {
   APP_NAME,
@@ -15,7 +17,7 @@ test("la marca pública usa los assets oficiales y una configuración única", (
   assert.equal(APP_NAME, "MULTINÓ");
   assert.equal(createWebManifest().name, APP_NAME);
   assert.match(html, /multino_logo_vector_v8\.svg/);
-  assert.match(html, /MULTINO_isotipo_oficial_original_transparente\.svg/);
+  assert.match(html, /multino_isotipo_original_192x192\.png/);
   assert.match(html, /data-app-name/);
   assert.match(main, /element\.textContent = APP_NAME/);
   assert.doesNotMatch(html, /brand-mark/);
@@ -28,6 +30,23 @@ test("la marca pública usa los assets oficiales y una configuración única", (
   assert.match(theme, /--team-b:\s*#ff9278/);
   assert.doesNotMatch(theme, /--team-a:\s*var\(--playable\)/);
   assert.doesNotMatch(theme, /--team-b:\s*var\(--scoring\)/);
+});
+
+test("hero, panel y compact usan encajes propios sin modificar el maestro v8", async () => {
+  const master = await readFile(new URL("../../assets/brand/multino_logo_vector_v8.svg", import.meta.url));
+  assert.equal(createHash("sha256").update(master).digest("hex"),
+    "30a8a9b7b3df81f7c3fab83997ad49fc0057a818a1a683d2d2f3604ccdc03cc8");
+  assert.equal((html.match(/brand-showcase brand-hero/g) ?? []).length, 1);
+  assert.equal((html.match(/brand-showcase brand-panel/g) ?? []).length, 2);
+  assert.match(html, /brand-lockup brand-compact/);
+  const css = await readFile(new URL("../../src/css/components.css", import.meta.url), "utf8");
+  assert.match(css, /aspect-ratio: 1000 \/ 953/);
+  assert.doesNotMatch(css.match(/\.brand-logo \{[^}]*\}/)?.[0] ?? "", /max-height/);
+  assert.match(css, /transform: scale\(var\(--brand-scale, 0\)\)/);
+  assert.equal(getBrandScale(335), 0.335);
+  assert.equal(getBrandScale(160), 0.16);
+  assert.equal(getBrandScale(0), 0);
+  assert.equal(getBrandScale(NaN), 0);
 });
 
 test("crear sala no solicita un nombre o código y el lobby ofrece ambas copias", () => {

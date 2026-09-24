@@ -32,6 +32,7 @@ import {
   SEAT_CONTROL_TYPES,
 } from "./game/index.js";
 import { APP_NAME } from "./config/AppConfig.js";
+import { observeBrandPresentation } from "./ui/BrandPresentation.js";
 import { getRuntimeConfig } from "./config/RuntimeConfig.js";
 import {
   ONLINE_SCREENS,
@@ -117,6 +118,7 @@ const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
 const onlineRoomStore = new LocalOnlineRoomStore();
 document.title = APP_NAME;
+observeBrandPresentation();
 document.querySelector("#app-title").textContent = APP_NAME;
 for (const element of document.querySelectorAll("[data-app-name]")) {
   element.textContent = APP_NAME;

@@ -45,31 +45,40 @@
 
 .brand-showcase {
   display: grid;
-  width: min(100%, 22rem);
+  width: min(100%, 23rem);
   min-height: 0;
   justify-self: center;
-  padding: 0.55rem 0.8rem;
+  padding: 0.25rem;
   place-items: center;
   border: 1px solid rgb(197 154 87 / 0.42);
   border-radius: 1rem;
   background: var(--club-ivory);
 }
 
-.brand-showcase--compact {
-  width: min(100%, 11rem);
-  padding-block: 0.55rem;
+.brand-panel {
+  width: min(60%, 12rem);
+}
+
+.brand-artboard {
+  display: block;
+  position: relative;
+  width: 100%;
+  /* The untouched master has a 1000x953 viewBox but 1000x1240
+     intrinsic dimensions. Give its viewport the artwork's actual ratio. */
+  aspect-ratio: 1000 / 953;
 }
 
 .brand-logo {
   display: block;
-  width: min(100%, 20rem);
-  max-height: 11rem;
-  object-fit: contain;
-}
-
-.brand-showcase--compact .brand-logo {
-  width: min(100%, 9.5rem);
-  max-height: 5.4rem;
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 1000px;
+  height: 953px;
+  max-width: none;
+  object-fit: fill;
+  /* Scale the whole image, including its non-scaling SVG strokes. */
+  transform-origin: top left;
+  transform: scale(var(--brand-scale, 0));
 }
 
 .entry-actions {
@@ -1363,24 +1372,8 @@
     padding: 1rem;
   }
 
-  .brand-showcase {
-    width: min(75vw, 17rem);
-    min-height: 0;
-    padding: 0.5rem 0.8rem;
-  }
-
-  .brand-showcase--compact {
-    width: min(100%, 9rem);
-  }
-
-  .brand-logo {
-    width: 100%;
-    max-height: 9.5rem;
-  }
-
-  .brand-showcase--compact .brand-logo {
-    width: min(100%, 7.6rem);
-    max-height: 4.3rem;
+  .brand-panel {
+    width: min(55%, 11rem);
   }
 
   .entry-actions {
