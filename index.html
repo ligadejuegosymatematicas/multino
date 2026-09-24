@@ -29,6 +29,7 @@
           <h1 id="app-title">MULTINÓ</h1>
         </div>
         <p id="session-badge" class="session-badge">Múltiplos de 5</p>
+        <button id="game-back-action" type="button" class="text-action" hidden>Salir</button>
       </header>
 
       <section id="entry-screen" class="setup-screen" aria-labelledby="entry-heading">
@@ -59,6 +60,7 @@
           </div>
 
           <form id="online-join-form" class="online-form">
+            <button id="resume-room-action" type="button" class="secondary-action" hidden>Volver a mi sala</button>
             <label class="setup-field" for="online-nick">
               <span>Tu nick</span>
               <input id="online-nick" name="nick" maxlength="24" autocomplete="nickname" required>
@@ -250,6 +252,15 @@
       </div>
       <noscript>JavaScript es necesario para jugar esta ronda local.</noscript>
     </main>
+
+    <dialog id="exit-dialog" class="exit-dialog" aria-labelledby="exit-title" aria-describedby="exit-description">
+      <h2 id="exit-title">¿Salir de la partida?</h2>
+      <p id="exit-description"></p>
+      <form method="dialog" class="exit-dialog__actions">
+        <button value="stay" class="primary-action" autofocus>Seguir jugando</button>
+        <button value="exit" class="secondary-action">Salir</button>
+      </form>
+    </dialog>
 
     <script src="./runtime-config.js"></script>
     <script type="module" src="./src/js/main.js"></script>

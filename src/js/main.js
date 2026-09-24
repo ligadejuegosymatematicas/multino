@@ -33,6 +33,7 @@ import {
 } from "./game/index.js";
 import { APP_NAME } from "./config/AppConfig.js";
 import { observeBrandPresentation } from "./ui/BrandPresentation.js";
+import { AppNavigation, getExitPrompt } from "./ui/AppNavigation.js";
 import { getRuntimeConfig } from "./config/RuntimeConfig.js";
 import {
   ONLINE_SCREENS,
@@ -99,6 +100,8 @@ const revealHandButton = document.querySelector("#reveal-hand-action");
 const turnActionPanel = document.querySelector("#turn-action-panel");
 const turnActionSummary = document.querySelector("#turn-action-summary");
 const currentSum = document.querySelector("#score-current-sum");
+const gameBackButton = document.querySelector("#game-back-action");
+const exitDialog = document.querySelector("#exit-dialog");
 let sessionController;
 let localSessionController = null;
 let onlineSessionController = null;
@@ -110,6 +113,7 @@ let onlinePresentationTimerKey = null;
 let activeFeedbackPresentation = null;
 let roundResultPending = false;
 let hasShownScoringLesson = false;
+let navigationEpoch = 0;
 const ROUND_RESULT_REVEAL_DELAY_MS = 520;
 const ONLINE_CPU_ANNOUNCE_MS = 500;
 const ONLINE_HUMAN_ANNOUNCE_MS = 80;
@@ -128,6 +132,23 @@ for (const element of document.querySelectorAll("[data-app-name-alt]")) {
   element.alt = APP_NAME;
 }
 const runtimeConfig = getRuntimeConfig();
+const initialUrlRoom = new URL(window.location.href).searchParams.get("room");
+const navigation = new AppNavigation({
+  history: window.history,
+  location: window.location,
+  events: window,
+  getPrompt: () => getExitPrompt(sessionController?.getPresentation(),
+    sessionController === onlineSessionController ? "online" : "local"),
+  confirmExit: (text) => new Promise((resolve) => {
+    document.querySelector("#exit-description").textContent = text;
+    exitDialog.returnValue = "stay";
+    exitDialog.addEventListener("close", () => resolve(exitDialog.returnValue === "exit"), { once: true });
+    exitDialog.showModal();
+  }),
+  onRoute: navigateToScreen,
+});
+const restoredRoute = navigation.restoredRoute;
+navigation.init();
 document.querySelector("#online-availability").textContent = runtimeConfig.onlineEnabled
   ? "Salas privadas online disponibles."
   : "El modo online aún no está configurado.";
@@ -494,6 +515,9 @@ function renderSession(session) {
   setupScreen.hidden = !isConfiguring;
   gameScreen.hidden = isConfiguring;
   appShell.classList.toggle("is-playing", !isConfiguring);
+  gameBackButton.hidden = isConfiguring;
+  gameBackButton.textContent = session.round?.isFinished ? "Volver" : "Salir";
+  navigation.record({ screen: isConfiguring ? "local-setup" : "local-round" });
   setupRoundMode.value = session.config.roundMode;
   setupRoundModeHelp.textContent = session.config.roundMode ===
       ROUND_STRUCTURE_MODES.BRANCHED
@@ -585,6 +609,12 @@ function renderOnlineSession(session) {
   onlineScreen.hidden = isRound;
   gameScreen.hidden = !isRound;
   appShell.classList.toggle("is-playing", Boolean(isRound));
+  gameBackButton.hidden = !isRound;
+  gameBackButton.textContent = session.round?.isFinished ? "Volver" : "Salir";
+  navigation.record({
+    screen: isRound ? "online-round" : session.room ? "online-lobby" : "online-join",
+    roomCode: session.room?.roomCode ?? session.pendingRoomCode,
+  }, { replace: Boolean(isRound && navigation.current.route.screen.startsWith("online-")) });
   if (isRound) {
     sessionBadge.textContent = `Online · ${session.room.roomCode}`;
     const queue = session.presentationQueue;
@@ -664,6 +694,10 @@ function renderOnlineSession(session) {
   if (isLobby) renderOnlineLobby(session);
   else {
     onlineRoomCode.value = session.pendingRoomCode;
+    const savedRoomCode = onlineRoomStore.load().roomCode;
+    const resumeButton = document.querySelector("#resume-room-action");
+    resumeButton.hidden = !savedRoomCode;
+    resumeButton.textContent = `Volver a mi sala ${savedRoomCode}`;
     onlineStatus.textContent = session.pendingRoomCode
       ? `Ingresa tu nick para unirte a ${session.pendingRoomCode}.`
       : "Crea una sala privada o abre una invitación.";
@@ -671,6 +705,7 @@ function renderOnlineSession(session) {
 }
 
 function startLocalMode() {
+  navigationEpoch += 1;
   clearOnlinePresentationTimer();
   resetPresentationBarrier();
   onlineSessionController?.dispose();
@@ -687,14 +722,17 @@ function startLocalMode() {
         state,
         scoringDurationMs: SCORING_FEEDBACK_TIMING.totalMs,
       }),
-      onChange: renderSession,
+      onChange: (session) => {
+        if (sessionController === localSessionController) renderSession(session);
+      },
     });
   }
   sessionController = localSessionController;
   sessionController.start();
 }
 
-async function startOnlineMode(roomCode = "") {
+async function startOnlineMode(roomCode = "", { resumeSaved = true, recordEntry = true, joinOnly = false } = {}) {
+  const epoch = ++navigationEpoch;
   clearOnlinePresentationTimer();
   resetPresentationBarrier();
   if (!runtimeConfig.onlineEnabled) {
@@ -705,31 +743,41 @@ async function startOnlineMode(roomCode = "") {
   setupScreen.hidden = true;
   gameScreen.hidden = true;
   onlineScreen.hidden = false;
+  gameBackButton.hidden = true;
+  appShell.classList.remove("is-playing", "is-ports-mode");
+  if (recordEntry) navigation.record({ screen: "online-join", roomCode });
   onlineCard.classList.add("is-busy");
   onlineStatus.textContent = "Conectando con la sala…";
   try {
-    const activeRoomCode = roomCode || onlineRoomStore.load().roomCode;
+    const activeRoomCode = roomCode || (resumeSaved ? onlineRoomStore.load().roomCode : "");
     const gateway = await createBrowserSupabaseGateway();
+    if (epoch !== navigationEpoch) return;
     onlineSessionController?.dispose();
     onlineSessionController = new OnlineGameSessionController({
       gateway,
-      onChange: renderOnlineSession,
+      onChange: (session) => {
+        if (epoch === navigationEpoch) renderOnlineSession(joinOnly && session.screen === ONLINE_SCREENS.JOIN
+          ? { ...session, pendingRoomCode: roomCode } : session);
+      },
       onError: (error) => {
-        onlineStatus.textContent = error.message;
+        if (epoch === navigationEpoch) onlineStatus.textContent = error.message;
       },
       onResync: () => {
+        if (epoch !== navigationEpoch) return;
         clearOnlinePresentationTimer();
         resetPresentationBarrier();
       },
     });
     sessionController = onlineSessionController;
-    await onlineSessionController.start({ roomCode: activeRoomCode });
-    const resumedRoomCode = onlineSessionController.getPresentation().room?.roomCode;
+    const controller = onlineSessionController;
+    await controller.start({ roomCode: joinOnly ? "" : activeRoomCode });
+    if (epoch !== navigationEpoch) { controller.dispose(); return; }
+    const resumedRoomCode = controller.getPresentation().room?.roomCode;
     if (resumedRoomCode) onlineRoomStore.save({ roomCode: resumedRoomCode });
   } catch (error) {
-    onlineStatus.textContent = error.message;
+    if (epoch === navigationEpoch) onlineStatus.textContent = error.message;
   } finally {
-    onlineCard.classList.remove("is-busy");
+    if (epoch === navigationEpoch) onlineCard.classList.remove("is-busy");
   }
 }
 
@@ -745,22 +793,45 @@ async function withOnlineBusy(operation) {
 }
 
 function showEntry() {
+  navigationEpoch += 1;
   clearOnlinePresentationTimer();
   resetPresentationBarrier();
   onlineSessionController?.dispose();
   onlineSessionController = null;
   sessionController = null;
-  onlineRoomStore.clear();
+  // Leaving the screen is not leaving the room. Keep membership and resume code.
+  localSessionController?.leaveRound();
   entryScreen.hidden = false;
   setupScreen.hidden = true;
   onlineScreen.hidden = true;
   gameScreen.hidden = true;
   appShell.classList.remove("is-playing", "is-ports-mode");
+  gameBackButton.hidden = true;
   sessionBadge.textContent = "Múltiplos de 5";
-  const url = new URL(window.location.href);
-  url.searchParams.delete("room");
-  window.history.replaceState(null, "", url);
+  navigation.record({ screen: "entry" });
 }
+
+function navigateToScreen(route) {
+  clearOnlinePresentationTimer();
+  resetPresentationBarrier();
+  // Local snapshots are not persisted. Once exit is accepted, discard only the
+  // active in-memory round; configuration and completed history are retained.
+  if (route.screen !== "local-round") localSessionController?.leaveRound();
+  if (route.screen === "local-setup" || route.screen === "local-round") {
+    if (route.screen === "local-round" && !localSessionController?.getRoundState()) {
+      navigation.record({ screen: "local-setup" }, { replace: true });
+    }
+    return startLocalMode();
+  }
+  if (route.screen.startsWith("online-")) {
+    return startOnlineMode(route.roomCode ?? "", {
+      resumeSaved: false, recordEntry: false, joinOnly: route.screen === "online-join",
+    });
+  }
+  showEntry();
+}
+
+gameBackButton.addEventListener("click", () => navigation.back());
 
 revealHandButton.addEventListener("click", () =>
   runIntent(() => sessionController?.revealCurrentHand?.(), ""),
@@ -845,17 +916,21 @@ document.querySelector("#choose-local-action").addEventListener(
 
 document.querySelector("#choose-online-action").addEventListener(
   "click",
-  () => void startOnlineMode(),
+  () => void startOnlineMode("", { resumeSaved: false }),
+);
+
+document.querySelector("#resume-room-action").addEventListener("click", () =>
+  void startOnlineMode(onlineRoomStore.load().roomCode),
 );
 
 document.querySelector("#local-back-action").addEventListener(
   "click",
-  showEntry,
+  () => navigation.back(),
 );
 
 document.querySelector("#online-back-action").addEventListener(
   "click",
-  showEntry,
+  () => navigation.back(),
 );
 
 document.querySelector("#create-room-action").addEventListener("click", () => {
@@ -867,9 +942,6 @@ document.querySelector("#create-room-action").addEventListener("click", () => {
     onlineRoomStore.save({
       roomCode: onlineSessionController.getPresentation().room.roomCode,
     });
-    const url = new URL(window.location.href);
-    url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
-    window.history.replaceState(null, "", url);
   });
 });
 
@@ -885,9 +957,6 @@ onlineJoinForm.addEventListener("submit", (event) => {
     onlineRoomStore.save({
       roomCode: onlineSessionController.getPresentation().room.roomCode,
     });
-    const url = new URL(window.location.href);
-    url.searchParams.set("room", onlineSessionController.getPresentation().room.roomCode);
-    window.history.replaceState(null, "", url);
   });
 });
 
@@ -919,10 +988,13 @@ startOnlineButton.addEventListener("click", () => {
 
 const savedProfile = profileStore.load();
 onlineNick.value = savedProfile.nick || "";
-const initialRoomCode = new URL(window.location.href).searchParams.get("room") ??
-  onlineRoomStore.load().roomCode;
+const initialRoomCode = initialUrlRoom ??
+  (restoredRoute?.screen === "entry" ? "" : onlineRoomStore.load().roomCode);
 if (initialRoomCode) {
-  void startOnlineMode(initialRoomCode);
+  void startOnlineMode(initialRoomCode, { recordEntry: !restoredRoute });
+} else if (restoredRoute?.screen.startsWith("local-")) {
+  navigation.record({ screen: "local-setup" }, { replace: true });
+  startLocalMode();
 } else {
   showEntry();
 }

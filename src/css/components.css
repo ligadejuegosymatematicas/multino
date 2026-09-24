@@ -1573,3 +1573,18 @@
     gap: 0.14rem;
   }
 }
+/* Navigation confirmation is outside the board/presentation renderers. */
+.exit-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  color: var(--color-text, #f4eddd);
+  background: #102b29;
+  border: 1px solid #b49562;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+.exit-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.exit-dialog__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.exit-dialog p { line-height: 1.5; }
+#game-back-action { flex-shrink: 0; padding: .35rem .6rem; font-size: .8rem; }

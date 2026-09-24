@@ -112,6 +112,15 @@ export class LocalGameSessionController {
     this.#emitChange();
   }
 
+  // Explicit UI exit: no active-round persistence exists. Keep configuration,
+  // but stop the abandoned local controller and never let it render off-screen.
+  leaveRound() {
+    this.#cancelPendingCpuTask();
+    this.roundController = null;
+    this.handRevealedForPlayerId = null;
+    this.screen = LOCAL_GAME_SCREENS.CONFIGURATION;
+  }
+
   getPresentation() {
     const round = this.roundController?.getPresentation() ?? null;
     return {
