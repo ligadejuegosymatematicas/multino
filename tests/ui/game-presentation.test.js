@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { projectGraphView } from "../../src/js/game/index.js";
+import {
+  projectGraphView,
+  projectPortView,
+  projectTraditionalView,
+} from "../../src/js/game/index.js";
 import {
   calculateScoringTokenTravel,
   createScoringTokenMotion,
@@ -17,6 +21,7 @@ import {
   getDisplayedTeamScore,
   getRoundResultPresentation,
   getScoringPanelPresentation,
+  getScorePanelSumPresentation,
   shouldDeferRoundResult,
 } from "../../src/js/ui/ScorePanel.js";
 import {
@@ -229,6 +234,46 @@ test("Σ y el marcador esperan la etapa final del feedback", () => {
     }, { feedback }),
     { sumText: "Σ = …", expression: null, isPending: true },
   );
+  assert.deepEqual(
+    getScorePanelSumPresentation({
+      scoringPresentation: { enabled: true, sum: 20 },
+    }, { feedback }),
+    { text: "Σ = …", isPending: true },
+  );
+});
+
+test("Grafo, Tradicional y Puertos comparten exactamente la misma Σ", () => {
+  let state = createBoardScenario({ K: 1, firstDominoId: "5-5" });
+  state = playDomino(state, "5-5");
+  state = playDomino(state, "1-5", targetAt("placement-1", "main:1"));
+  const views = [
+    projectTraditionalView(state),
+    projectGraphView(state),
+    projectPortView(state),
+  ];
+
+  assert.deepEqual(
+    views.map((view) => view.scoringPresentation.sum),
+    [11, 11, 11],
+  );
+  assert.deepEqual(
+    views.map((view) => view.scoringPresentation.terms),
+    [views[0].scoringPresentation.terms, views[0].scoringPresentation.terms, views[0].scoringPresentation.terms],
+  );
+  assert.deepEqual(
+    getScorePanelSumPresentation(views[1]),
+    { text: "Σ = 11", isPending: false },
+  );
+});
+
+test("el HUD de Grafo usa Σ = 0 como convención de mesa vacía", () => {
+  const view = projectGraphView(createBoardScenario());
+
+  assert.equal(view.scoringPresentation.sum, 0);
+  assert.deepEqual(
+    getScorePanelSumPresentation(view),
+    { text: "Σ = 0", isPending: false },
+  );
 });
 
 test("el ganador espera al scoring y a la pausa posterior del marcador", () => {
@@ -390,7 +435,8 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
   assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
   assert.match(mainSource, /"is-ports-mode"[\s\S]*?mode === BOARD_VIEW_MODES\.PORTS/);
-  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS \|\| feedback\?\.scoring != null/);
+  assert.match(mainSource, /showCurrentSum:\s*mode === BOARD_VIEW_MODES\.GRAPH/);
+  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS \|\| mode === BOARD_VIEW_MODES\.GRAPH \|\|[\s\S]*?feedback\?\.scoring != null/);
   assert.match(themeCss, /\.app-shell\.is-ports-mode \.round-overview/);
   assert.match(turnSource, /player-status__remaining/);
   assert.match(turnSource, /remainingDominoCount/);

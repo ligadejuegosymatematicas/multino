@@ -443,7 +443,10 @@ function renderRound(
   renderScorePanel(
     document.querySelector("#score-panel"),
     presentation.view,
-    { feedback },
+    {
+      feedback,
+      showCurrentSum: mode === BOARD_VIEW_MODES.GRAPH,
+    },
   );
   renderScoringPanel(
     document.querySelector("#scoring-panel"),
@@ -451,7 +454,8 @@ function renderRound(
     { feedback },
   );
   scoringCard.hidden = !presentation.view.scoringPresentation.enabled ||
-    mode === BOARD_VIEW_MODES.PORTS || feedback?.scoring != null;
+    mode === BOARD_VIEW_MODES.PORTS || mode === BOARD_VIEW_MODES.GRAPH ||
+    feedback?.scoring != null;
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,

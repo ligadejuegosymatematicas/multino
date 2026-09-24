@@ -11,7 +11,19 @@ export function getDisplayedTeamScore(team, feedback = null) {
   return team.score - pendingAward;
 }
 
-export function renderScorePanel(container, view, { feedback = null } = {}) {
+export function getScorePanelSumPresentation(view, { feedback = null } = {}) {
+  const scoring = view.scoringPresentation;
+  if (!scoring.enabled) return null;
+  return feedback?.scoring
+    ? { text: "Σ = …", isPending: true }
+    : { text: `Σ = ${scoring.sum}`, isPending: false };
+}
+
+export function renderScorePanel(
+  container,
+  view,
+  { feedback = null, showCurrentSum = false } = {},
+) {
   if (!container) {
     return;
   }
@@ -45,6 +57,23 @@ export function renderScorePanel(container, view, { feedback = null } = {}) {
       item.append(delta);
     }
     container.append(item);
+  }
+  const sumPresentation = showCurrentSum
+    ? getScorePanelSumPresentation(view, { feedback })
+    : null;
+  container.classList.toggle("has-current-sum", sumPresentation !== null);
+  if (sumPresentation) {
+    const sum = document.createElement("strong");
+    sum.className = "score-current-sum";
+    sum.classList.toggle("is-pending", sumPresentation.isPending);
+    sum.textContent = sumPresentation.text;
+    sum.setAttribute(
+      "aria-label",
+      sumPresentation.isPending
+        ? "Calculando la suma de las puntas"
+        : `Suma actual de las puntas: ${view.scoringPresentation.sum}`,
+    );
+    container.append(sum);
   }
 }
 
