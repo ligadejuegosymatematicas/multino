@@ -813,6 +813,23 @@ test("jugar, decisión, recorrido y estructura exponen revelado progresivo", () 
   assert.match(renderPortStructureToggleMarkup(structure), /Volver a jugar/);
 });
 
+test("estudio: Ver estructura añade parejas internas sin cambiar targets, Σ ni snapshot", () => {
+  const state = createTwoArmScenario();
+  const before = structuredClone(state);
+  const view = projectPortView(state);
+  const normal = createPortScene(view);
+  const structure = createPortScene(view, { showStructure: true });
+  const detail = createPortScene(view, { showStructure: true, expandedNodeValue: 4 });
+  assert.deepEqual(structure.openTargets, normal.openTargets);
+  assert.deepEqual(structure.scoringPresentation, normal.scoringPresentation);
+  assert.deepEqual(state, before);
+  assert.ok(detail.nodeInspector.bridges.length > 0);
+  assert.equal(detail.nodeFocus.ports.length, 6);
+  assert.equal(renderPortSvgMarkup(normal).match(/class="port-bridge /g)?.length ?? 0, 0);
+  assert.ok((renderPortSvgMarkup(structure).match(/class="port-bridge /g)?.length ?? 0) > 0);
+  assert.match(renderPortStructureToggleMarkup(normal), /Ver estructura/);
+});
+
 test("Puertos intensifica las fuentes reales y deja la resolución a la banda común", () => {
   const view = projectPortView(createTwoArmScenario());
   const contributingTarget = view.portGraph.openTargets[0];

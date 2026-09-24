@@ -69,3 +69,29 @@ sigue recuperable mediante su código, también después de salir a portada.
 
 Vista inicial: Tradicional / Estrategia / Grafo, sin cambiar el default Tradicional.
 Se conservan nombres de equipos, asientos, Σ y la leyenda matemática compartida.
+
+## Estudio de «Ver estructura» (decisión: conservar)
+
+Auditoría de `PortRenderer.render`, `renderPortSvgMarkup`, `createPortScene` y
+`GraphRenderer.renderGraphSvgMarkup`:
+
+1. El toggle cambia exclusivamente `PortRenderer.structureVisible`; no envía
+   acciones al controlador ni modifica el snapshot. Cambia el rótulo a
+   `Volver a jugar` y reduce la tapa central para exponer el dibujo interior.
+2. Muestra hilos externos de fichas ya jugadas, puentes internos de continuidad,
+   incidencias de cada valor, hubs dobles con sockets y puntas individuales.
+3. Al pulsar un medallón en ese modo abre un detalle ampliado: seis incidencias
+   posibles, parejas de continuidad, sockets del doble, destinos y resumen de
+   conexiones. Los endpoints jugables siguen siendo los mismos targets legales.
+4. Permite inspeccionar un recorrido y volver a jugar; no agrega ninguna acción
+   reglamentaria. Sin el toggle, los medallones y sus decisiones estratégicas ya
+   permiten realizar las jugadas y ver previews locales.
+5. Grafo sí duplica las fichas/aristas, lazos, familias y puntas. Pero colapsa cada
+   valor en un vértice: NO dibuja las parejas internas de incidencias ni ofrece
+   su inspector ampliado. Por ello el toggle no es una copia completa de Grafo.
+
+Conclusión: innecesario para un principiante al decidir, pero contiene información
+analítica única. Se conserva sin cambios; no se elimina ni el toggle ni su estado.
+Propuesta para una decisión posterior: acceso secundario bajo ayuda avanzada,
+con nombre `Detalle de conexiones`, fuera del flujo principal de jugada. Este
+bloque no introduce otro rediseño ni mueve la información a Grafo.
