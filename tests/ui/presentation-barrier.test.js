@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   getLocalCpuPresentationDelay,
   getOnlineIdleTurnMessage,
+  getPresentedActivePlayerId,
   isPresentationBarrierActive,
   resolvePresentedFeedback,
 } from "../../src/js/ui/PresentationBarrier.js";
@@ -81,6 +82,26 @@ test("al vaciar la cola, el mensaje cambia del actor presentado al turno autorit
   }), "");
 });
 
+test("el actor terminal solo permanece activo durante la presentacion final", () => {
+  assert.equal(getPresentedActivePlayerId({
+    isFinished: false,
+    currentPlayerId: "seat-2",
+  }), "seat-2");
+  assert.equal(getPresentedActivePlayerId({
+    isFinished: true,
+    roundResultDeferred: true,
+    feedbackPlayerId: "seat-2",
+    currentPlayerId: "seat-2",
+  }), "seat-2");
+  assert.equal(getPresentedActivePlayerId({
+    isFinished: true,
+    roundResultDeferred: false,
+    feedbackPlayerId: "seat-2",
+    presentationActorId: "seat-2",
+    currentPlayerId: "seat-2",
+  }), null);
+});
+
 test("la UI no permite saltar scoring, revelar mano ni cambiar vista", async () => {
   const main = await readFile(new URL("../../src/js/main.js", import.meta.url), "utf8");
   const feedback = await readFile(
@@ -104,6 +125,6 @@ test("la UI no permite saltar scoring, revelar mano ni cambiar vista", async () 
   assert.doesNotMatch(main, /completeScoringFeedback/);
   assert.doesNotMatch(feedback, /Toca para completar|role", "button"/);
   assert.match(hand, /presentation\.isFinished \|\| disabled/);
-  assert.match(main, /feedback\?\.playerId \?\?/);
+  assert.match(main, /getPresentedActivePlayerId\(\{/);
   assert.match(turn, /player\.playerId === activePlayerId/);
 });

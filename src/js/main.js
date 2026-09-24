@@ -46,6 +46,7 @@ import {
 import {
   getLocalCpuPresentationDelay,
   getOnlineIdleTurnMessage,
+  getPresentedActivePlayerId,
   isPresentationBarrierActive,
   resolvePresentedFeedback,
 } from "./ui/PresentationBarrier.js";
@@ -425,9 +426,13 @@ function renderRound(
     presentation.view,
     {
       emphasize: feedback !== null && !feedback.endedRound,
-      activePlayerId: feedback?.playerId ??
-        presentation.presentationQueue?.actorSeatId ??
-        presentation.view.turn.currentPlayerId,
+      activePlayerId: getPresentedActivePlayerId({
+        isFinished: presentation.isFinished,
+        roundResultDeferred,
+        feedbackPlayerId: feedback?.playerId,
+        presentationActorId: presentation.presentationQueue?.actorSeatId,
+        currentPlayerId: presentation.view.turn.currentPlayerId,
+      }),
     },
   );
   document.querySelector("#turn-panel").classList.toggle(

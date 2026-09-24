@@ -42,6 +42,17 @@ export function getOnlineIdleTurnMessage({
     : `Turno de ${displayName}`;
 }
 
+export function getPresentedActivePlayerId({
+  isFinished = false,
+  roundResultDeferred = false,
+  feedbackPlayerId = null,
+  presentationActorId = null,
+  currentPlayerId = null,
+} = {}) {
+  if (isFinished && !roundResultDeferred) return null;
+  return feedbackPlayerId ?? presentationActorId ?? currentPlayerId;
+}
+
 export function getLocalCpuPresentationDelay({
   state,
   scoringDurationMs,
