@@ -130,9 +130,10 @@ function renderVertex(vertex, hasSelection) {
       vertex.previewScoringMultiplicity !== vertex.scoringMultiplicity
     ? `×${vertex.scoringMultiplicity}→×${vertex.previewScoringMultiplicity}`
     : `×${displayedMultiplicity}`;
-  const scoringMultiplicity = displayedMultiplicity > 0 ||
-      vertex.scoringMultiplicity > 0
-    ? `<g class="graph-vertex__scoring-multiplicity${vertex.previewScoringMultiplicity !== null ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-removing" : ""}" data-semantic="scoring"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} aria-hidden="true"><rect x="${vertex.x - 91}" y="${vertex.y - 68}" width="78" height="48" rx="24"></rect><text x="${vertex.x - 52}" y="${vertex.y - 44}">${multiplicityLabel}</text></g>`
+  const shouldShowScoringMultiplicity = displayedMultiplicity > 0 ||
+    vertex.scoringMultiplicity > 0 || vertex.openTargetCount > 0;
+  const scoringMultiplicity = shouldShowScoringMultiplicity
+    ? `<g class="graph-vertex__scoring-multiplicity${vertex.previewScoringMultiplicity !== null ? " is-preview" : ""}${displayedMultiplicity === 0 ? " is-zero" : ""}${displayedMultiplicity === 0 && vertex.previewScoringMultiplicity !== null ? " is-removing" : ""}" data-semantic="scoring"${vertex.isScoringTerm ? ` data-scoring-anchor-value="${vertex.value}"` : ""} aria-hidden="true"><rect x="${vertex.x - 99}" y="${vertex.y - 72}" width="86" height="52" rx="26"></rect><text x="${vertex.x - 56}" y="${vertex.y - 46}">${multiplicityLabel}</text></g>`
     : "";
   const targetClass = vertex.openTargetCount > 0 ? " has-targets" : " is-zero";
   return `
@@ -141,7 +142,7 @@ function renderVertex(vertex, hasSelection) {
       <circle class="graph-vertex__playability-ring${targetClass}" cx="${vertex.x}" cy="${vertex.y}" r="42"></circle>
       <circle class="graph-vertex__circle" cx="${vertex.x}" cy="${vertex.y}" r="35"></circle>
       <text class="graph-vertex__value" x="${vertex.x}" y="${vertex.y}">${vertex.value}</text>
-      <g class="graph-vertex__target-count${targetClass}" data-semantic="playability" aria-hidden="true"><rect x="${vertex.x + 13}" y="${vertex.y - 68}" width="78" height="48" rx="24"></rect><text x="${vertex.x + 52}" y="${vertex.y - 44}">↗ ${vertex.openTargetCount}</text></g>
+      <g class="graph-vertex__target-count${targetClass}" data-semantic="playability" aria-hidden="true"><rect x="${vertex.x + 13}" y="${vertex.y - 72}" width="86" height="52" rx="26"></rect><text x="${vertex.x + 56}" y="${vertex.y - 46}">↗ ${vertex.openTargetCount}</text></g>
       ${scoringMultiplicity}
       <text class="graph-vertex__history" data-semantic="history" x="${vertex.x}" y="${vertex.y + 55}">▣ ${vertex.playedTileCount}/${vertex.totalTileCount}</text>
     </g>`;

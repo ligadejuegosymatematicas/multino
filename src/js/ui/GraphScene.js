@@ -333,9 +333,7 @@ export function createGraphScene(
   const potentialStructure = createPotentialStructure(positions);
   const legalTargetIds = new Set(legalTargets.map(targetIdentity));
   const activeScoringTerms = scoringResolution?.terms ??
-    (strategicDecisions.length > 0
-      ? view.scoringPresentation?.terms ?? []
-      : []);
+    view.scoringPresentation?.terms ?? [];
   const scoringPortIds = new Set(
     activeScoringTerms
       .filter((term) => term.portId !== null)

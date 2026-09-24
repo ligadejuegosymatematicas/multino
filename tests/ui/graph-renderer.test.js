@@ -156,6 +156,33 @@ function createDenseScenario() {
   return state;
 }
 
+function createRamifierStates(value = 5) {
+  const dominoes = [`${value}-${value}`, `1-${value}`, `2-${value}`, `3-${value}`, `4-${value}`]
+    .map((dominoId) => dominoId.split("-").map(Number).sort((a, b) => a - b).join("-"));
+  let state = createBoardScenario({ K: 1, firstDominoId: dominoes[0] });
+  state = playDomino(state, dominoes[0]);
+  const states = [state];
+  for (const [dominoId, portId] of [
+    [dominoes[1], "main:1"],
+    [dominoes[2], "main:2"],
+    [dominoes[3], "branch:1"],
+    [dominoes[4], "branch:2"],
+  ]) {
+    state = playDomino(state, dominoId, targetAt("placement-1", portId));
+    states.push(state);
+  }
+  return states;
+}
+
+function graphVertexFor(state, value) {
+  const scene = createGraphScene(projectGraphView(state));
+  return {
+    scene,
+    vertex: scene.vertices.find((candidate) => candidate.value === value),
+    markup: renderGraphSvgMarkup(scene),
+  };
+}
+
 test("el SVG inicial renderiza exactamente los siete vértices estables", () => {
   const state = createDeterministicMatch();
   const view = projectGraphView(state);
@@ -357,7 +384,9 @@ test("q targets del mismo valor conservan q indicadores seleccionables", () => {
   assert.equal(valueSix.legalTargetIds.length, 2);
   const markup = renderGraphSvgMarkup(scene);
   assert.equal(markup.match(/class="open-target__option-index"/g)?.length, 2);
-  assert.doesNotMatch(markup, /graph-multiplicity|>×2</);
+  assert.match(markup, />↗ 2<\/text>/);
+  assert.match(markup, />×2<\/text>/);
+  assert.doesNotMatch(markup, /graph-multiplicity/);
   assert.deepEqual(view, before);
 });
 
@@ -910,4 +939,61 @@ test("Grafo comparte la gramática ↗, ×m y x/7 de Puertos", () => {
   assert.match(markup, />↗ 2<\/text>/);
   assert.match(markup, new RegExp(`>×${expectedMultiplicity}<\\/text>`));
   assert.match(markup, new RegExp(`>▣ ${six.playedTileCount}\\/7<\\/text>`));
+});
+
+test("Grafo separa conexiones y aporte del ramificador en R0-R4", () => {
+  const expected = [
+    { connections: 2, multiplicity: 2, visible: "×2" },
+    { connections: 1, multiplicity: 2, visible: "×2" },
+    { connections: 2, multiplicity: 0, visible: "×0" },
+    { connections: 1, multiplicity: 0, visible: "×0" },
+    { connections: 0, multiplicity: 0, visible: null },
+  ];
+
+  createRamifierStates().forEach((state, index) => {
+    const { vertex, markup } = graphVertexFor(state, 5);
+    assert.equal(vertex.openTargetCount, expected[index].connections, `R${index}`);
+    assert.equal(vertex.scoringMultiplicity, expected[index].multiplicity, `R${index}`);
+    assert.match(markup, new RegExp(`data-vertex-value="5" data-open-target-count="${expected[index].connections}" data-scoring-multiplicity="${expected[index].multiplicity}"`));
+    assert.match(markup, new RegExp(`>↗ ${expected[index].connections}<\\/text>`));
+    if (expected[index].visible === null) {
+      assert.doesNotMatch(markup, /graph-vertex__scoring-multiplicity[^>]*>[\s\S]*?>×0<\/text>/);
+    } else {
+      assert.match(markup, new RegExp(`>${expected[index].visible}<\\/text>`));
+    }
+  });
+});
+
+test("Grafo mantiene ×2 para un doble ordinario abierto y ×0 al saturarlo", () => {
+  let state = createBoardScenario({ K: 0, firstDominoId: "4-4" });
+  state = playDomino(state, "4-4");
+  state = playDomino(state, "1-4", (target) => target.value === 4);
+  const open = graphVertexFor(state, 4);
+
+  assert.equal(open.vertex.openTargetCount, 1);
+  assert.equal(open.vertex.scoringMultiplicity, 2);
+  assert.match(open.markup, />↗ 1<\/text>[\s\S]*?>×2<\/text>|>×2<\/text>[\s\S]*?>↗ 1<\/text>/);
+
+  state = playDomino(
+    state,
+    "2-4",
+    (target) => target.value === 4 && target.placementId === "placement-1",
+  );
+  const saturated = graphVertexFor(state, 4);
+  assert.equal(saturated.vertex.openTargetCount, 0);
+  assert.equal(saturated.vertex.scoringMultiplicity, 0);
+  assert.match(saturated.markup, /data-vertex-value="4" data-open-target-count="0" data-scoring-multiplicity="0"/);
+});
+
+test("el contador teal conserva targets concretos repetidos del mismo valor", () => {
+  const state = createRamifierStates()[2];
+  const view = projectGraphView(state);
+  const group = view.openEndsByValue.find(({ value }) => value === 5);
+  const { vertex, markup } = graphVertexFor(state, 5);
+
+  assert.equal(group.targets.length, 2);
+  assert.equal(new Set(group.targets.map(({ id }) => id)).size, 2);
+  assert.equal(vertex.openTargetCount, group.targets.length);
+  assert.match(markup, />↗ 2<\/text>/);
+  assert.match(markup, />×0<\/text>/);
 });

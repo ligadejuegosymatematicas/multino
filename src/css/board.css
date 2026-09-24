@@ -139,10 +139,21 @@
 .graph-vertex__scoring-multiplicity text,
 .graph-vertex__target-count text {
   fill: #302204;
-  font-size: 34px;
+  font-size: 37px;
   font-weight: 900;
   text-anchor: middle;
   dominant-baseline: central;
+}
+
+.graph-vertex__scoring-multiplicity.is-zero rect {
+  fill: rgb(67 51 17 / 0.88);
+  stroke: var(--game-gold-bright);
+  stroke-dasharray: 5 3;
+  filter: drop-shadow(0 0 4px rgb(255 202 82 / 0.42));
+}
+
+.graph-vertex__scoring-multiplicity.is-zero text {
+  fill: #ffe9a8;
 }
 
 .graph-vertex__playability-ring {
@@ -174,7 +185,7 @@
 
 .graph-vertex__history {
   fill: #c4cbc4;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 850;
   text-anchor: middle;
 }
