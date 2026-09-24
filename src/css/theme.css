@@ -144,10 +144,6 @@ body {
   box-shadow: var(--shadow-panel), var(--shadow-inset);
 }
 
-.app-shell.is-ports-mode .round-overview {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
 .overview-card {
   border-color: rgb(197 154 87 / 0.25);
 }
@@ -427,8 +423,7 @@ body {
 }
 
 @media (max-width: 58rem) and (orientation: portrait) {
-  .round-overview,
-  .app-shell.is-ports-mode .round-overview {
+  .round-overview {
     grid-template-columns: minmax(0, 1fr) auto;
   }
   .overview-players { grid-column: 1 / -1; }

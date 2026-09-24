@@ -16,7 +16,7 @@ import {
 import {
   renderRoundResult,
   renderScorePanel,
-  renderScoringPanel,
+  renderCurrentSum,
   shouldDeferRoundResult,
 } from "./ui/ScorePanel.js";
 import {
@@ -97,7 +97,7 @@ const handPrivacyTitle = document.querySelector("#hand-privacy-title");
 const revealHandButton = document.querySelector("#reveal-hand-action");
 const turnActionPanel = document.querySelector("#turn-action-panel");
 const turnActionSummary = document.querySelector("#turn-action-summary");
-const scoringCard = document.querySelector("#scoring-card");
+const currentSum = document.querySelector("#score-current-sum");
 let sessionController;
 let localSessionController = null;
 let onlineSessionController = null;
@@ -445,19 +445,13 @@ function renderRound(
   renderScorePanel(
     document.querySelector("#score-panel"),
     presentation.view,
-    {
-      feedback,
-      showCurrentSum: mode === BOARD_VIEW_MODES.GRAPH,
-    },
+    { feedback },
   );
-  renderScoringPanel(
-    document.querySelector("#scoring-panel"),
+  renderCurrentSum(
+    currentSum,
     presentation.view,
     { feedback },
   );
-  scoringCard.hidden = !presentation.view.scoringPresentation.enabled ||
-    mode === BOARD_VIEW_MODES.PORTS || mode === BOARD_VIEW_MODES.GRAPH ||
-    feedback?.scoring != null;
   renderRoundResult(
     document.querySelector("#round-result"),
     presentation.view,

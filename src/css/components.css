@@ -475,13 +475,14 @@
 .score-current-sum {
   display: inline-grid;
   flex: 0 0 auto;
-  min-width: 4.1rem;
+  width: 4.1rem;
+  min-height: 1.6rem;
   place-items: center;
   padding: 0.22rem 0.42rem;
-  border: 1px solid rgb(255 201 78 / 0.55);
+  border: 1px solid var(--game-line);
   border-radius: 0.55rem;
   color: var(--game-gold-bright);
-  background: rgb(67 51 17 / 0.44);
+  background: rgb(0 0 0 / 0.18);
   font-size: 0.88rem;
   font-weight: 900;
   line-height: 1;
@@ -491,7 +492,6 @@
 .score-current-sum.is-pending {
   color: #f1dfad;
   border-style: dashed;
-  background: rgb(67 51 17 / 0.24);
 }
 
 .panel-heading {
@@ -1435,7 +1435,7 @@
   }
 
   .score-current-sum {
-    min-width: 3.55rem;
+    width: 3.55rem;
     padding: 0.18rem 0.28rem;
     font-size: 0.72rem;
   }

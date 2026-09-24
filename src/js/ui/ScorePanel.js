@@ -22,7 +22,7 @@ export function getScorePanelSumPresentation(view, { feedback = null } = {}) {
 export function renderScorePanel(
   container,
   view,
-  { feedback = null, showCurrentSum = false } = {},
+  { feedback = null } = {},
 ) {
   if (!container) {
     return;
@@ -58,23 +58,20 @@ export function renderScorePanel(
     }
     container.append(item);
   }
-  const sumPresentation = showCurrentSum
-    ? getScorePanelSumPresentation(view, { feedback })
-    : null;
-  container.classList.toggle("has-current-sum", sumPresentation !== null);
-  if (sumPresentation) {
-    const sum = document.createElement("strong");
-    sum.className = "score-current-sum";
-    sum.classList.toggle("is-pending", sumPresentation.isPending);
-    sum.textContent = sumPresentation.text;
-    sum.setAttribute(
-      "aria-label",
-      sumPresentation.isPending
-        ? "Calculando la suma de las puntas"
-        : `Suma actual de las puntas: ${view.scoringPresentation.sum}`,
-    );
-    container.append(sum);
-  }
+}
+
+// A single persistent HUD element, outside every board renderer and the team
+// score animation. Changing views updates neither its identity nor its layout.
+export function renderCurrentSum(sum, view, { feedback = null } = {}) {
+  if (!sum) return;
+  const presentation = getScorePanelSumPresentation(view, { feedback });
+  sum.hidden = presentation === null;
+  if (!presentation) return;
+  sum.classList.toggle("is-pending", presentation.isPending);
+  if (sum.textContent !== presentation.text) sum.textContent = presentation.text;
+  sum.setAttribute("aria-label", presentation.isPending
+    ? "Calculando la suma de las puntas"
+    : `Suma actual de las puntas: ${view.scoringPresentation.sum}`);
 }
 
 export function getScoringPanelPresentation(view, { feedback = null } = {}) {

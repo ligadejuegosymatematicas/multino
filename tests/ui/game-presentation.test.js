@@ -22,6 +22,7 @@ import {
   getRoundResultPresentation,
   getScoringPanelPresentation,
   getScorePanelSumPresentation,
+  renderCurrentSum,
   shouldDeferRoundResult,
 } from "../../src/js/ui/ScorePanel.js";
 import {
@@ -33,6 +34,42 @@ function targetAt(placementId, portId) {
   return (target) =>
     target.placementId === placementId && target.portId === portId;
 }
+
+test("Σ global conserva su nodo y texto al cambiar de vista y oculta el resultado durante scoring", () => {
+  const classes = new Set();
+  const attrs = new Map();
+  let writes = 0;
+  let text = "Σ = 0";
+  // Deliberately has no append/replaceChildren API: this HUD node must persist.
+  const sum = {
+    hidden: false,
+    get textContent() { return text; },
+    set textContent(value) { text = value; writes += 1; },
+    classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name) },
+    setAttribute: (name, value) => attrs.set(name, value),
+  };
+  let state = createBoardScenario({ firstDominoId: "5-5" });
+  for (const project of [projectTraditionalView, projectPortView, projectGraphView]) {
+    renderCurrentSum(sum, project(state));
+    assert.equal(sum.textContent, "Σ = 0");
+    assert.equal(sum.hidden, false);
+  }
+  assert.equal(writes, 0);
+  state = playDomino(state, "5-5");
+  for (const project of [projectTraditionalView, projectPortView, projectGraphView, projectTraditionalView]) {
+    renderCurrentSum(sum, project(state), { feedback: { scoring: {} } });
+    assert.equal(sum.textContent, "Σ = …");
+    assert.equal(classes.has("is-pending"), true);
+    assert.equal(attrs.get("aria-label"), "Calculando la suma de las puntas");
+  }
+  assert.equal(writes, 1);
+  for (const project of [projectTraditionalView, projectPortView, projectGraphView, projectTraditionalView]) {
+    renderCurrentSum(sum, project(state));
+    assert.equal(sum.textContent, "Σ = 10");
+    assert.equal(classes.has("is-pending"), false);
+  }
+  assert.equal(writes, 2);
+});
 
 test("el feedback puntuable deriva equipo y puntos de la acción aceptada", () => {
   const feedback = getGameFeedback({
@@ -435,9 +472,10 @@ test("la jerarquía game-first compacta chrome y acerca tablero y mano", async (
   assert.doesNotMatch(mainSource, /Vista de grafo activa|Vista tradicional activa/);
   assert.match(mainSource, /renderTurnAction\(turnActionSummary, presentation\)/);
   assert.match(mainSource, /"is-ports-mode"[\s\S]*?mode === BOARD_VIEW_MODES\.PORTS/);
-  assert.match(mainSource, /showCurrentSum:\s*mode === BOARD_VIEW_MODES\.GRAPH/);
-  assert.match(mainSource, /scoringCard\.hidden = !presentation\.view\.scoringPresentation\.enabled \|\|[\s\S]*?BOARD_VIEW_MODES\.PORTS \|\| mode === BOARD_VIEW_MODES\.GRAPH \|\|[\s\S]*?feedback\?\.scoring != null/);
-  assert.match(themeCss, /\.app-shell\.is-ports-mode \.round-overview/);
+  assert.match(mainSource, /renderCurrentSum\(\s*currentSum,\s*presentation\.view,\s*\{ feedback \}/);
+  assert.doesNotMatch(mainSource, /showCurrentSum|scoringCard\.hidden/);
+  assert.equal((html.match(/id="score-current-sum"/g) ?? []).length, 1);
+  assert.doesNotMatch(themeCss + layoutCss, /\.is-ports-mode \.round-overview/);
   assert.match(turnSource, /player-status__remaining/);
   assert.match(turnSource, /remainingDominoCount/);
 });
