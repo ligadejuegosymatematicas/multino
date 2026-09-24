@@ -23,7 +23,7 @@ test("la marca pública usa los assets oficiales y una configuración única", (
   assert.doesNotMatch(html, /brand-mark/);
   assert.doesNotMatch(html, /Jugar MULTINÓ/);
   assert.match(html, /Elige cómo jugar/);
-  assert.match(html, /Dominó, estrategia y múltiplos\./);
+  assert.match(html, /Dominó, estrategia y múltiplos de 5\./);
   assert.doesNotMatch(html, /Órbita|Vector/);
   assert.match(theme, /\.team-badge\[data-team-id="B"\]/);
   assert.match(theme, /--team-a:\s*#a98cff/);

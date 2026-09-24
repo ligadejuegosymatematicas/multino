@@ -325,7 +325,7 @@ test("la UI expone configuración simple y acciones terminales sin divisor edita
   assert.match(html, /name="initial-view-mode" value="traditional" checked/);
   assert.match(html, /name="initial-view-mode" value="ports">/);
   assert.match(html, /data-view-mode="ports"/);
-  assert.match(html, /Puntuación: múltiplos de 5/);
+  assert.match(html, /Se puntúa con múltiplos de 5\./);
   assert.match(html, /id="play-again-action"/);
   assert.match(html, /id="change-config-action"/);
   assert.equal((html.match(/data-seat-index=/g) ?? []).length, 4);

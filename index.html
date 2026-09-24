@@ -39,7 +39,7 @@
           </div>
           <div>
             <h2 id="entry-heading">Elige cómo jugar</h2>
-            <p class="setup-intro">Dominó, estrategia y múltiplos.</p>
+            <p class="setup-intro">Dominó, estrategia y múltiplos de 5.</p>
           </div>
           <div class="entry-actions">
             <button id="choose-local-action" type="button" class="primary-action">Jugar local</button>
@@ -55,23 +55,22 @@
             <span class="brand-artboard"><img class="brand-logo" src="./assets/brand/multino_logo_vector_v8.svg" alt="MULTINÓ" data-app-name-alt></span>
           </div>
           <div>
-            <h2 id="online-heading">Sala online</h2>
-            <p id="online-status" class="setup-intro" aria-live="polite">Crea una sala privada o abre una invitación.</p>
+            <h2 id="online-heading">Jugar online</h2>
+            <p id="online-status" class="setup-intro" aria-live="polite">Crea una sala privada o únete con un código.</p>
           </div>
 
           <form id="online-join-form" class="online-form">
             <button id="resume-room-action" type="button" class="secondary-action" hidden>Volver a mi sala</button>
             <label class="setup-field" for="online-nick">
-              <span>Tu nick</span>
+              <span>Nombre de jugador</span>
               <input id="online-nick" name="nick" maxlength="24" autocomplete="nickname" required>
             </label>
             <div class="online-create-block">
-              <span>Crear una sala privada</span>
               <button id="create-room-action" type="button" class="primary-action">Crear sala</button>
             </div>
             <div class="online-join-block">
               <label class="setup-field" for="online-room-code">
-                <span>Unirse con código</span>
+                <span>Código de sala</span>
                 <input id="online-room-code" name="room-code" maxlength="8" autocomplete="off" placeholder="ABCDE">
               </label>
               <button id="join-room-action" type="submit" class="secondary-action">Unirse</button>
@@ -109,7 +108,7 @@
           </div>
           <div>
             <h2 id="setup-heading">Nueva partida</h2>
-            <p class="setup-intro">Elige la estructura de la ronda y cómo quieres ver el tablero.</p>
+            <p class="setup-intro">Configura la ronda y elige cómo verla.</p>
           </div>
 
           <label class="setup-field" for="setup-round-mode">
@@ -118,16 +117,12 @@
               <option value="RAMIFICADO" selected>Ramificado</option>
               <option value="LINEAL">Lineal</option>
             </select>
-            <small id="setup-round-mode-help">El primer chancho jugado es el único que puede recibir hasta cuatro conexiones.</small>
+            <small id="setup-round-mode-help">En Ramificado, el primer doble jugado es el único que puede recibir hasta cuatro conexiones.</small>
           </label>
 
           <fieldset class="setup-field">
             <legend>Vista inicial</legend>
             <div class="setup-choice" role="group" aria-label="Vista inicial del tablero">
-              <label>
-                <input type="radio" name="initial-view-mode" value="graph">
-                <span>Grafo</span>
-              </label>
               <label>
                 <input type="radio" name="initial-view-mode" value="traditional" checked>
                 <span>Tradicional</span>
@@ -136,11 +131,15 @@
                 <input type="radio" name="initial-view-mode" value="ports">
                 <span>Estrategia</span>
               </label>
+              <label>
+                <input type="radio" name="initial-view-mode" value="graph">
+                <span>Grafo</span>
+              </label>
             </div>
           </fieldset>
 
           <fieldset class="setup-field setup-seats">
-            <legend>Mesa local · equipos alternados</legend>
+            <legend>Jugadores</legend>
             <div class="seat-grid">
               <div class="seat-config" data-seat-index="0">
                 <span class="seat-config__position">Asiento 1 · Equipo A</span>
@@ -148,7 +147,7 @@
                   <option value="HUMAN" selected>Humano</option>
                   <option value="CPU">CPU</option>
                 </select>
-                <input data-seat-nick aria-label="Nick del asiento 1" maxlength="24" value="Jugador 1">
+                <input data-seat-nick aria-label="Nombre del asiento 1" maxlength="24" value="Jugador 1">
               </div>
               <div class="seat-config" data-seat-index="1">
                 <span class="seat-config__position">Asiento 2 · Equipo B</span>
@@ -156,7 +155,7 @@
                   <option value="HUMAN">Humano</option>
                   <option value="CPU" selected>CPU</option>
                 </select>
-                <input data-seat-nick aria-label="Nick del asiento 2" maxlength="24" value="CPU 2" disabled>
+                <input data-seat-nick aria-label="Nombre del asiento 2" maxlength="24" value="CPU 2" disabled>
               </div>
               <div class="seat-config" data-seat-index="2">
                 <span class="seat-config__position">Asiento 3 · Equipo A</span>
@@ -164,7 +163,7 @@
                   <option value="HUMAN">Humano</option>
                   <option value="CPU" selected>CPU</option>
                 </select>
-                <input data-seat-nick aria-label="Nick del asiento 3" maxlength="24" value="CPU 3" disabled>
+                <input data-seat-nick aria-label="Nombre del asiento 3" maxlength="24" value="CPU 3" disabled>
               </div>
               <div class="seat-config" data-seat-index="3">
                 <span class="seat-config__position">Asiento 4 · Equipo B</span>
@@ -172,14 +171,14 @@
                   <option value="HUMAN">Humano</option>
                   <option value="CPU" selected>CPU</option>
                 </select>
-                <input data-seat-nick aria-label="Nick del asiento 4" maxlength="24" value="CPU 4" disabled>
+                <input data-seat-nick aria-label="Nombre del asiento 4" maxlength="24" value="CPU 4" disabled>
               </div>
             </div>
-            <small>Siempre 4 jugadores · los equipos A y B ocupan asientos alternados.</small>
+            <small>4 jugadores · compañeros de equipo frente a frente.</small>
           </fieldset>
 
-          <p class="setup-scoring">Puntuación: múltiplos de 5</p>
-          <button id="start-game-action" type="submit" class="primary-action">Jugar</button>
+          <p class="setup-scoring">Se puntúa con múltiplos de 5.</p>
+          <button id="start-game-action" type="submit" class="primary-action">Empezar partida</button>
           <button id="local-back-action" type="button" class="text-action">Volver</button>
         </form>
       </section>

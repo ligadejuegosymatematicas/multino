@@ -46,3 +46,26 @@ Online: `Volver al inicio`. Se informa que una nueva partida requiere crear otra
 sala y compartir su código. No se ofrecen `Jugar de nuevo` ni `Reordenar asientos`
 porque requieren una transición de servidor que no existe. La sala terminada
 sigue recuperable mediante su código, también después de salir a portada.
+
+## Copy público final
+
+| Antes | Después |
+|---|---|
+| Dominó, estrategia y múltiplos. | Dominó, estrategia y múltiplos de 5. |
+| Salas privadas online disponibles. | Eliminado cuando online está configurado. |
+| Elige la estructura de la ronda y cómo quieres ver el tablero. | Configura la ronda y elige cómo verla. |
+| El primer chancho jugado… | En Ramificado, el primer doble jugado es el único que puede recibir hasta cuatro conexiones. |
+| Todos los chanchos son ordinarios… | En Lineal, la mesa forma una sola cadena y cada doble admite dos conexiones. |
+| Mesa local · equipos alternados | Jugadores |
+| Siempre 4 jugadores · los equipos A y B ocupan asientos alternados. | 4 jugadores · compañeros de equipo frente a frente. |
+| Jugar (configuración) | Empezar partida |
+| Puntuación: múltiplos de 5 | Se puntúa con múltiplos de 5. |
+| Sala online | Jugar online |
+| Crea una sala privada o abre una invitación. | Crea una sala privada o únete con un código. |
+| Tu nick | Nombre de jugador |
+| Crear una sala privada + Crear sala | Crear sala |
+| Unirse con código | Código de sala |
+| Inspección topológica cerrada. | Detalle cerrado. |
+
+Vista inicial: Tradicional / Estrategia / Grafo, sin cambiar el default Tradicional.
+Se conservan nombres de equipos, asientos, Σ y la leyenda matemática compartida.

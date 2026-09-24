@@ -150,9 +150,9 @@ const navigation = new AppNavigation({
 });
 const restoredRoute = navigation.restoredRoute;
 navigation.init();
+document.querySelector("#online-availability").hidden = runtimeConfig.onlineEnabled;
 document.querySelector("#online-availability").textContent = runtimeConfig.onlineEnabled
-  ? "Salas privadas online disponibles."
-  : "El modo online aún no está configurado.";
+  ? "" : "El modo online aún no está configurado.";
 
 function collectSetupSeats() {
   return seatConfigElements.map((element, seatIndex) => {
@@ -309,7 +309,7 @@ function describeStructure(presentation, structureId) {
   }
   return presentation.view.topology.branchFamilies.some(
     (family) => family.id === structureId,
-  ) ? "los brazos del chancho ramificador" : "el recorrido";
+  ) ? "las ramas del doble central" : "el recorrido";
 }
 
 function inspectStructure(structureId) {
@@ -318,8 +318,8 @@ function inspectStructure(structureId) {
   runIntent(
     () => sessionController.inspectStructure(structureId),
     wasInspected
-      ? "Inspección topológica cerrada."
-      : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
+      ? "Detalle cerrado."
+      : `Viendo ${describeStructure(presentation, structureId)}.`,
   );
 }
 
@@ -402,15 +402,15 @@ function renderRound(
       runIntent(
         () => sessionController.inspectPlacement(edge.placementId),
         wasInspected
-          ? "Inspección topológica cerrada."
-          : `Inspeccionando ${describeStructure(presentation, structureId)}.`,
+          ? "Detalle cerrado."
+          : `Viendo ${describeStructure(presentation, structureId)}.`,
       );
     },
     onInspectStructure: inspectStructure,
     onClearInspection: () =>
       runIntent(
         () => sessionController.clearInspection(),
-        "Inspección topológica cerrada.",
+        "Detalle cerrado.",
       ),
     onMessage: setMessage,
   });
@@ -532,8 +532,8 @@ function renderSession(session) {
   setupRoundMode.value = session.config.roundMode;
   setupRoundModeHelp.textContent = session.config.roundMode ===
       ROUND_STRUCTURE_MODES.BRANCHED
-    ? "El primer chancho jugado es el único que puede recibir hasta cuatro conexiones."
-    : "Todos los chanchos son ordinarios y la partida se mantiene como una única cadena.";
+    ? "En Ramificado, el primer doble jugado es el único que puede recibir hasta cuatro conexiones."
+    : "En Lineal, la mesa forma una sola cadena y cada doble admite dos conexiones.";
   for (const input of initialModeInputs) {
     input.checked = input.value === session.config.initialViewMode;
   }
@@ -710,8 +710,8 @@ function renderOnlineSession(session) {
     resumeButton.hidden = !savedRoomCode;
     resumeButton.textContent = `Volver a mi sala ${savedRoomCode}`;
     onlineStatus.textContent = session.pendingRoomCode
-      ? `Ingresa tu nick para unirte a ${session.pendingRoomCode}.`
-      : "Crea una sala privada o abre una invitación.";
+      ? `Escribe tu nombre para unirte a ${session.pendingRoomCode}.`
+      : "Crea una sala privada o únete con un código.";
   }
 }
 
@@ -952,7 +952,7 @@ document.querySelector("#online-back-action").addEventListener(
 document.querySelector("#create-room-action").addEventListener("click", () => {
   void withOnlineBusy(async () => {
     const nick = onlineNick.value.trim();
-    if (!nick) throw new Error("Escribe tu nick.");
+    if (!nick) throw new Error("Escribe tu nombre de jugador.");
     profileStore.save({ nick });
     await onlineSessionController.createRoom(nick);
     onlineRoomStore.save({
@@ -966,7 +966,7 @@ onlineJoinForm.addEventListener("submit", (event) => {
   void withOnlineBusy(async () => {
     const nick = onlineNick.value.trim();
     const roomCode = onlineRoomCode.value.trim();
-    if (!nick) throw new Error("Escribe tu nick.");
+    if (!nick) throw new Error("Escribe tu nombre de jugador.");
     if (!roomCode) throw new Error("Escribe el código de sala.");
     profileStore.save({ nick });
     await onlineSessionController.joinRoom({ roomCode, nick });
