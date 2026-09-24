@@ -33,3 +33,16 @@ no reabre automáticamente esa sala al refrescar; la URL de sala sí la recupera
 
 Salir local elimina la ronda en memoria y cancela su tarea pendiente. Conserva
 configuración e historial terminado; el diálogo advierte que no puede retomarse.
+
+## Resultado y acciones finales
+
+El resultado y sus acciones aparecen únicamente después del scoring y settle
+existentes, con ganador/empate, marcador por equipos, motivo y bonus preservados.
+Local: `Jugar de nuevo` conserva asientos/modo/vista y reinicia marcador/reparto;
+`Cambiar configuración` conserva la posibilidad existente de editar la mesa;
+`Volver al inicio` abre portada. No se añade reordenamiento online a Local.
+
+Online: `Volver al inicio`. Se informa que una nueva partida requiere crear otra
+sala y compartir su código. No se ofrecen `Jugar de nuevo` ni `Reordenar asientos`
+porque requieren una transición de servidor que no existe. La sala terminada
+sigue recuperable mediante su código, también después de salir a portada.

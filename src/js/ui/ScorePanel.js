@@ -96,6 +96,20 @@ export function shouldDeferRoundResult({
   );
 }
 
+export function getRoundActionsPresentation({ isFinished, deferred, sessionKind }) {
+  const visible = Boolean(isFinished && !deferred);
+  const local = sessionKind !== "ONLINE";
+  return {
+    visible,
+    canPlayAgain: visible && local,
+    canConfigure: visible && local,
+    canGoHome: visible,
+    notice: visible && !local
+      ? "Para otra partida online, crea una nueva sala y comparte su código."
+      : "",
+  };
+}
+
 export function renderScoringPanel(container, view, { feedback = null } = {}) {
   if (!container) {
     return;

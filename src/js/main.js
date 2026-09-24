@@ -18,6 +18,7 @@ import {
   renderScorePanel,
   renderCurrentSum,
   shouldDeferRoundResult,
+  getRoundActionsPresentation,
 } from "./ui/ScorePanel.js";
 import {
   renderTurnPanel,
@@ -487,8 +488,18 @@ function renderRound(
   passButton.disabled = interactionLocked || !presentation.canPass ||
     presentation.isFinished;
   passButton.hidden = !presentation.canPass || presentation.isFinished;
-  roundActions.hidden = presentation.sessionKind === "ONLINE" ||
-    !presentation.isFinished || roundResultDeferred;
+  const resultActions = getRoundActionsPresentation({
+    isFinished: presentation.isFinished,
+    deferred: roundResultDeferred,
+    sessionKind: presentation.sessionKind,
+  });
+  roundActions.hidden = !resultActions.visible;
+  playAgainButton.hidden = !resultActions.canPlayAgain;
+  changeConfigButton.hidden = !resultActions.canConfigure;
+  document.querySelector("#round-home-action").hidden = !resultActions.canGoHome;
+  const resultNotice = document.querySelector("#round-actions-notice");
+  resultNotice.textContent = resultActions.notice;
+  resultNotice.hidden = !resultActions.notice;
   const selectedCount = presentation.selectedLegalTargets.length;
   const strategicDecisionCount = presentation.strategicDecisionGroups?.length ?? 0;
   const selectionHint = document.querySelector("#selection-hint");
@@ -907,6 +918,11 @@ changeConfigButton.addEventListener("click", () => {
   } catch (error) {
     setMessage(error.message);
   }
+});
+
+document.querySelector("#round-home-action").addEventListener("click", () => {
+  if (sessionController?.getPresentation().round?.isFinished && !roundResultPending &&
+      !activeFeedbackPresentation) showEntry();
 });
 
 document.querySelector("#choose-local-action").addEventListener(
