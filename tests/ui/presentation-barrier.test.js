@@ -7,6 +7,7 @@ import {
   getOnlineIdleTurnMessage,
   getPresentedActivePlayerId,
   isPresentationBarrierActive,
+  isDirectTerminalSync,
   resolvePresentedFeedback,
 } from "../../src/js/ui/PresentationBarrier.js";
 
@@ -100,6 +101,27 @@ test("el actor terminal solo permanece activo durante la presentacion final", ()
     presentationActorId: "seat-2",
     currentPlayerId: "seat-2",
   }), null);
+});
+
+test("un resync terminal directo no vuelve a reproducir el ultimo scoring", () => {
+  assert.equal(isDirectTerminalSync({
+    isFinished: true,
+    presentationPhase: "idle",
+    lastFeedbackSequence: null,
+    activeFeedback: null,
+  }), true);
+  assert.equal(isDirectTerminalSync({
+    isFinished: true,
+    presentationPhase: "move",
+    lastFeedbackSequence: null,
+    activeFeedback: null,
+  }), false);
+  assert.equal(isDirectTerminalSync({
+    isFinished: true,
+    presentationPhase: "idle",
+    lastFeedbackSequence: 27,
+    activeFeedback: null,
+  }), false);
 });
 
 test("la UI no permite saltar scoring, revelar mano ni cambiar vista", async () => {

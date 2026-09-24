@@ -53,6 +53,18 @@ export function getPresentedActivePlayerId({
   return feedbackPlayerId ?? presentationActorId ?? currentPlayerId;
 }
 
+export function isDirectTerminalSync({
+  isFinished = false,
+  presentationPhase = null,
+  lastFeedbackSequence = null,
+  activeFeedback = null,
+} = {}) {
+  return isFinished &&
+    presentationPhase === "idle" &&
+    lastFeedbackSequence === null &&
+    activeFeedback === null;
+}
+
 export function getLocalCpuPresentationDelay({
   state,
   scoringDurationMs,

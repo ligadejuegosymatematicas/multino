@@ -48,6 +48,7 @@ import {
   getOnlineIdleTurnMessage,
   getPresentedActivePlayerId,
   isPresentationBarrierActive,
+  isDirectTerminalSync,
   resolvePresentedFeedback,
 } from "./ui/PresentationBarrier.js";
 
@@ -605,11 +606,19 @@ function renderOnlineSession(session) {
       return;
     }
     const nextFeedback = getGameFeedback(session.round.view);
-    let feedback = resolvePresentedFeedback({
-      nextFeedback,
+    const directTerminalSync = isDirectTerminalSync({
+      isFinished: session.round.isFinished,
+      presentationPhase: queue.phase,
       lastFeedbackSequence,
       activeFeedback: activeFeedbackPresentation,
     });
+    let feedback = directTerminalSync
+      ? null
+      : resolvePresentedFeedback({
+        nextFeedback,
+        lastFeedbackSequence,
+        activeFeedback: activeFeedbackPresentation,
+      });
     if (feedback?.scoring && !hasShownScoringLesson) {
       feedback = { ...feedback, showScoringLesson: true };
       hasShownScoringLesson = true;
