@@ -40,7 +40,7 @@ import {
   ONLINE_SCREENS,
   OnlineGameSessionController,
 } from "./online/OnlineGameSessionController.js";
-import { createBrowserSupabaseGateway } from "./online/SupabaseBrowserClient.js";
+import { createBrowserGatewayProvider } from "./online/SupabaseBrowserClient.js";
 import {
   LocalMatchHistoryStore,
   LocalOnlineRoomStore,
@@ -123,6 +123,7 @@ const ONLINE_POST_SCORE_PAUSE_MS = 260;
 const profileStore = new LocalProfileStore();
 const historyStore = new LocalMatchHistoryStore();
 const onlineRoomStore = new LocalOnlineRoomStore();
+const getOnlineGateway = createBrowserGatewayProvider();
 document.title = APP_NAME;
 observeBrandPresentation();
 document.querySelector("#app-title").textContent = APP_NAME;
@@ -147,6 +148,7 @@ const navigation = new AppNavigation({
     exitDialog.showModal();
   }),
   onRoute: navigateToScreen,
+  exitRoute: (route) => route.screen === "online-round" ? { screen: "entry" } : null,
 });
 const restoredRoute = navigation.restoredRoute;
 navigation.init();
@@ -761,7 +763,7 @@ async function startOnlineMode(roomCode = "", { resumeSaved = true, recordEntry 
   onlineStatus.textContent = "Conectando con la sala…";
   try {
     const activeRoomCode = roomCode || (resumeSaved ? onlineRoomStore.load().roomCode : "");
-    const gateway = await createBrowserSupabaseGateway();
+    const gateway = await getOnlineGateway();
     if (epoch !== navigationEpoch) return;
     onlineSessionController?.dispose();
     onlineSessionController = new OnlineGameSessionController({

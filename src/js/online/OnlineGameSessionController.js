@@ -122,7 +122,11 @@ export class OnlineGameSessionController {
     if (this.pendingRoomCode) {
       try {
         await this.resumeRoom(this.pendingRoomCode);
-      } catch {
+      } catch (error) {
+        // An invitation opened by a new member legitimately needs JOIN. A
+        // transport/Auth/render failure is NOT evidence that membership vanished.
+        // In particular, do not turn an already restored ROUND into a join form.
+        if (error.code !== "NOT_ROOM_MEMBER") throw error;
         this.screen = ONLINE_SCREENS.JOIN;
         this.#emitChange();
       }

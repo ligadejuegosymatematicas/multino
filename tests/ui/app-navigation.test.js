@@ -4,7 +4,7 @@ import { AppNavigation, EXIT_COPY, getExitPrompt } from "../../src/js/ui/AppNavi
 import { LocalGameSessionController } from "../../src/js/ui/LocalGameSessionController.js";
 import { createDefaultSeats } from "../../src/js/game/index.js";
 
-function harness() {
+function harness(options = {}) {
   const events = new EventTarget();
   const location = { href: "https://example.org/multino/" };
   const entries = [{ state: null, url: location.href }];
@@ -33,6 +33,7 @@ function harness() {
     getPrompt: () => prompt,
     confirmExit: () => { confirmations++; return new Promise(resolve => { resolveConfirm = resolve; }); },
     onRoute: route => routes.push(route),
+    ...options,
   });
   nav.init();
   return { nav, history, entries, location, routes,
@@ -99,6 +100,21 @@ test("refresh keeps navigation and room code without storing private match data"
   nav.init();
   assert.equal(h.entries.length, 2);
   assert.doesNotMatch(JSON.stringify(h.history.state), /hand|userId|token|seatId/);
+});
+
+test("online PLAYING: cancel retains match URL; accepted exit reaches home without another entry", async () => {
+  const h = harness({ exitRoute: route => route.screen === "online-round" ? { screen: "entry" } : null });
+  h.nav.record({ screen: "online-join" });
+  h.nav.record({ screen: "online-round", roomCode: "ABCDE" });
+  const length = h.entries.length;
+  h.setPrompt(EXIT_COPY.online);
+  h.nav.back(); await flush(); h.confirm(false); await flush();
+  assert.match(h.location.href, /room=ABCDE/);
+  assert.equal(h.routes.length, 0);
+  h.nav.back(); await flush(); h.confirm(true); await flush();
+  assert.deepEqual(h.routes.at(-1), { screen: "entry" });
+  assert.equal(h.entries.length, length);
+  assert.equal(new URL(h.location.href).searchParams.has("room"), false);
 });
 
 test("local exit cancels scheduled work, drops nonpersisted round, preserves configuration", () => {

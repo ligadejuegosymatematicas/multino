@@ -6,7 +6,7 @@ import {
   OnlineGameSessionController,
   createOnlineRoundPresentation,
 } from "../../src/js/online/OnlineGameSessionController.js";
-import { createBrowserSupabaseGateway } from "../../src/js/online/SupabaseBrowserClient.js";
+import { createBrowserSupabaseGateway, createBrowserGatewayProvider } from "../../src/js/online/SupabaseBrowserClient.js";
 import { SupabaseGateway } from "../../src/js/online/SupabaseGateway.js";
 
 function projectedView({ current = true } = {}) {
@@ -422,7 +422,7 @@ test("una sala pendiente puede reanudarse al volver la red sin crear otro asient
     sendIntent: async () => matchResponse(),
   };
   const controller = new OnlineGameSessionController({ gateway });
-  await controller.start({ roomCode: "ABCDE" });
+  await assert.rejects(controller.start({ roomCode: "ABCDE" }), { code: "NETWORK" });
   assert.equal(controller.getPresentation().room, null);
 
   available = true;
@@ -584,4 +584,58 @@ test("el cliente Supabase del navegador usa solamente configuración pública", 
   assert.equal(captured.key, "sb_publishable_public-example");
   assert.equal(captured.options.auth.persistSession, true);
   assert.equal(Object.hasOwn(captured.options, "serviceRole"), false);
+});
+
+test("navegar fuera y volver reutiliza un único cliente Auth, incluso con entradas simultáneas", async () => {
+  let created = 0;
+  const gateway = {};
+  const getGateway = createBrowserGatewayProvider(async () => { created++; return gateway; });
+  assert.deepEqual(await Promise.all([getGateway(), getGateway()]), [gateway, gateway]);
+  assert.equal(await getGateway(), gateway);
+  assert.equal(created, 1);
+});
+
+test("una importación fallida permite reintento explícito, sin bucle automático", async () => {
+  let calls = 0;
+  const gateway = {};
+  const getGateway = createBrowserGatewayProvider(async () => {
+    if (++calls === 1) throw new Error("Sin red");
+    return gateway;
+  });
+  await assert.rejects(getGateway(), /Sin red/);
+  assert.equal(calls, 1);
+  assert.equal(await getGateway(), gateway);
+  assert.equal(calls, 2);
+});
+
+test("un error de render al restaurar PLAYING no se convierte en pérdida de membership", async () => {
+  const controller = new OnlineGameSessionController({
+    gateway: {
+      ensureAnonymousIdentity: async () => ({ id: "user-1" }),
+      sendLobbyIntent: async () => ({ ...room(), status: "PLAYING" }),
+      subscribeRoom: () => () => {},
+      syncMatch: async () => matchResponse(),
+    },
+    onChange: () => { throw new Error("Renderer failed"); },
+  });
+  await assert.rejects(controller.start({ roomCode: "ABCDE" }), /Renderer failed/);
+  assert.equal(controller.getPresentation().screen, ONLINE_SCREENS.ROUND);
+  assert.equal(controller.getPresentation().pendingRoomCode, "ABCDE");
+  assert.equal(controller.getPresentation().userId, "user-1");
+});
+
+test("una invitación ajena sí solicita JOIN sin crear identidad ni asiento adicionales", async () => {
+  let calls = 0;
+  const controller = new OnlineGameSessionController({ gateway: {
+    ensureAnonymousIdentity: async () => ({ id: "user-2" }),
+    sendLobbyIntent: async intent => {
+      calls++;
+      assert.equal(intent.type, "GET_ROOM");
+      throw Object.assign(new Error("NOT_ROOM_MEMBER"), { code: "NOT_ROOM_MEMBER" });
+    },
+  } });
+  await controller.start({ roomCode: "ABCDE" });
+  assert.equal(controller.getPresentation().screen, ONLINE_SCREENS.JOIN);
+  assert.equal(controller.getPresentation().pendingRoomCode, "ABCDE");
+  assert.equal(calls, 1);
 });

@@ -283,3 +283,74 @@ test("cuatro clientes presentan la última jugada y convergen al mismo FINISHED"
     finalAuthority.publicMatch.roundResult,
   );
 });
+
+test("salir de pantalla y refresh recuperan identidad, asiento, mano y canal sin JOIN; FINISHED recupera directo", async () => {
+  const { service, roomCode, userIds } = await createFourHumanRoom();
+  const harness = new FourClientHarness({ service, roomCode, userIds });
+  const membership = structuredClone(service.getView({ roomCode, userId: userIds[1] }).room.seats);
+  let joins = 0;
+  const restore = async (userId) => {
+    const gateway = harness.gateway(userId);
+    const send = gateway.sendLobbyIntent;
+    gateway.sendLobbyIntent = async (intent) => {
+      if (intent.type === "JOIN_ROOM") joins++;
+      return send(intent);
+    };
+    const controller = new OnlineGameSessionController({ gateway });
+    await controller.start({ roomCode });
+    const p = controller.getPresentation();
+    const authority = harness.latest(userId);
+    assert.equal(p.userId, userId);
+    assert.equal(p.room.roomCode, roomCode);
+    assert.equal(p.room.seats.length, 4);
+    assert.equal(p.room.seats.filter(seat => seat.userId === userId).length, 1);
+    const own = p.room.seats.find(seat => seat.userId === userId);
+    const original = membership.find(seat => seat.userId === userId);
+    assert.equal(own.seatId, `${roomCode}:${original.seatId}`);
+    assert.equal(own.seatIndex, original.seatIndex);
+    assert.equal(own.teamId, original.teamId);
+    assert.equal(own.nick, original.nick);
+    assert.deepEqual(controller.authoritativeMatch, authority);
+    assert.deepEqual(controller.match.privateMatch.hand, authority.privateMatch.hand);
+    assert.equal(p.presentationQueue.phase, "idle");
+    assert.equal(harness.listeners.get(userId).size, 1, "exactamente un canal activo");
+    assert.equal(Object.hasOwn(authority.publicMatch, "hands"), false);
+    assert.deepEqual(Object.keys(authority.privateMatch.dominoes).sort(), [...authority.privateMatch.hand].sort());
+    return controller;
+  };
+  let clients = await Promise.all(userIds.map(restore));
+  // Refresh: destroy only presentation, never membership or the persisted identity.
+  clients[1].dispose();
+  assert.equal(harness.listeners.get(userIds[1]).size, 0);
+  clients[1] = await restore(userIds[1]);
+
+  for (let turn = 0; turn < 120; turn++) {
+    const view = service.getView({ roomCode, userId: userIds[0] });
+    if (view.room.status === ROOM_STATES.FINISHED) break;
+    const actor = view.room.seats.find(seat => seat.seatId === view.publicMatch.currentPlayerId);
+    // A non-actor leaves the screen. The other human can legally advance the round.
+    const absentIndex = (userIds.indexOf(actor.userId) + 1) % 4;
+    const absentId = userIds[absentIndex];
+    clients[absentIndex].dispose();
+    const action = service.getView({ roomCode, userId: actor.userId }).privateMatch.legalActions[0];
+    await harness.submit(actor.userId, { expectedVersion: view.room.version, intent: action.type === "PASS"
+      ? { type: "PASS" } : { type: "PLAY_TILE", dominoId: action.dominoId, target: action.target } });
+    harness.broadcast();
+    clients[absentIndex] = await restore(absentId);
+    const after = clients[absentIndex].getPresentation();
+    if (after.round.isFinished) {
+      assert.equal(after.presentationQueue.phase, "idle");
+      assert.equal(after.round.handPrivacy.canAct, false);
+      assert.equal(after.round.canPass, false);
+    }
+  }
+  assert.equal(service.getView({ roomCode, userId: userIds[0] }).room.status, ROOM_STATES.FINISHED);
+  for (let index = 0; index < 4; index++) {
+    clients[index].dispose();
+    clients[index] = await restore(userIds[index]);
+    assert.equal(clients[index].getPresentation().round.isFinished, true);
+    clients[index].dispose();
+  }
+  assert.equal(joins, 0);
+  assert.deepEqual(service.getView({ roomCode, userId: userIds[1] }).room.seats, membership);
+});

@@ -16,8 +16,9 @@ export function getExitPrompt(session, kind) {
  * another entry; acceptance traverses to the original destination exactly once.
  * State contains navigation only, never identity, hands or game snapshots. */
 export class AppNavigation {
-  constructor({ history, location, events, confirmExit, getPrompt, onRoute }) {
-    Object.assign(this, { history, location, events, confirmExit, getPrompt, onRoute });
+  constructor({ history, location, events, confirmExit, getPrompt, onRoute,
+    exitRoute = () => null }) {
+    Object.assign(this, { history, location, events, confirmExit, getPrompt, onRoute, exitRoute });
     this.current = history.state?.[KEY] ?? {
       index: 0, route: { screen: "entry" },
     };
@@ -69,7 +70,8 @@ export class AppNavigation {
       const accepted = await this.confirmExit(pending.prompt);
       this.pending = null;
       if (accepted) {
-        this.allowed = pending.target;
+        this.allowed = { ...pending.target,
+          exitRoute: this.exitRoute(this.current.route) };
         this.history.go(pending.target.index - this.current.index);
       }
       return;
@@ -82,6 +84,7 @@ export class AppNavigation {
       return;
     }
     const allowed = this.allowed?.index === target.index;
+    const exitRoute = allowed ? this.allowed.exitRoute : null;
     this.allowed = null;
     const prompt = !allowed && !sameRoute(target.route, this.current.route)
       ? this.getPrompt() : null;
@@ -92,7 +95,10 @@ export class AppNavigation {
       return;
     }
     this.current = target;
-    await this.onRoute(target.route);
+    // A confirmed online exit leaves the screen, not the room. Replace the
+    // reached entry rather than pushing a new one (no Back/confirmation loop).
+    if (exitRoute) this.record(exitRoute, { replace: true });
+    await this.onRoute(this.current.route);
   }
 
   dispose() { this.events.removeEventListener("popstate", this.listener); }
